@@ -1,6 +1,31 @@
 # BeamNG Belfast: project plan and task queue
 
-*Last updated 8 November 2026. Checked against BeamNG.drive 0.40.4 on this PC.*
+*Last updated 10 November 2026. Planned against BeamNG.drive 0.40.4; the install is now 0.40.5 (found in T-005).*
+
+## 0. Where things stand (read this first in a new session)
+
+**M0 is done except T-011.** T-001 to T-010 passed their Done-when checks and are on `dev` (pushed). Details are in `docs/spikes/mcp.md`, `docs/spikes/vlm.md`, `docs/spikes/gpu.md`, `docs/gamectl.md` and `docs/loopkit.md`.
+
+**How we work now (decided 10 November 2026).** Running M0 with an orchestrator and one agent per task used about 72% of a 5-hour usage limit, so fully unattended running is on hold. T-011 (schedules) is deferred. Work continues in manual sessions with a clear context: one or two tasks per session, started by you.
+
+To continue, start a new session and say: `Read task.md section 0 and CLAUDE.md, then do T-xxx.` To keep usage down, do the task in the session itself on the task's tagged model, rather than through an orchestrator with subagents.
+
+**Ready next:** T-101 (Opus, review MapNG before running it; this unlocks M1), T-308 (Sonnet, flag-this-spot key, needs the game), T-803 (optional).
+
+**What M0 found**
+
+- BeamNG's built-in MCP works: 102 tools, localhost only, about 6 s from launch to ready. `-windowed` and `-fullscreen` crash this build; the default window is already 1280x720.
+- `tools/gamectl.py` starts, loads a level, screenshots and stops the game safely. `tools/vlm.py` drives Qwen. They share `H:\BelfastData\gpu.lock` so the two never overlap.
+- The game and Qwen cannot run together on this PC. System RAM (31 GB) is the limit, not video memory. QA stays turn-based, and T-805 would have to be turn-based too.
+- Qwen takes about 10 s per frame and its reasoning effort cannot be set. Its accuracy on real game frames is still unmeasured (T-306).
+
+**Loose ends from M0**
+
+- The loop kit's slash commands (`/next-task`, `/status` and the rest) were walked through by hand, never run as real commands. Try `/status` once in a new session.
+- The guard-rail hook was tested with sample input, not in a live session. It reads command text, so a script that builds a path or flag at run time is not caught.
+- Re-tagging a blocked task and adding Inbox rows are hand edits to this file.
+- Gate G1 needs a baseline: a clean stock level already logs two errors of the game's own.
+- The 09:00 to 18:00 rule is checked only when the game starts.
 
 This file is the plan and the work queue. The loops described in [GUIDE.md](GUIDE.md) read the tables in section 7 and change the Status column, so please keep their layout.
 
@@ -178,7 +203,7 @@ Outcome: Claude can run the game and the local model, safely and unattended.
 | T-008 | done | Load the game and Qwen together at 1280x720 on low settings. Decide whether a closed-loop local play-test is workable | sonnet | medium | game | T-006, T-007 | Verdict with numbers in `docs/spikes/gpu.md` |
 | T-009 | done | `tools/next_task.py <day or night>` prints only the next ready row. `tools/task_state.py` sets a status | sonnet | medium | any | T-002 | Unit tests pass against this file |
 | T-010 | done | Loop kit: `.claude/agents/` pinned per model and effort (`builder`, `builder-light`, `architect`, `architect-deep`, `steward`) and project commands `/next-task`, `/qa`, `/triage`, `/truth`, `/vr-review`, `/status` (note: dry runs were manual walk-throughs in a throwaway repo; first real slash-command run still to be confirmed in a new session) | sonnet | high | any | T-004, T-009 | Each command completes a dry run on a dummy task |
-| T-011 | todo | Approve the schedules in GUIDE.md section 5 and let Claude create them | you | - | you | T-010 | Schedules appear in the app |
+| T-011 | todo | Approve the schedules in GUIDE.md section 5 and let Claude create them (note: deferred by you on 10 Nov 2026; unattended running is on hold because of usage limits) | you | - | you | T-010 | Schedules appear in the app |
 
 ### M1: First drivable Belfast
 
@@ -295,7 +320,7 @@ Outcome: as much of Belfast as VR can carry.
 | T-802 | todo | Public release checklist, only if decision 5 changes: no third-party imagery, full credits, ODbL obligations, BeamNG repository rules | sonnet | medium | any | T-801 | Checklist complete and approved by you |
 | T-803 | todo | Optional: review `llm-game-automation-mcp` at a pinned commit and build it from source | opus | high | any | T-001 | Written security review ends in go or no-go |
 | T-804 | todo | Optional: test it on a QA profile for real gamepad driving, if the review passes | sonnet | medium | game | T-803, T-006 | Report says what it adds beyond the built-in MCP |
-| T-805 | todo | Optional: weekly exploratory play-test by Qwen through LM Studio's MCP support, limited to safe tools | sonnet | medium | game | T-008, T-306 | One useful report that scripts had missed |
+| T-805 | todo | Optional: weekly exploratory play-test by Qwen through LM Studio's MCP support, limited to safe tools (note: T-008 found game and Qwen cannot run together; would have to be turn-based) | sonnet | medium | game | T-008, T-306 | One useful report that scripts had missed |
 
 ## 8. Guard rails
 
@@ -328,7 +353,7 @@ Every agent follows these. T-002 copies them into `CLAUDE.md`, and T-004 enforce
 
 ## 10. What has not been verified yet
 
-- BeamNG's built-in MCP was read in your install's code but has not been run. T-005 proves it live.
+- BeamNG's built-in MCP has now been run live (T-005, T-006). `load_level` and screenshots are proven on a stock level only.
 - MapNG has not been run. Its headless export and tests were read as code only.
 - Mapillary coverage of Belfast is unknown until you have a token.
 - 8192 px terrain and all VR performance on 0.40.4 are unmeasured.
