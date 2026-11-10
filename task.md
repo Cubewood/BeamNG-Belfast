@@ -177,7 +177,7 @@ Outcome: Claude can run the game and the local model, safely and unattended.
 | T-007 | done | `tools/vlm.py`: start the LM Studio server, load Qwen, send an image with a JSON schema, unload. Record `lms load --estimate-only`, video memory and seconds per frame at low and medium reasoning | sonnet | medium | gpu | T-003 | 20 frames return valid JSON. Video memory returns to baseline after unload |
 | T-008 | todo | Load the game and Qwen together at 1280x720 on low settings. Decide whether a closed-loop local play-test is workable | sonnet | medium | game | T-006, T-007 | Verdict with numbers in `docs/spikes/gpu.md` |
 | T-009 | done | `tools/next_task.py <day or night>` prints only the next ready row. `tools/task_state.py` sets a status | sonnet | medium | any | T-002 | Unit tests pass against this file |
-| T-010 | doing | Loop kit: `.claude/agents/` pinned per model and effort (`builder`, `builder-light`, `architect`, `architect-deep`, `steward`) and project commands `/next-task`, `/qa`, `/triage`, `/truth`, `/vr-review`, `/status` | sonnet | high | any | T-004, T-009 | Each command completes a dry run on a dummy task |
+| T-010 | done | Loop kit: `.claude/agents/` pinned per model and effort (`builder`, `builder-light`, `architect`, `architect-deep`, `steward`) and project commands `/next-task`, `/qa`, `/triage`, `/truth`, `/vr-review`, `/status` (note: dry runs were manual walk-throughs in a throwaway repo; first real slash-command run still to be confirmed in a new session) | sonnet | high | any | T-004, T-009 | Each command completes a dry run on a dummy task |
 | T-011 | todo | Approve the schedules in GUIDE.md section 5 and let Claude create them | you | - | you | T-010 | Schedules appear in the app |
 
 ### M1: First drivable Belfast
