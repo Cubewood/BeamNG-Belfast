@@ -1,0 +1,98 @@
+{
+  "permissions": {
+    "deny": [
+      "Edit(//h/SteamLibrary/**)",
+      "Edit(//h/steamlibrary/**)",
+      "Edit(//H/SteamLibrary/**)",
+      "Bash(rm *SteamLibrary*)",
+      "Bash(rm *steamlibrary*)",
+      "Bash(rmdir *SteamLibrary*)",
+      "Bash(rmdir *steamlibrary*)",
+      "Bash(mv *SteamLibrary*)",
+      "Bash(mv *steamlibrary*)",
+      "Bash(touch *SteamLibrary*)",
+      "Bash(touch *steamlibrary*)",
+      "Bash(mkdir *SteamLibrary*)",
+      "Bash(mkdir *steamlibrary*)",
+      "Bash(tee *SteamLibrary*)",
+      "Bash(tee *steamlibrary*)",
+      "Bash(sed -i*SteamLibrary*)",
+      "Bash(sed -i*steamlibrary*)",
+      "Bash(* > *SteamLibrary*)",
+      "Bash(* > *steamlibrary*)",
+      "Bash(* >> *SteamLibrary*)",
+      "Bash(* >> *steamlibrary*)",
+      "PowerShell(Remove-Item *SteamLibrary*)",
+      "PowerShell(Remove-Item *steamlibrary*)",
+      "PowerShell(Move-Item *SteamLibrary*)",
+      "PowerShell(Move-Item *steamlibrary*)",
+      "PowerShell(Rename-Item *SteamLibrary*)",
+      "PowerShell(New-Item *SteamLibrary*)",
+      "PowerShell(Set-Content *SteamLibrary*)",
+      "PowerShell(Add-Content *SteamLibrary*)",
+      "PowerShell(Clear-Content *SteamLibrary*)",
+      "PowerShell(Out-File *SteamLibrary*)",
+      "PowerShell(* | Out-File *SteamLibrary*)",
+      "PowerShell(* | Set-Content *SteamLibrary*)",
+      "PowerShell(* > *SteamLibrary*)",
+      "PowerShell(* >> *SteamLibrary*)",
+
+      "Bash(git push *main*)",
+      "Bash(git push -f*)",
+      "Bash(git push * -f*)",
+      "Bash(git push *--force*)",
+      "Bash(git push *--all*)",
+      "Bash(git push *--mirror*)",
+      "Bash(git push * +*)",
+      "Bash(git * push *main*)",
+      "Bash(gh pr merge*)",
+      "PowerShell(git push *main*)",
+      "PowerShell(git push -f*)",
+      "PowerShell(git push * -f*)",
+      "PowerShell(git push *--force*)",
+      "PowerShell(git push *--all*)",
+      "PowerShell(git push *--mirror*)",
+      "PowerShell(git push * +*)",
+      "PowerShell(gh pr merge*)",
+
+      "Bash(git add .env*)",
+      "Bash(git add * .env)",
+      "Bash(git add *secrets.env*)",
+      "Bash(git add *.pem*)",
+      "Bash(git add *.key*)",
+      "PowerShell(git add .env*)",
+      "PowerShell(git add * .env)",
+      "PowerShell(git add *secrets.env*)",
+      "PowerShell(git add *.pem*)",
+      "PowerShell(git add *.key*)",
+
+      "Bash(*.exe*-mcpremote*)",
+      "Bash(*BeamNG*-mcpremote*)",
+      "Bash(*gamectl*-mcpremote*)",
+      "PowerShell(*.exe*-mcpremote*)",
+      "PowerShell(*BeamNG*-mcpremote*)",
+      "PowerShell(*gamectl*-mcpremote*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell|Write|Edit|NotebookEdit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe",
+            "args": [
+              "-NoProfile",
+              "-ExecutionPolicy",
+              "Bypass",
+              "-File",
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/guard.ps1"
+            ],
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
