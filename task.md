@@ -86,13 +86,13 @@ H:\BeamNG-QA\    throwaway game profile for tests
 
 ## 4. Decisions for you
 
-The defaults apply until you say otherwise. Decision 3 is the only one that blocks unattended work.
+**Answered 10 November 2026 (T-001):** decision 1 = **Hydebank**. Decision 3 = **yes**, loops may push to `dev` and open pull requests (`main` is still never pushed by a loop). Decisions 2, 4, 5, 6 and 7 = the defaults below.
 
 | # | Decision | Default | Why it matters |
 |---|---|---|---|
-| 1 | Which test centre? | Belfast (Balmoral), 66 Balmoral Road, BT12 6QL. The other is Belfast (Hydebank), 4 Hospital Road, BT8 8JL | Sets the first map area |
+| 1 | Which test centre? | **Chosen: Belfast (Hydebank), 4 Hospital Road, BT8 8JL.** The other is Belfast (Balmoral), 66 Balmoral Road, BT12 6QL | Sets the first map area |
 | 2 | Does this PC also run your day job? | Yes. Anything that launches the game stays outside 09:00 to 18:00 | The game uses the GPU and opens a window |
-| 3 | May the loops push to `dev` on GitHub and open pull requests? | Not until you say yes. `main` is never pushed by a loop | Unattended work needs somewhere to land |
+| 3 | May the loops push to `dev` on GitHub and open pull requests? | **Yes (answered).** `main` is never pushed by a loop | Unattended work needs somewhere to land |
 | 4 | Leave Google Maps out? | Yes | See finding 3. Say so if you want it added as a lookup-only tool for things like place names |
 | 5 | Private use or public release? | Private. The repo is public, so it holds code and fix data only, and the level zip stays on your PC | Public release adds licence and polish work (T-802) |
 | 6 | Learner car | Manual right-hand-drive Covet | Affects T-601 |
@@ -168,15 +168,15 @@ Outcome: Claude can run the game and the local model, safely and unattended.
 
 | ID | Status | Task | Model | Effort | Where | Needs | Done when |
 |---|---|---|---|---|---|---|---|
-| T-001 | todo | Answer the decisions in section 4, or say "use the defaults" | you | - | you | - | Section 4 updated |
-| T-002 | todo | Connect this folder to `Cubewood/BeamNG-Belfast`. Create the `dev` branch, `.gitignore` (data, builds, images, secrets), `CLAUDE.md` under 200 lines (project rules, the rules in the game's `NOTE_FOR_MODDERS.md`, section 8 below) and `CREDITS.md` | sonnet | medium | any | T-001 | `dev` exists, `git status` is clean, nothing over 5 MB is tracked |
-| T-003 | todo | Write `tools/bootstrap.ps1`: Node 22, GitHub CLI, Python 3.12 through uv, geospatial libraries, with uv and npm caches on H: | haiku | medium | any | T-002 | Runs twice cleanly and prints all versions |
-| T-004 | todo | Guard rails: deny rules and `PreToolUse` hooks that block writes to the Steam game folder, pushes to `main`, committing secrets and any use of `-mcpremote` | sonnet | high | any | T-002 | A test shows each rule blocking |
+| T-001 | done | Answer the decisions in section 4, or say "use the defaults" | you | - | you | - | Section 4 updated |
+| T-002 | done | Connect this folder to `Cubewood/BeamNG-Belfast`. Create the `dev` branch, `.gitignore` (data, builds, images, secrets), `CLAUDE.md` under 200 lines (project rules, the rules in the game's `NOTE_FOR_MODDERS.md`, section 8 below) and `CREDITS.md` | sonnet | medium | any | T-001 | `dev` exists, `git status` is clean, nothing over 5 MB is tracked |
+| T-003 | doing | Write `tools/bootstrap.ps1`: Node 22, GitHub CLI, Python 3.12 through uv, geospatial libraries, with uv and npm caches on H: | haiku | medium | any | T-002 | Runs twice cleanly and prints all versions |
+| T-004 | doing | Guard rails: deny rules and `PreToolUse` hooks that block writes to the Steam game folder, pushes to `main`, committing secrets and any use of `-mcpremote` | sonnet | high | any | T-002 | A test shows each rule blocking |
 | T-005 | todo | Prove BeamNG's built-in MCP live: launch windowed with `-userpath H:\BeamNG-QA\profile -enablemcp`, then call `initialize`, `tools/list`, `get_status` and `screenshot_image`. Record whether the window steals focus and how background frame limiting behaves. Confirm MCP stays off in your normal profile | sonnet | medium | game | T-003 | `docs/spikes/mcp.md` holds the real tool list and results. Your normal profile is unchanged |
 | T-006 | todo | `tools/gamectl.py`: lock file, launch, wait until ready, load level, stop, QA settings (1280x720, audio off, background frame limit off, telemetry off). It may only kill the process it started, and must exit at once if BeamNG is already running | sonnet | high | game | T-005 | Three unattended start and stop cycles pass |
 | T-007 | todo | `tools/vlm.py`: start the LM Studio server, load Qwen, send an image with a JSON schema, unload. Record `lms load --estimate-only`, video memory and seconds per frame at low and medium reasoning | sonnet | medium | gpu | T-003 | 20 frames return valid JSON. Video memory returns to baseline after unload |
 | T-008 | todo | Load the game and Qwen together at 1280x720 on low settings. Decide whether a closed-loop local play-test is workable | sonnet | medium | game | T-006, T-007 | Verdict with numbers in `docs/spikes/gpu.md` |
-| T-009 | todo | `tools/next_task.py <day or night>` prints only the next ready row. `tools/task_state.py` sets a status | sonnet | medium | any | T-002 | Unit tests pass against this file |
+| T-009 | doing | `tools/next_task.py <day or night>` prints only the next ready row. `tools/task_state.py` sets a status | sonnet | medium | any | T-002 | Unit tests pass against this file |
 | T-010 | todo | Loop kit: `.claude/agents/` pinned per model and effort (`builder`, `builder-light`, `architect`, `architect-deep`, `steward`) and project commands `/next-task`, `/qa`, `/triage`, `/truth`, `/vr-review`, `/status` | sonnet | high | any | T-004, T-009 | Each command completes a dry run on a dummy task |
 | T-011 | todo | Approve the schedules in GUIDE.md section 5 and let Claude create them | you | - | you | T-010 | Schedules appear in the app |
 

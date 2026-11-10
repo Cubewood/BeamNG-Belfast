@@ -1,0 +1,84 @@
+# Data and downloads (raw data lives in H:\BelfastData, never in git)
+data/*
+!data/overrides/
+downloads/
+raw/
+cache/
+*.osm
+*.pbf
+*.osm.bz2
+*.tif
+*.tiff
+*.laz
+*.las
+*.asc
+*.xlsx
+*.xls
+*.gpkg
+*.shp
+*.dbf
+*.shx
+*.zip
+*.7z
+*.rar
+
+# Builds and level output
+build/
+dist/
+out/
+levels/
+*.dds
+
+# Images (evidence photos and screenshots are never committed)
+*.jpg
+*.jpeg
+*.png
+*.webp
+*.gif
+*.bmp
+*.tga
+*.psd
+*.svg
+
+# Secrets
+.env
+.env.*
+secrets.env
+*.key
+*.pem
+*.token
+*token*.txt
+credentials*.json
+
+# Python, Node, uv
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.uv-cache/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+node_modules/
+.npm/
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# OS and editor
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
+.idea/
+.vscode/
+
+# Logs
+*.log
+logs/
+
+# Runtime reports (keep the folder only)
+reports/*
+!reports/.gitkeep
