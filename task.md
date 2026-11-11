@@ -211,7 +211,7 @@ Outcome: you have driven a real slice of Belfast and we know what is wrong with 
 
 | ID | Status | Task | Model | Effort | Where | Needs | Done when |
 |---|---|---|---|---|---|---|---|
-| T-101 | todo | Review MapNG commit `d605117` before running any of it: network calls, telemetry, bundled data licences, and how it handles UK rules today | opus | medium | any | T-002 | `docs/spikes/mapng.md` ends in go or no-go |
+| T-101 | doing | Review MapNG commit `d605117` before running any of it: network calls, telemetry, bundled data licences, and how it handles UK rules today | opus | medium | any | T-002 | `docs/spikes/mapng.md` ends in go or no-go |
 | T-102 | todo | Add MapNG as a pinned submodule in `third_party/mapng`, run its unit tests, and wrap `scripts/sweep/exportArea.mjs` in `tools/mapng_export.py` | sonnet | medium | any | T-101, T-003 | Unit tests pass and a sample area exports |
 | T-103 | todo | Generate `belfast_slice`: a 2048 m square at 1 m per pixel around your test centre, using stock OSM and free elevation, without satellite imagery | sonnet | medium | any | T-102 | Level linter reports 0 errors. Zip installed in the QA profile only |
 | T-104 | todo | Run MapNG's `runIngameTests` and `driveTest --no-street` on the slice | sonnet | medium | game | T-103, T-006 | Results saved, summary in `docs/spikes/baseline.md` |
@@ -246,7 +246,7 @@ Outcome: every night, a build is tested without you or Claude, and you get a sho
 | T-305 | todo | Build a labelled evaluation set of at least 150 frames, half with planted faults. Label with Claude vision, and you spot-check the disagreements | sonnet | high | any | T-303 | Set saved in `qa/eval/` |
 | T-306 | todo | Measure Qwen on the evaluation set. Write a trust table per defect type. Fault types under 90% precision go to Sonnet or are dropped | sonnet | medium | gpu | T-304, T-305 | `docs/spikes/vlm-eval.md` with thresholds |
 | T-307 | todo | Digest and issue cards: `DIGEST.md` under 60 lines, plus `issues/Q-*.md` with location, metric and image path, de-duplicated between runs | sonnet | medium | any | T-302 | A rerun creates no duplicate cards |
-| T-308 | todo | Flag-this-spot key: a dev-only extension that logs position, heading, speed and a screenshot when you press a bound key or wheel button in VR | sonnet | medium | game | T-006 | A test flag produces a complete record |
+| T-308 | doing | Flag-this-spot key: a dev-only extension that logs position, heading, speed and a screenshot when you press a bound key or wheel button in VR | sonnet | medium | game | T-006 | A test flag produces a complete record |
 | T-309 | todo | `qa/nightly.ps1`: build, G0 to G4, digest, clean shutdown. Register it in Windows Task Scheduler for 01:00 | sonnet | high | game | T-301, T-304, T-307 | Three unattended nights with nothing left running |
 | T-310 | todo | Regression gate: compare each night with the last accepted metrics and block release candidates that get worse | sonnet | medium | any | T-309 | A planted regression is blocked |
 
