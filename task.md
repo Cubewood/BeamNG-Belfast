@@ -8,7 +8,7 @@
 
 **How we work.** On 10 November an orchestrated run of M0 used about 72% of a 5-hour usage limit, so scheduled unattended running is on hold and T-011 is deferred. On 11 November you asked for an orchestrated session again; it ran T-101, T-308, T-102, T-103 and T-104, one agent per task. Default for a new session is still: `Read task.md section 0 and CLAUDE.md, then do T-xxx.` Ask for orchestration when you want it.
 
-**Ready next:** T-105 (you: VR drive of `belfast_slice`, then notes in `feedback/`), I-001 (AI road-graph error), T-302 (route drive suite), T-803 (optional). T-106 (gap report) waits for T-105.
+**Ready next:** T-105 (you: VR drive of `belfast_slice`, then notes in `feedback/`), T-302 (route drive suite; it must use a fresh vehicle or `mapmgr.setMap()` after scripted drives, see `docs/spikes/ai-graph.md`), T-803 (optional). T-106 (gap report) waits for T-105.
 
 **Needs you**
 
@@ -21,7 +21,7 @@
 - MapNG review: go, with conditions that `tools/mapng_export.py` enforces (no satellite or Google content, hosts blocked on export, UK country rules served). Without the rules file the export comes out as USA, right-hand traffic.
 - `belfast_slice` (2048 m, 1 m/px, 72 MB) lints with 0 errors, loads in 17.7 s with no errors of its own, and has white markings and left-hand road rules. Elevation is 30 m Terrarium, so the terrain is coarse until M2.
 - Baseline fails: sidewalk probes 7/247 (2.8%, limit 2%); drive test 8 of 12 routes completed, 4 crashes, two bumps over 7 m/s2. Sites are in `docs/spikes/baseline.md`.
-- AI traffic does not move on the slice: fatal Lua error at `graphpath.lua:268` (edge 3230). Lane side for AI is therefore unverified (I-001).
+- AI traffic works on the slice and keeps left (44 of 44 two-way samples on Hospital Road and Purdysburn Road). The fatal Lua error T-104 saw (`graphpath.lua:268`) came from switching a car to traffic mode after a scripted drive, not from the level (I-001, `docs/spikes/ai-graph.md`). Roundabouts, one-ways and junction turns under AI are still unchecked.
 - UK gaps in MapNG: km/h speed signs only, Italian sign meshes, anticlockwise roundabout sign, no mini-roundabouts, box junctions or give-way markings. Biome is still "East Coast USA".
 - Flag-this-spot key works on the QA profile (F9, records in `flagspot\flags.jsonl` in the user folder). Untested in a headset.
 
@@ -199,7 +199,7 @@ New requests land here. The dispatcher takes them before the milestones.
 
 | ID | Status | Task | Model | Effort | Where | Needs | Done when |
 |---|---|---|---|---|---|---|---|
-| I-001 | doing | Diagnose why AI traffic does not move on `belfast_slice`: fatal Lua error `graphpath.lua:268` edgeList nil (edge 3230) from `mapmgr.lua:281`, near (-122,109). See `docs/spikes/baseline.md` | opus | high | game | T-104 | Cause and proposed fix in `docs/spikes/ai-graph.md` |
+| I-001 | done | Diagnose why AI traffic does not move on `belfast_slice`: fatal Lua error `graphpath.lua:268` edgeList nil (edge 3230) from `mapmgr.lua:281`, near (-122,109). See `docs/spikes/baseline.md` | opus | high | game | T-104 | Cause and proposed fix in `docs/spikes/ai-graph.md` |
 
 ### M0: Foundations
 

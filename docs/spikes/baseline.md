@@ -9,7 +9,7 @@ Run 2026-11-11, 22:22 to 22:41 local, QA profile only, MapNG `d605117` unmodifie
 | G1 level load | Loads, 17.7 s, no level-caused error in the console. One level-caused warning (licence plate template) |
 | runIngameTests | 657 probes, **FAIL**: `sidewalk` 7/247 (2.8%, limit 2%). road, deck, spawn all 0 failures |
 | driveTest `--no-street` | 12 routes, 8 clean, **4 crashes**, 2 bumps over 7 m/s². No airborne, stuck, fell or off-route events |
-| Traffic side | Road rules say left-hand traffic. A lane test with AI could not be run: AI traffic mode throws a fatal Lua error on this level (works on `gridmap_v2`) |
+| Traffic side | Road rules say left-hand traffic. A lane test with AI could not be run in this session: AI traffic mode threw a fatal Lua error. **Corrected by I-001 (`docs/spikes/ai-graph.md`):** the error came from switching a car to traffic mode after a scripted drive, not from the level. A fresh car drives in traffic mode and keeps left |
 
 ## Commands
 
@@ -97,6 +97,6 @@ Four of the seven are within 130 m of (265, 950), north edge of the slice.
 
 1. Sidewalk probe failures: 7 positions above, 4 clustered near (265, 950).
 2. Four drive crashes at the sites above; two bumps over 7 m/s² at (-388, 8) and (267, 880).
-3. AI graph error on the vehicle side (graphpath `edgeList` nil, edge 3230): AI traffic does not work on this level.
+3. AI graph error on the vehicle side (graphpath `edgeList` nil, edge 3230): ~~AI traffic does not work on this level.~~ Not a level defect: see `docs/spikes/ai-graph.md` (I-001). It is a test-order problem in our QA tooling; use a fresh vehicle or call `mapmgr.setMap()` after a scripted drive.
 4. Missing `vehicles/common/licenseplates/belfast_slice/licensePlate-default.sktemplate.json` (warning at every vehicle spawn).
 5. `driveTest.mjs` re-shows the UI over its own screenshots; use `shots\` style captures or hide the UI after each capture.
