@@ -82,3 +82,4 @@ logs/
 # Runtime reports (keep the folder only)
 reports/*
 !reports/.gitkeep
+.claude/worktrees/
