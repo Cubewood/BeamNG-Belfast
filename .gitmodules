@@ -1,0 +1,3 @@
+[submodule "third_party/mapng"]
+	path = third_party/mapng
+	url = https://github.com/nikkiluzader/mapng
