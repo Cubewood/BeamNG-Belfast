@@ -1,16 +1,29 @@
 # BeamNG Belfast: project plan and task queue
 
-*Last updated 10 November 2026. Planned against BeamNG.drive 0.40.4; the install is now 0.40.5 (found in T-005).*
+*Last updated 11 November 2026. Planned against BeamNG.drive 0.40.4; the install is now 0.40.5 (found in T-005).*
 
 ## 0. Where things stand (read this first in a new session)
 
-**M0 is done except T-011.** T-001 to T-010 passed their Done-when checks and are on `dev` (pushed). Details are in `docs/spikes/mcp.md`, `docs/spikes/vlm.md`, `docs/spikes/gpu.md`, `docs/gamectl.md` and `docs/loopkit.md`.
+**M0 is done except T-011. M1 is done up to the VR drive (11 November 2026).** T-101 to T-104 and T-308 passed and are on `dev` (pushed). Details: `docs/spikes/mapng.md`, `docs/mapng_export.md`, `docs/belfast_slice.md`, `docs/spikes/baseline.md`, `docs/flagspot.md`; M0 details in `docs/spikes/mcp.md`, `docs/spikes/vlm.md`, `docs/spikes/gpu.md`, `docs/gamectl.md`, `docs/loopkit.md`.
 
-**How we work now (decided 10 November 2026).** Running M0 with an orchestrator and one agent per task used about 72% of a 5-hour usage limit, so fully unattended running is on hold. T-011 (schedules) is deferred. Work continues in manual sessions with a clear context: one or two tasks per session, started by you.
+**How we work.** On 10 November an orchestrated run of M0 used about 72% of a 5-hour usage limit, so scheduled unattended running is on hold and T-011 is deferred. On 11 November you asked for an orchestrated session again; it ran T-101, T-308, T-102, T-103 and T-104, one agent per task. Default for a new session is still: `Read task.md section 0 and CLAUDE.md, then do T-xxx.` Ask for orchestration when you want it.
 
-To continue, start a new session and say: `Read task.md section 0 and CLAUDE.md, then do T-xxx.` To keep usage down, do the task in the session itself on the task's tagged model, rather than through an orchestrator with subagents.
+**Ready next:** T-105 (you: VR drive of `belfast_slice`, then notes in `feedback/`), I-001 (AI road-graph error), T-302 (route drive suite), T-803 (optional). T-106 (gap report) waits for T-105.
 
-**Ready next:** T-101 (Opus, review MapNG before running it; this unlocks M1), T-308 (Sonnet, flag-this-spot key, needs the game), T-803 (optional).
+**Needs you**
+
+- Confirm the test centre position. OSM has no feature for the Hydebank centre or BT8 8JL, so `belfast_slice` is centred on the middle of Hospital Road (54.5428, -5.9300).
+- T-102 was marked done with 806 of 812 MapNG unit tests passing. The six failures are Windows environment problems (path bug, a dependency missing from the lockfile, CRLF checkout), none in export code. Reopen it if that is not acceptable.
+- Say when the slice and the flag-this-spot mod should go into your normal `mods` folder (T-105). Both are in the QA profile only.
+
+**What M1 found so far**
+
+- MapNG review: go, with conditions that `tools/mapng_export.py` enforces (no satellite or Google content, hosts blocked on export, UK country rules served). Without the rules file the export comes out as USA, right-hand traffic.
+- `belfast_slice` (2048 m, 1 m/px, 72 MB) lints with 0 errors, loads in 17.7 s with no errors of its own, and has white markings and left-hand road rules. Elevation is 30 m Terrarium, so the terrain is coarse until M2.
+- Baseline fails: sidewalk probes 7/247 (2.8%, limit 2%); drive test 8 of 12 routes completed, 4 crashes, two bumps over 7 m/s2. Sites are in `docs/spikes/baseline.md`.
+- AI traffic does not move on the slice: fatal Lua error at `graphpath.lua:268` (edge 3230). Lane side for AI is therefore unverified (I-001).
+- UK gaps in MapNG: km/h speed signs only, Italian sign meshes, anticlockwise roundabout sign, no mini-roundabouts, box junctions or give-way markings. Biome is still "East Coast USA".
+- Flag-this-spot key works on the QA profile (F9, records in `flagspot\flags.jsonl` in the user folder). Untested in a headset.
 
 **What M0 found**
 
@@ -186,6 +199,7 @@ New requests land here. The dispatcher takes them before the milestones.
 
 | ID | Status | Task | Model | Effort | Where | Needs | Done when |
 |---|---|---|---|---|---|---|---|
+| I-001 | doing | Diagnose why AI traffic does not move on `belfast_slice`: fatal Lua error `graphpath.lua:268` edgeList nil (edge 3230) from `mapmgr.lua:281`, near (-122,109). See `docs/spikes/baseline.md` | opus | high | game | T-104 | Cause and proposed fix in `docs/spikes/ai-graph.md` |
 
 ### M0: Foundations
 
