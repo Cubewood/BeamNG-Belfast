@@ -8,7 +8,7 @@
 
 **How we work.** On 10 November an orchestrated run of M0 used about 72% of a 5-hour usage limit, so scheduled unattended running is on hold and T-011 is deferred. On 11 November you asked for an orchestrated session again; it ran T-101, T-308, T-102, T-103 and T-104, one agent per task. Default for a new session is still: `Read task.md section 0 and CLAUDE.md, then do T-xxx.` Ask for orchestration when you want it.
 
-**Ready next:** T-105 (you: VR drive of `belfast_slice`, then notes in `feedback/`), T-302 (route drive suite; it must use a fresh vehicle or `mapmgr.setMap()` after scripted drives, see `docs/spikes/ai-graph.md`), T-803 (optional). T-106 (gap report) waits for T-105.
+**Ready next:** T-105 (you: VR drive of `belfast_slice`, then notes in `feedback/`), T-303 (junction camera sweep), T-307 (digest and issue cards), T-803 (optional). T-106 (gap report) waits for T-105.
 
 **Needs you**
 
@@ -23,6 +23,7 @@
 - Baseline fails: sidewalk probes 7/247 (2.8%, limit 2%); drive test 8 of 12 routes completed, 4 crashes, two bumps over 7 m/s2. Sites are in `docs/spikes/baseline.md`.
 - AI traffic works on the slice and keeps left (44 of 44 two-way samples on Hospital Road and Purdysburn Road). The fatal Lua error T-104 saw (`graphpath.lua:268`) came from switching a car to traffic mode after a scripted drive, not from the level (I-001, `docs/spikes/ai-graph.md`). Roundabouts, one-ways and junction turns under AI are still unchecked.
 - UK gaps in MapNG: km/h speed signs only, Italian sign meshes, anticlockwise roundabout sign, no mini-roundabouts, box junctions or give-way markings. Biome is still "East Coast USA".
+- Route drive suite (T-302, `docs/drive_suite.md`): `qa/drive_suite.py run --gate` drives 10 named routes from a provisional start on Hospital Road in about 8 minutes, unattended. First run: 7 of 10 completed, G3 fails. Crashes at (-211,-93) (Lady Ishbel Avenue right turn, two routes) and (194,284) (Hospital Road / Newtownbreda Road, the same junction T-104 crashed at). The crashes happen only when the AI follows its lane; MapNG-style scripted driving got through both. Causes are not established, and bumps near the 7 m/s2 limit vary between runs.
 - Flag-this-spot key works on the QA profile (F9, records in `flagspot\flags.jsonl` in the user folder). Untested in a headset.
 
 **What M0 found**
@@ -254,7 +255,7 @@ Outcome: every night, a build is tested without you or Claude, and you get a sho
 | ID | Status | Task | Model | Effort | Where | Needs | Done when |
 |---|---|---|---|---|---|---|---|
 | T-301 | todo | Static checks: MapNG's linter plus connection, one-way, height and budget checks against the pinned data | sonnet | high | any | T-103, T-202 | Planted faults are all caught |
-| T-302 | doing | Route drive suite: adapt MapNG's `driveTest` to named routes around the test centre, with per-frame telemetry | sonnet | high | game | T-104 | Runs unattended and writes metrics JSON |
+| T-302 | done | Route drive suite: adapt MapNG's `driveTest` to named routes around the test centre, with per-frame telemetry | sonnet | high | game | T-104 | Runs unattended and writes metrics JSON |
 | T-303 | todo | Junction camera sweep: driver's-eye view from the right-hand seat at 30 m and 10 m before every route junction, at fixed lighting | sonnet | medium | game | T-302 | JPG and pose file for each junction approach |
 | T-304 | todo | Image judge: close the game, load Qwen, judge frames against a JSON schema, unload | sonnet | high | gpu | T-303, T-007 | Each frame gets defect type, confidence and reason |
 | T-305 | todo | Build a labelled evaluation set of at least 150 frames, half with planted faults. Label with Claude vision, and you spot-check the disagreements | sonnet | high | any | T-303 | Set saved in `qa/eval/` |
