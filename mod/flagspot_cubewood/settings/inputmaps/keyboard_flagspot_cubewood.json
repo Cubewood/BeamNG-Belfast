@@ -1,0 +1,5 @@
+{
+  "bindings":[
+    {"control":"f9", "action":"flagSpotCubewood"}
+  ]
+}

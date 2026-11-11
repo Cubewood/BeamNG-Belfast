@@ -1,0 +1,3 @@
+{
+"flagSpotCubewood" :{"cat":"general", "order": 30, "ctx": "tlua", "onDown": "extensions.cubewood_flagspot.flag()", "title": "Flag this spot (Belfast QA)", "desc": "Dev only. Logs position, heading, speed and a screenshot to flagspot/flags.jsonl in the user folder." },
+}
