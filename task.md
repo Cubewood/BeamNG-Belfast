@@ -254,7 +254,7 @@ Outcome: every night, a build is tested without you or Claude, and you get a sho
 | ID | Status | Task | Model | Effort | Where | Needs | Done when |
 |---|---|---|---|---|---|---|---|
 | T-301 | todo | Static checks: MapNG's linter plus connection, one-way, height and budget checks against the pinned data | sonnet | high | any | T-103, T-202 | Planted faults are all caught |
-| T-302 | todo | Route drive suite: adapt MapNG's `driveTest` to named routes around the test centre, with per-frame telemetry | sonnet | high | game | T-104 | Runs unattended and writes metrics JSON |
+| T-302 | doing | Route drive suite: adapt MapNG's `driveTest` to named routes around the test centre, with per-frame telemetry | sonnet | high | game | T-104 | Runs unattended and writes metrics JSON |
 | T-303 | todo | Junction camera sweep: driver's-eye view from the right-hand seat at 30 m and 10 m before every route junction, at fixed lighting | sonnet | medium | game | T-302 | JPG and pose file for each junction approach |
 | T-304 | todo | Image judge: close the game, load Qwen, judge frames against a JSON schema, unload | sonnet | high | gpu | T-303, T-007 | Each frame gets defect type, confidence and reason |
 | T-305 | todo | Build a labelled evaluation set of at least 150 frames, half with planted faults. Label with Claude vision, and you spot-check the disagreements | sonnet | high | any | T-303 | Set saved in `qa/eval/` |
