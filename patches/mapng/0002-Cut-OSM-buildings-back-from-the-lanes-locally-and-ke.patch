@@ -1,0 +1,157 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Belfast Patches <belfast-patches@users.noreply.github.com>
+Date: Fri, 13 Nov 2026 23:22:52 +0000
+Subject: [PATCH] Cut OSM buildings back from the lanes locally, and keep roads
+ through a building as mapped
+
+The cut was a straight half-plane along each road segment's line. A long road line
+reaches past the segment and across a large footprint, so the cut removed more than
+the overlap and was refused (kept as mapped): Tesco Extra, 0.25% of it in the lanes,
+stayed in the service roads along its edge.
+
+The lanes (each segment as a capsule at the lane half width plus the 0.3 m allowance)
+are now subtracted from the footprint with polygon-clipping (through polyClip.js, on
+its 1 cm grid), when that leaves one ring with no hole. The half-plane cut stays as
+the fallback. A road whose centre line runs 5 m or more through the footprint is a
+passage or a misplaced line: the building stays as mapped and is listed, whatever its
+share (before, only 30% and over). The clipped record gains `run` and `local`.
+
+Tests: a road ending beside a 100 m block takes only that corner (fails with the
+half-plane cut alone); a road through a large site is kept and listed.
+
+diff --git a/services/buildingRoadConflicts.js b/services/buildingRoadConflicts.js
+index 83d872f..89d4754 100644
+--- a/services/buildingRoadConflicts.js
++++ b/services/buildingRoadConflicts.js
+@@ -18,7 +18,10 @@
+ //     wider than an old town's street, so never more than the lanes), else it
+ //     stays as mapped and is listed for checking. (belfast patch: "reaching
+ //     into" means a share of 3% or more, or at least 1 m2 and 0.15 m deep past
+-//     the cut line, so a large footprint with a small share is cut back too.)
++//     the cut line, so a large footprint with a small share is cut back too.
++//     The lanes are subtracted from the footprint locally, not by a straight
++//     cut along each road line, and a road's centre line running 5 m or more
++//     through the footprint keeps it as mapped and listed.)
+ //
+ // Roads that legitimately pass a building are never counted: tunnels,
+ // building passages, covered or underground ways, bridges over it, and the
+@@ -27,6 +30,7 @@
+ // Pure: features in, features out, plus the list of what was changed.
+ 
+ import { estimateRoadCrossSection, isOneWayRoad, NON_DRIVEABLE_HIGHWAYS } from './roadWidth.js';
++import polygonClipping from './polyClip.js';
+ 
+ // an ML outline with this share of its area on a road's driving lanes, or the
+ // road's centre line this far through it, is left out
+@@ -51,6 +55,8 @@ const SAMPLE_TARGET = 4000;      // area samples per footprint (step at least SA
+ const SAMPLE_MIN_M = 0.5;
+ const CELL_M = 24;               // road segment index cell
+ const MAX_CUTS = 3;
++const PASSAGE_RUN_M = 5;         // belfast patch (T-412): a centre line this far through an OSM footprint is not a cut-back case
++const CAP_STEPS = 8;             // arc segments per half circle of a lane strip's end
+ 
+ const SKIP_SERVICE = new Set(['driveway', 'parking_aisle', 'drive-through']);
+ const ROAD_SKIP = new Set([...NON_DRIVEABLE_HIGHWAYS, 'raceway', 'platform', 'bus_stop', 'elevator', 'services', 'rest_area']);
+@@ -128,6 +134,30 @@ function clipHalfPlane(ring, p, n) {
+   return out;
+ }
+ 
++// belfast patch (T-412): a road segment's lanes as a polygon: the segment
++// widened by `half` each side, with a round end at each of its two nodes (so
++// consecutive segments of a bend leave no gap)
++function laneStrip(s) {
++  const ang = Math.atan2(s.b[1] - s.a[1], s.b[0] - s.a[0]);
++  const ring = [];
++  for (let i = 0; i <= CAP_STEPS; i++) { const t = ang - Math.PI / 2 + (Math.PI * i) / CAP_STEPS; ring.push([s.b[0] + Math.cos(t) * s.half, s.b[1] + Math.sin(t) * s.half]); }
++  for (let i = 0; i <= CAP_STEPS; i++) { const t = ang + Math.PI / 2 + (Math.PI * i) / CAP_STEPS; ring.push([s.a[0] + Math.cos(t) * s.half, s.a[1] + Math.sin(t) * s.half]); }
++  return ring;
++}
++
++// the footprint `ring` with the lanes of `segs` taken out, as one ring, or null
++// when that leaves nothing, several pieces or a hole (or the clipper gives up)
++function cutOutLanes(ring, segs) {
++  try {
++    const res = polygonClipping.difference([ring], ...segs.map((s) => [laneStrip(s)]));
++    if (res.length !== 1 || res[0].length !== 1) return null;
++    const out = res[0][0].slice(0, -1);
++    return out.length >= 3 ? out : null;
++  } catch (e) {
++    return null;
++  }
++}
++
+ /**
+  * Check every building footprint against the roads' driving lanes.
+  *   features: OSM features ({ type, tags, geometry: [{ lat, lng }], holes? })
+@@ -250,8 +280,17 @@ export function resolveBuildingRoadConflicts(features, { project, unproject, urb
+     if ((share < OSM_CLIP_SHARE && !reachesLanes) || share >= LIST_SHARE || !unproject || holes.length) { keepAsMapped(); continue; }
+     // cut back along the edge of each road segment it reaches into, the most
+     // overlapping first, keeping the side of the footprint's own centre
+-    let cut = ring.slice();
+-    const order = [...bySeg.entries()].sort((a, b) => b[1] - a[1]).slice(0, MAX_CUTS);
++    // belfast patch (T-412): a road's centre line running PASSAGE_RUN_M or more through
++    // the footprint is a passage or a misplaced line: kept as mapped and listed, as
++    // before for the large shares. Otherwise the lanes are subtracted from the
++    // footprint locally (polygon-clipping); the straight cut along each road line,
++    // which can slice off walls far from the road, is only the fallback
++    if (run >= PASSAGE_RUN_M) { keepAsMapped(); continue; }
++    let cut = cutOutLanes(ring, [...bySeg.keys()]);
++    if (cut && ringArea(cut) / area < 1 - share - CUT_SLACK) cut = null;
++    const local = !!cut;
++    if (!cut) cut = ring.slice();
++    const order = local ? [] : [...bySeg.entries()].sort((a, b) => b[1] - a[1]).slice(0, MAX_CUTS);
+     for (const [s] of order) {
+       const vx = s.b[0] - s.a[0]; const vy = s.b[1] - s.a[1]; const L = Math.hypot(vx, vy);
+       if (L < 1e-6) continue;
+@@ -265,7 +304,7 @@ export function resolveBuildingRoadConflicts(features, { project, unproject, urb
+     }
+     const kept = cut.length >= 3 ? ringArea(cut) / area : 0;
+     if (cut.length < 3 || kept < 1 - share - CUT_SLACK) { keepAsMapped(); continue; }
+-    clipped.push({ id, share, kept, overlapM2, depth });
++    clipped.push({ id, share, kept, overlapM2, depth, run, local });
+     out.push({ ...f, geometry: cut.map(([x, y]) => unproject(x, y)), tags: { ...f.tags, 'mapng:clipped_from_road': 'yes' } });
+   }
+   return { features: out, dropped, clipped, flagged };
+diff --git a/tests/buildingRoadConflicts.test.mjs b/tests/buildingRoadConflicts.test.mjs
+index 44202aa..861c367 100644
+--- a/tests/buildingRoadConflicts.test.mjs
++++ b/tests/buildingRoadConflicts.test.mjs
+@@ -98,6 +98,38 @@ test('a large footprint with a hairline overlap is left alone and not listed', (
+   assert.equal(r.features.find((f) => f.id === 'way_hair'), hairline);
+ });
+ 
++// belfast patch (T-412): the lanes are subtracted from the footprint locally
++test('the cut is local: a road ending at a corner of a huge footprint takes only that corner', () => {
++  // a 100 x 100 m block; a street running up at 45 degrees to end at (0, 0), 0.7 m from the block's corner.
++  // A straight cut along the street's line would keep only the half of the block on one side of it
++  const road = { id: 'way_diag', type: 'road', tags: { highway: 'service' }, geometry: [P(-60, -60), P(0, 0)] };
++  const block = { id: 'way_big', type: 'building', tags: { building: 'retail' }, geometry: rect(1, -5, 101, 95) };
++  const r = run([road, block]);
++  assert.equal(r.flagged.length, 0, 'not left as mapped');
++  assert.equal(r.clipped.length, 1);
++  assert.ok(r.clipped[0].local && r.clipped[0].kept > 0.99, `kept ${r.clipped[0].kept}`);
++  const cut = r.features.find((f) => f.id === 'way_big');
++  const pts = cut.geometry.map((p) => project(p.lat, p.lng));
++  assert.ok(pts.some(([x, y]) => Math.abs(x - 101) < 1e-6 && Math.abs(y - 95) < 1e-6), 'the far corner stays');
++  assert.ok(pts.some(([x, y]) => Math.abs(x - 101) < 1e-6 && Math.abs(y + 5) < 1e-6), 'the corner at the other end stays');
++  // nothing of the cut footprint is inside the street's lanes (half width 1.8 + 0.3 + the 0.3 kerb allowance, minus polygon slack)
++  const half = 2.1;
++  for (const [x, y] of pts) {
++    const t = Math.max(0, Math.min(1, (x + 60 + y + 60) / 120));   // nearest point on (-60,-60)-(0,0)
++    const d = Math.hypot(x - (-60 + 60 * t), y - (-60 + 60 * t));
++    assert.ok(d >= half - 0.1, `vertex (${x.toFixed(2)}, ${y.toFixed(2)}) is ${d.toFixed(2)} m from the street`);
++  }
++});
++
++test('a road running through a large footprint is a passage or a misplaced line: kept as mapped and listed, not carved', () => {
++  // 30 x 41 m site with the street through it: 10% of it on the lanes, 30 m of centre line inside
++  const site = { id: 'way_site', type: 'building', tags: { building: 'construction' }, geometry: rect(-15, -1, 15, 40) };
++  const r = run([street(), site]);
++  assert.equal(r.clipped.length, 0);
++  assert.deepEqual(r.flagged.map((d) => d.id), ['way_site']);
++  assert.ok(r.features.includes(site));
++});
++
+ test('a large footprint with a small overlap that cannot be cut back (a courtyard) is kept as mapped and listed', () => {
+   const courtyard = { id: 'way_court', type: 'building', tags: { building: 'yes' }, geometry: rect(-20, 2.8, 20, 22.8), holes: [rect(-3, 10, 3, 15)] };
+   const r = run([street(), courtyard]);

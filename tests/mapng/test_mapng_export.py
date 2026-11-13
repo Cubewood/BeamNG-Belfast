@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools"))
 import mapng_export as me  # noqa: E402
 
 PRELOAD = Path(me.__file__).with_name("mapng_preload.mjs")
+NO_PATCHES = Path(__file__).with_name("no_such_patches_dir")  # these tests mock git and expect the plain pin rule
 
 
 # ---------------------------------------------------------------- environment stripping
@@ -150,18 +151,18 @@ def _runner(head, dirty=""):
 
 
 def test_check_pin_ok():
-    assert me.check_pin(runner=_runner(me.PINNED_COMMIT)) == me.PINNED_COMMIT
+    assert me.check_pin(runner=_runner(me.PINNED_COMMIT), patches_dir=NO_PATCHES) == me.PINNED_COMMIT
 
 
 def test_check_pin_rejects_other_commit():
     with pytest.raises(me.GuardError) as exc:
-        me.check_pin(runner=_runner("e15442b" + "0" * 33))
+        me.check_pin(runner=_runner("e15442b" + "0" * 33), patches_dir=NO_PATCHES)
     assert exc.value.code == me.EXIT_PIN
 
 
 def test_check_pin_rejects_modified_submodule():
     with pytest.raises(me.GuardError) as exc:
-        me.check_pin(runner=_runner(me.PINNED_COMMIT, " M services/countryRules.js"))
+        me.check_pin(runner=_runner(me.PINNED_COMMIT, " M services/countryRules.js"), patches_dir=NO_PATCHES)
     assert exc.value.code == me.EXIT_PIN
 
 
