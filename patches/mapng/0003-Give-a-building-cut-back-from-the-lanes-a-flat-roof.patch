@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Belfast Patches <belfast-patches@users.noreply.github.com>
+Date: Fri, 13 Nov 2026 23:24:27 +0000
+Subject: [PATCH] Give a building cut back from the lanes a flat roof
+
+A pitched roof is drawn on the footprint's oriented box plus 0.35 m eaves. After a
+cut the footprint is no longer that box, so the roof still covered the cut-off corner
+and overhung the lanes (OSM 1260691543: roof corner 1.0 m from the service road's
+centre line, its sloping faces read as 4 m of wall in the lanes by the T-301 check).
+A footprint tagged mapng:clipped_from_road is now planned with a flat roof, on its ring.
+
+diff --git a/services/beamngBuildings.js b/services/beamngBuildings.js
+index 3e425f2..e10114a 100644
+--- a/services/beamngBuildings.js
++++ b/services/beamngBuildings.js
+@@ -573,6 +573,9 @@ export function planBuilding(tags = {}, { area, seed, lat, lon, rectFill, levels
+   // (a pitched roof mapped on a near-square footprint with chamfered corners, a tower's: kept, on its box)
+   const taggedPitch = ['hipped', 'pyramidal', 'gabled'].includes(String(tags['roof:shape'] || '').toLowerCase());
+   if (roof !== 'flat' && rectFill < (taggedPitch ? RECT_FILL_TAGGED : RECT_FILL)) roof = 'flat';
++  // belfast patch (T-412): a pitched roof is drawn on the footprint's box plus its eaves, so on a footprint
++  // cut back from a road's lanes (buildingRoadConflicts.js) it would still overhang the lanes: flat, on the ring
++  if (tags['mapng:clipped_from_road'] === 'yes') roof = 'flat';
+   if (roof === 'skillion') roof = 'gabled';
+   if (roof === 'pyramidal') roof = 'hipped';
+   const pitch = Number.parseFloat(tags['roof:angle']) || style.pitch;
+diff --git a/tests/beamngBuildings.test.mjs b/tests/beamngBuildings.test.mjs
+index 766f5a1..d5e1638 100644
+--- a/tests/beamngBuildings.test.mjs
++++ b/tests/beamngBuildings.test.mjs
+@@ -30,6 +30,9 @@ test('planBuilding: classes, tags and region decide the look', () => {
+   assert.ok(house.windows && house.wall, 'plain wall with laid-over windows');
+ 
+   assert.equal(planBuilding({ building: 'house' }, opts({ rectFill: 0.6 })).roof, 'flat', 'L-shaped: flat');
++  // belfast patch (T-412): a footprint cut back from a road's lanes gets a flat roof, not a box roof with eaves over the lanes
++  assert.equal(planBuilding({ building: 'house', 'mapng:clipped_from_road': 'yes' }, opts()).roof, 'flat', 'cut back from a road: flat');
++  assert.equal(planBuilding({ building: 'house', 'roof:shape': 'gabled', 'mapng:clipped_from_road': 'yes' }, opts()).roof, 'flat', 'even a tagged pitch');
+   assert.equal(planBuilding({ building: 'apartments', 'building:levels': '7' }, opts({ area: 900 })).floors, 7);
+   assert.equal(planBuilding({ building: 'yes', height: '30' }, opts({ area: 900 })).eaveH, 30);
+   assert.equal(planBuilding({ building: 'office', 'building:levels': '30' }, opts({ area: 2000 })).office, true, 'towers are glass');

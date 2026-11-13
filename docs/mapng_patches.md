@@ -60,28 +60,37 @@ After: the cut also applies when the overlap is at least **1 m2** and **0.15 m d
 
 Tests (`third_party/mapng/tests/buildingRoadConflicts.test.mjs`): a 40 x 20 m footprint with 2.5% in the lanes is cut back; a hairline overlap is left alone and not listed; a courtyard footprint is kept and listed.
 
-### Result on the Slice (re-export of `belfast_slice`, same OSM, in `H:\BelfastData\mapng\t412\`)
 
-| | Before (`mapng\out\belfast_slice.zip`) | After (`mapng\t412\belfast_slice.zip`) |
-|---|---|---|
-| MapNG report: OSM buildings cut back | 11 | 19 |
-| MapNG report: OSM buildings kept and listed | 0 | 3 |
-| T-301 `building-in-lane` findings | 8 (1 high, 5 medium, 2 low) | 5 (0 high, 5 medium) |
-| 1260690275 at (-209.5, -81.9), on a driving road | high, 11.8 m2, 1.68 m deep | gone |
+## Patch 0002: the lanes are subtracted locally (gap 1, follow-on)
+
+File `services/buildingRoadConflicts.js`. Patch 0001 still cut along the straight line of each road segment. A long line reaches past the segment and across a large footprint, so the cut removed more than the overlap and was refused: Tesco Extra (OSM 148546058, 0.25% in the lanes) stayed in the service roads along its edge.
+
+Now each segment's lanes (a capsule at the lane half width plus the 0.3 m allowance, round ends so bends leave no gap) are subtracted from the footprint with `polygon-clipping`, through MapNG's own `polyClip.js` (1 cm grid). It is used when the result is one ring with no hole. The straight cut remains as the fallback. Also new: a road whose centre line runs 5 m or more through an OSM footprint is a passage or a misplaced line, so the building stays as mapped and is listed whatever its share (before: only from 30%). The `clipped` records gain `run` and `local`.
+
+Tests: a road ending beside a 100 m block takes only that corner (the test fails with the straight cut alone, which would keep about 40% of the block and refuse); a road through a large site is kept and listed.
+
+## Patch 0003: a cut-back building gets a flat roof
+
+File `services/beamngBuildings.js`, `planBuilding`. Why OSM 1260691543 (a house) kept a 0.37 m residual in the T-301 check after patch 0001: its walls were cut back correctly (2.1 to 2.5 m from the service road's centre line, MapNG's lane edge), but a pitched roof is drawn on the footprint's **oriented box plus 0.35 m eaves**. After the cut the footprint is a notched hexagon and its box still covers the cut-off corner. Measured on the exported collision mesh: a roof corner at (-714.6, -797.7), 1.0 m from the road's centre line, and the roof's sloping faces read as 4.2 m of wall in the lanes to the check. A footprint tagged `mapng:clipped_from_road` is now planned with a flat roof, which follows the ring: the nearest roof vertex is then 2.1 m from the centre line.
+
+Test (`tests/beamngBuildings.test.mjs`): a house with the tag, even one tagged `roof:shape=gabled`, plans a flat roof.
+
+## Result on the Slice (re-export of `belfast_slice`, same OSM, in `H:\BelfastData\mapng\t412\`)
+
+| | Before (`mapng\out\belfast_slice.zip`) | After patch 0001 | After patches 0001 to 0003 |
+|---|---|---|---|
+| MapNG report: OSM buildings cut back | 11 | 19 | 20 |
+| MapNG report: OSM buildings kept and listed | 0 | 3 | 1 |
+| T-301 `building-in-lane` findings | 8 (1 high, 5 medium, 2 low) | 5 (0 high, 5 medium) | 1 (0 high, 1 medium) |
 
 ### Buildings that still stay in lanes
 
-All five remaining findings are on `highway=service` ways (not in the navigation graph). Nothing is left on a residential, tertiary or other navigation road.
+One finding remains, by design. OSM 1259387657 (`building=construction`, about 76 x 59 m) at (76, -116): 309 m2, up to 0.88 m deep, on a service road (not in the navigation graph). Plain `highway=service` ways 404213828 and 860893189 run 28.5 m through the footprint (15% of it, 534 m2 by MapNG's lanes). No `tunnel=building_passage` tag. MapNG keeps it as mapped and lists it. It is an OSM data question (a service road mapped through a construction site), not a cut-back case, and no override was written. Any override needs evidence (OSNI or Mapillary, never Google).
 
-| Building | Where | What the check finds | Why it stays |
-|---|---|---|---|
-| 1259387657 (`building=construction`, about 76 x 59 m) | (76, -116) | 309 m2, up to 0.88 m deep | Plain service ways 404213828 and 860893189 run 28 m through the footprint (15% of it, 534 m2 by MapNG's lanes). Not tagged as a passage. MapNG keeps it as mapped and lists it. This is an OSM data question (a service road mapped through a construction site), not a cut-back case. Override only with evidence (OSNI or Mapillary, never Google) |
-| 148546058 (Tesco Extra, `building=retail`) | (580, 787), (643, 861), (600, 769) | 3 sites of 5.4 m2, up to 1.20 m deep | Plain service ways 148546062, 148546066 and 148546070 run along its edge (tunnelled service ways under it are skipped). The share is 0.25%, but a straight cut along a road line would slice the very large footprint, so MapNG keeps it and lists it (20.6 m2, 1.59 m deep). A local cut (subtract the lane strip from the footprint with `polygon-clipping`, already a MapNG dependency) would remove it: follow-up |
-| 1260691543 (`building=house`) | (-717, -797) | 6.4 m2, up to 0.37 m deep | MapNG cuts it back (4 m2, 1.38 m deep, in a standalone run of the rule). What the check still sees is 0.37 m deeper than the cut line on service way 609214743: the drawn lane is a little wider than MapNG's estimate. Not investigated further |
-
-MapNG also lists 1258799627 (1.7 m2, 0.74 m deep, 5%) as kept; the check finds no wall of it in the lanes.
+The other cases of the first run (148546058 Tesco Extra, 1260691543 house, 1258799627) are cut back now.
 
 ## Not verified
 
-- No game run. The crash at (-211, -93) is expected to be gone because the walls are cut back, but only the drive suite rerun (T-413 Done-when) confirms it.
-- The `building-in-lane` check reads the collision mesh of the tiles, as the car would; it was run on the re-exported zip only, with the OSM extract of the original export (`areas/belfast_slice/osm.json`).
+- No game run. The crash at (-211, -93) is expected to be gone because the walls are cut back, but only the drive suite rerun (T-413 Done-when) confirms it. Cut-back houses and the Tesco footprint now have flat roofs and notched outlines; nobody has looked at them in the game.
+- The `building-in-lane` check reads the collision mesh of the tiles, as the car would; it was run on the re-exported zip only, with the OSM extract of the original export (`areas/belfast_slice/osm.json`, not the pinned cut).
+- Upstream tests: 817, 811 pass, the same six environment failures as the baseline (`docs/mapng_export.md`).
