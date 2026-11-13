@@ -45,6 +45,7 @@ def run_all(lv, budget=None):
     out += ck.check_budget(lv, budget or {"decal_roads": 100, "objects": 100}, 1000)[0]
     out += ck.check_buildings(lv, C, "auto")[0]
     out += ck.check_terrain_steps(lv, C)
+    out += ck.check_speed_limits(lv, C)
     out += ck.check_stock_assets(lv, INDEX)[0]
     return out
 
@@ -183,6 +184,23 @@ def test_terrain_step_at_a_bridge_is_skipped(tmp_path):
 
 
 # ---------------------------------------------------------------- 8 stock assets
+
+def test_road_without_a_speed_limit_is_found(tmp_path):
+    f = ck.check_speed_limits(level(tmp_path, no_speed_limit=("B",)), C)
+    assert kinds(f) == ["road-no-speed-limit"] and f[0]["severity"] == "high"
+    assert len(f) == 2                                   # B is drawn in two pieces
+    assert all("dr_B" in x["where"] for x in f)
+
+
+def test_speed_limit_that_is_not_a_mph_step_is_found(tmp_path):
+    f = ck.check_speed_limits(level(tmp_path, speed_ms=50 / 3.6), C)   # 50 km/h = 31 mph
+    assert kinds(f) == ["road-speed-not-mph-step"] and f[0]["severity"] == "low"
+
+
+@pytest.mark.parametrize("mph", [10, 20, 30, 40, 50, 60, 70])
+def test_every_mph_limit_passes(tmp_path, mph):
+    assert ck.check_speed_limits(level(tmp_path, speed_ms=round(mph * 0.44704, 3)), C) == []
+
 
 def test_missing_stock_shape_is_found(tmp_path):
     found, info = ck.check_stock_assets(level(tmp_path, shape_path="/art/shapes/stock/gone.dae"), INDEX)

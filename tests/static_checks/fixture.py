@@ -48,6 +48,8 @@ class Spec:
     extra_decal_roads: int = 0
     osm_roads_only: bool = False
     texture_ref: str | None = None          # a material texture path to plant
+    no_speed_limit: tuple = ()              # road keys whose _ai road has no speedLimit (T-408)
+    speed_ms: float = 13.411                # speedLimit of the others (30 mph)
 
 
 ROADS = {
@@ -149,7 +151,9 @@ def build(tmp: Path, spec: Spec | None = None) -> tuple[Path, Path]:
                      "__parent": "Decal_Roads", "position": nodes[0][:3], "material": mat, "nodes": nodes}
                 if suffix == "ai":
                     o.update({"drivability": 0.9, "lanesLeft": 0 if r["oneway"] else 1,
-                              "lanesRight": 1 if not r["oneway"] else 2, "autoLanes": False, "speedLimit": 13.4})
+                              "lanesRight": 1 if not r["oneway"] else 2, "autoLanes": False})
+                    if key not in spec.no_speed_limit:
+                        o["speedLimit"] = spec.speed_ms
                     if r["oneway"] and not spec.unflagged_oneway:
                         o["oneWay"] = True              # C is drawn one-way even when OSM says two-way (a planted fault)
                 roads.append(o)

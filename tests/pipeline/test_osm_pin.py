@@ -241,6 +241,7 @@ def test_fetch_with_pinned_osm_gives_the_child_no_overpass(tmp_path, monkeypatch
     monkeypatch.setattr(me, "_prepare", lambda name: (tmp_path / name, tmp_path / "home"))
     seen = {}
     monkeypatch.setattr(me, "_run_node", lambda args, env, mem: seen.update(args=args, env=env) or 0)
+    monkeypatch.setattr(me, "apply_speed_limits", lambda area_dir: {})      # no node run, so no osm.json (T-408 step)
     ns = SimpleNamespace(name="belfast_x", lat=54.5, lng=-5.9, size=512, node_memory_mb=1, pinned_osm="slice")
     assert me.cmd_fetch(ns) == 0
     hosts = seen["env"]["MAPNG_ALLOW_HOSTS"].split(",")

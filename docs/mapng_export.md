@@ -78,3 +78,8 @@ Area `hydebank_sample`: centre 54.553 N, -5.925 E (from the task brief), 512 m s
 - `info.json`: `country "United Kingdom"`, `region "europe"`, `roadRules {"rightHandDrive": true, "turnOnRed": false}`. Assertion passed.
 - `info.json` still says `biome "East Coast USA"` (regional look), and trees were off. The road-marking style (`white` against `americas`) was not inspected in the zip.
 - Not loaded in the game; no console check.
+
+## Speed limits (T-408)
+
+`fetch`, `pinned-osm` and `export` run `pipeline/speed_limits.py` on the area's `osm.json` first, so every road way
+carries `maxspeed` in mph (`docs/speed_limits.md`). It is idempotent. The summary lands in `<area>/speed_limits.json`.
