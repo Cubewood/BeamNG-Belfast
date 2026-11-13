@@ -1,0 +1,231 @@
+# DfI road widths (T-205)
+
+DfI Roads publishes the width of almost every adopted road in Northern Ireland. This step reads that data, matches it
+to the pinned OSM ways of the three map squares, and writes one width per OSM way with a confidence score. T-406
+(road widths) reads the output.
+
+| Thing | Where |
+|---|---|
+| Step | `pipeline/dfi.py` |
+| Tests | `tests/pipeline/test_dfi.py` (synthetic data only, no network) |
+| Manifest (committed) | `data/sources/dfi.json`: URL, dataset page, download time, size, SHA-256, licence, attribution |
+| Raw files (not in git) | `H:\BelfastData\dfi\HIGHWAY_NETWORK.CSV`, `carriageway-details-all-export-5-july-2021.xlsx` |
+| Parsed (not in git) | `H:\BelfastData\dfi\items.csv` (587,138 rows), `sections.csv` (72,842 rows) |
+| Output (not in git) | `H:\BelfastData\dfi\widths_slice.json`, `widths_city_south.json`, `widths_full.json` |
+
+Data: Department for Infrastructure (DfI Roads) via OpenDataNI, UK Open Government Licence v3.0. "Contains public
+sector information licensed under the Open Government Licence v3.0." The raw files stay out of git; the manifest
+and code are in it. No Google content is used anywhere.
+
+## What the two datasets are
+
+- **Highway Network** (CSV, 11 MB, a live link rebuilt every evening). One row per road section: code
+  (`7035A0055_17`), name, division, type (single or dual carriageway, roundabout, footway), adoption status, length,
+  class (M, A, B, C, U, F). **No coordinates.**
+- **Carriageway Details** (xlsx, 55 MB, an export of 5 July 2021, four sheets by division). One row per stretch of a
+  section: width in metres, start and end chainage along the section, surface, and **one point** (Easting,
+  Northing, whole metres). Every row is type `CARRIAGEWAY`; footways are not in it.
+
+So geometry comes from Carriageway Details and names, classes and types from the Highway Network, joined on the
+section code. All 199 sections inside the slice box, and 3,936 of 3,941 in the full box, are found in the Highway Network.
+
+Two things I checked in the data, because the dataset description does not say:
+
+- The point of a row is where the stretch **starts**. Consecutive rows of a section are as far apart as their
+  chainage difference (for example 158 m of chainage, 159 m between the points). The step uses this to draw each
+  stretch as a line from its point to the next row's point.
+- The coordinates are **Irish Grid (EPSG:29903), not ITM**: Bangor items read about 350,000 east where ITM would read
+  about 750,000. The datum shift in `config/aoi.yaml` (7-parameter Helmert, 1 to 2 m by OSi's own figure) is therefore
+  in the path, and OSi's grid-based shift is not used. Measured result: DfI's own points sit a **median 0.76 m** from the
+  OSM way they were matched to (0.75 m on the full box, systematic part under 0.3 m), so the shift is good enough here
+  and no correction is applied. The whole-metre rounding of the points is part of that 0.76 m.
+
+## Getting the files
+
+```text
+set P=uv run --no-project --python 3.12 --with pyproj --with numpy --with pyyaml --with requests --with shapely python
+%P% pipeline/dfi.py download     # once; refuses to replace existing files without --force
+%P% pipeline/dfi.py verify       # size and SHA-256 against data/sources/dfi.json
+%P% pipeline/dfi.py parse        # xlsx and csv -> items.csv, sections.csv (stdlib parser, about 30 s)
+%P% pipeline/dfi.py match        # all three squares (about 15 s); --area slice for one
+%P% pipeline/dfi.py sample -n 30 # the 30-way spread used for the hand check below
+```
+
+How the files were found: the CKAN API of OpenDataNI (`admin.opendatani.gov.uk/api/3/action/package_show`) answered
+403 to every request I made, and `www.opendatani.gov.uk` is a front end without that API. The two resource URLs were
+read from the dataset pages themselves (`www.opendatani.gov.uk/dataset/highway-network` and `.../carriageway-details`,
+embedded page data). The Carriageway Details link answers 403 to a bare `curl` and 302 (to signed object storage) to a
+client that names itself; the step sends `BeamNGBelfast-dfi/1.0 (...)`. The Highway Network is a live file, so a
+later download will differ from the pinned SHA-256 and will need a new manifest (and the match re-run).
+
+Because the xlsx is from July 2021, roads built or re-surfaced since have no row, and a road re-marked since may have
+a different width. The Highway Network is 2026 and shows 199 sections in the slice box, all with widths in the xlsx.
+
+## How a width gets onto an OSM way
+
+1. Items inside the square's Irish Grid box (plus 250 m) become metres in ITM. OSM ways come from the pinned cut
+   (`H:\BelfastData\osm\cuts\<area>.overpass.json`, SHA-256 checked against `data/sources/osm.json`), drivable
+   classes only (motorway to service, living street, road; not footways or area ways).
+2. Each item becomes a stretch (a line to the next row's point, or a lone point if the chainage does not run on or
+   the distance disagrees with it by more than 4 m) and is sampled every 8 m. A sample counts for its share of the
+   item's length; a lone point counts for at most 10 m.
+3. Items narrower than 2 m or wider than 20 m are left out of the width (junction mouths, turning heads, car park
+   edges; 118 of 2,101 items in the slice box).
+4. A sample goes to the cheapest OSM way within reach, cost = distance + a penalty for the name:
+
+   | Name relation (DfI street v OSM `name`) | Penalty | Reach |
+   |---|---|---|
+   | exact, or same road number (A55 v `A0055` in the section code) | 0 m | 30 m |
+   | partial ('Ormeau Road' v 'Upper Ormeau Road', or Road v Street) | 4 m | 18 m |
+   | unknown (the way has no name) | 10 m | 18 m |
+   | conflict (both have names and they differ) | never matched | |
+
+   Names are compared after spelling out DfI's abbreviations (RD, AV, GDS, CRE, GVE, ST becoming SAINT when leading and
+   STREET when trailing and so on) and dropping the section digit that DfI glues on ('RD1').
+5. Per way: the width is the length-weighted median of the matched items' widths; quartiles are kept.
+
+## Confidence
+
+`confidence` is a product of five parts, each in `parts` of the output:
+
+| Part | 1.0 when | Falls to |
+|---|---|---|
+| geometry | DfI's own points are within 4 m of the way (median) | 0.3 at 18 m |
+| name | the street name is equal | 0.85 near match or same road number, 0.55 when the way has no name |
+| coverage | DfI covers the whole way | 0.4 when it covers none (0.4 + 0.6 x fraction) |
+| spread | all widths on the way agree | 0.5 when the inter-quartile range is 2 m or more |
+| class | DfI class and OSM class are within one rank | 0.8 when two ranks apart |
+
+Tiers: **high** 0.70 and over, **medium** 0.40 to 0.70, **low** below 0.40. A way with low confidence still has a
+width; T-406 should decide what to do with it. The numbers are chosen by me, not fitted: with 30 hand-checked ways
+there is nothing to fit them to (see below).
+
+## Output
+
+`widths_<area>.json`: `inputs` (SHA-256 of both DfI files, the OSM cut and the extract), `settings`, `coverage`, `ways`
+and `unmatched_in_area`. Each way, keyed by OSM way id, has: `width_m`, `width_q1_m`, `width_q3_m`, `confidence`,
+`tier`, `parts`, `offset_median_m`, `covered_m`, `way_length_m`, `coverage`, `n_items`, `samples`, `sections`
+(DfI section code to metres matched), `section_main`, `name_relation`, plus the OSM `highway`, `name`, `ref`, `width_tag`,
+`lanes`, `oneway`, `length_m`, `in_area` (any vertex inside the square without the 100 m margin).
+
+## Coverage report
+
+Counts are OSM drivable ways with a vertex inside the square (the 100 m margin of the cut is not counted). DfI
+adoption: every section in all three boxes is `Adopted` except 5 in the full box that are not in the Highway Network.
+
+| Square | OSM ways | km | Ways with a width | km with a width | high / medium / low (km) |
+|---|---|---|---|---|---|
+| slice | 495 | 61.8 | 196 | 39.2 (63 %) | 18.7 / 16.5 / 4.0 |
+| city_south | 1,410 | 166.8 | 535 | 101.6 (61 %) | 65.1 / 23.2 / 13.3 |
+| full | 13,167 | 1,178.4 | 5,360 | 709.9 (60 %) | 430.1 / 195.5 / 84.3 |
+
+The share is low because of `service` ways: 230 of the slice's 495 ways and 19.2 of 61.8 km are OSM service roads
+(car parks, driveways, hospital grounds, estate lanes), and DfI adopts almost none of them (7 per cent of service km
+get a width). **Without service ways the slice has 37.9 of 42.6 km, 89 per cent, with a width.**
+
+Slice by OSM class:
+
+| Class | Ways | km | With a width | km with a width | Share | high / medium / low (km) | Median width (p10 to p90) m |
+|---|---|---|---|---|---|---|---|
+| trunk | 38 | 5.07 | 27 | 4.55 | 90 % | 1.84 / 1.99 / 0.71 | 7.6 (6.2 to 17.5) |
+| secondary | 27 | 4.42 | 15 | 3.99 | 90 % | 2.99 / 1.00 / 0 | 6.6 (5.4 to 10.0) |
+| tertiary | 17 | 5.36 | 8 | 5.05 | 94 % | 1.00 / 3.24 / 0.81 | 9.0 (5.0 to 14.3) |
+| unclassified | 23 | 8.37 | 12 | 7.85 | 94 % | 3.13 / 4.71 / 0.01 | 6.2 (5.0 to 7.6) |
+| residential | 160 | 19.39 | 116 | 16.44 | 85 % | 9.76 / 5.35 / 1.33 | 5.6 (4.8 to 10.3) |
+| service | 230 | 19.21 | 18 | 1.34 | 7 % | 0 / 0.16 / 1.19 | 6.8 (5.0 to 12.7) |
+
+The slice has no motorway, primary or living-street ways; the full box has 66 motorway ways (median 7.3 m), 515
+primary (median 11.3 m).
+
+DfI side, slice: 2,101 items, 5,443 samples; 87.9 per cent of the DfI length found an OSM way. Of the rest, 436
+samples had no way within reach and 162 had only ways with a different name. Matched length by name relation
+(slice): exact 36.8 km, partial 0.4, road number 0.1, unknown 2.0 (the unknown ones are mostly unnamed residential
+and service ways). Median of each way's offset: 0.8 m, 90th percentile 3.8 m, 99th 9.7 m.
+
+Against OSM's own `width` tags: almost none to compare with (the slice has 0 tagged ways, the full box 30, 20 of them
+matched). On those 20 the median difference is 1.0 m, 9 agree within 0.75 m, and OSM is the narrower in 9 of the rest.
+That fits DfI measuring the whole carriageway and mappers tagging the lane.
+
+### What stays unmatched
+
+- Service roads, as above.
+- Unnamed residential ways whose DfI neighbour is a longer section (several OSM ways to one section; the point that
+  ends up nearest another named way takes the item). Castledillon Road (156202503) is an example: its DfI items lie
+  7 to 13 m from it but a neighbouring way of the same name is nearer.
+- Roads built since July 2021, and roads DfI does not adopt.
+- Ways where a different street name is on the OSM way: for example the A55 'Belvoir Road' where the DfI section is
+  called 'Milltown Rd'. The A55 road number rescues it when the section code carries it.
+
+## Hand-checked sample of 30 ways (slice)
+
+**Who checked, and how.** I (the builder agent, Sonnet 5.5) checked this from the data, on 13 November 2026. The user
+has not checked it. It was **not** checked against imagery or a site visit, and no Google content was used.
+For each way I looked at: do the street names agree; is the OSM way's length similar to the DfI section's; do the
+OSM ways that meet at its ends carry the cross streets the DfI section description names ('X to Y'); is the DfI point
+close to the way. "Right" means all of that agrees. It says the **match** is right, not that the **width** is true:
+I have no independent measurement of any width, only plausibility (a one-way 2-lane slip at 5.2 m is narrow, a
+rural C road at a constant 10.0 m is wide).
+
+How the 30 were picked: `pipeline/dfi.py sample`, a fixed spread (2 motorway, 2 trunk, 4 primary, 4 secondary, 3
+tertiary, 3 unclassified, 8 residential, 1 living street, 3 service as far as the class exists in the slice, then the
+longest remaining ways), and within each class evenly spaced through the list ordered by confidence, so high, medium and
+low all appear. No cherry-picking of ways. The matcher was tuned after I read a first 30 (nearest-way cost with a name
+penalty, a shorter reach for partial names, more DfI abbreviations, a road-number rule, using DfI's own points for the
+offset); the 30 below are from the final run, so this is **not an independent test** of the final rules, only a check
+that nothing obviously wrong is left in a spread of ways.
+
+Result: **25 right, 1 likely right, 3 plausible but not provable (the OSM way has no name), 1 doubtful, 0 wrong.**
+
+| # | OSM way | Class | OSM name (ref) | DfI section | DfI name | Offset m | Width m (quartiles) | Confidence | My check | Why |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 863855829 | trunk_link | (none) | 7035C0302_09 | NEWTOWNBREDA RD1 | 0.35 | 17.7 (17.7-18.8) | 0.21 low | Right | OSM way 76.9 m, DfI section 75.3 m, ends meet Belvoir Rd and the C302 roundabout. Width 17.7 m looks flared for a 2-lane link; confidence correctly low. |
+| 2 | 1422555647 | trunk | Belvoir Road (A55) | 7035A0055_18 | BELVOIR RD1 | 0.96 | 10.7 (10.7-10.7) | 1.0 high | Right | Name equal, 0.96 m off; the section is the south carriageway. |
+| 3 | 26345421 | secondary | Milltown Road (B205) | 7035B0023_08 | MILLTOWN RD2 | 2.49 | 7.3 (7.3-8.0) | 0.436 medium | Right | Name equal, ends at Belvoir Rd as the section says. Only 21 per cent of the way covered, so medium. |
+| 4 | 932109005 | secondary | Milltown Road (B205) | 7035B0023_11 | MILLTOWN RD2 | 0.17 | 6.3 (5.2-6.3) | 0.718 high | Right | Name equal, one end meets Hospital Rd as the section 'Hospital Rd to Belvoir Rd' says. |
+| 5 | 860893153 | secondary | Milltown Road (B205) | 7035B0023_11 | MILLTOWN RD2 | 0.48 | 5.2 (5.2-6.0) | 0.8 high | Right | Same DfI section as the previous way; 5.2 m for a one-way 2-lane slip is narrow but plausible. |
+| 6 | 404102951 | secondary | Hospital Road (B205) | 7035B0023_10 | HOSPITAL RD1 | 1.98 | 6.5 (6.5-6.5) | 1.0 high | Right | Name equal. OSM ref is B205 but DfI files Hospital Rd under B0023: possibly an OSM ref error, not a matching error. |
+| 7 | 932108000 | tertiary | Hospital Road (C302) | 7035C0302_06 | HOSPITAL RD1 | 0.59 | 14.3 (14.3-15.8) | 0.366 low | Right | Name and ref (C302) agree. 14.3 m is a junction approach (several lanes), not a running width; low confidence fits. |
+| 8 | 135069684 | tertiary | Newtownbreda Road (C302) | 7035C0302_03 | NEWTOWNBREDA RD1 | 1.56 | 7.9 (7.2-9.8) | 0.499 medium | Right | Name and ref agree, ends at Purdysburn Rd and Hospital Rd. Widths vary 7.2 to 9.8 m along it. |
+| 9 | 386981923 | tertiary | Purdysburn Road (C302) | 7035C0302_02 | PURDYSBURN RD1 | 0.55 | 10.0 (10.0-10.0) | 0.887 high | Right (width unverified) | Name and ref agree. A constant 10.0 m is wide for a rural C road; I cannot say if it includes verges or lane markings. |
+| 10 | 366053151 | unclassified | Milltown Hill | 7035U0510_07 | MILLTOWN HILL1 | 1.31 | 7.5 (7.5-10.2) | 0.366 low | Right | 7 m stub at the Ballylesson Rd junction; name equal. Tiny way, so only 55 per cent covered. |
+| 11 | 370927381 | unclassified | Old Milltown Road | 7035U0500_28 | OLD MILLTOWN RD2 | 2.5 | 5.7 (5.7-5.7) | 0.926 high | Right | Name equal, 2.5 m off, its ends meet Old Milltown Rd and Belvoir Drive. |
+| 12 | 1083622670 | unclassified | Milltown Hill | 7035U0510_07 | MILLTOWN HILL1 | 0.84 | 5.0 (5.0-5.0) | 1.0 high | Right | Name equal; length 46 m of a 380 m DfI section that OSM has cut into several ways. |
+| 13 | 371345029 | residential | (none) | 7035U0500_62 | BELVOIR DR1 | 0.99 | 5.0 (5.0-14.0) | 0.154 low | Plausible, not provable | OSM way has no name. DfI 'Belvoir Dr ... No.228 to 240' is 43 m, the way 75 m; it hangs off Belvoir Drive. Width 5.0 with a 14 m upper quartile: unreliable. |
+| 14 | 371345000 | residential | (none) | 7035U0500_65 | DRUMART DR1 | 0.2 | 4.0 (4.0-4.0) | 0.412 medium | Plausible, not provable | No OSM name; it joins Drumart Drive and the section is 'Drumart Dr ... (access rd)'. 0.2 m off. |
+| 15 | 41418203 | residential | Cedarhurst Rise | 7035U0511_24 | CEDARHURST RISE1 | 0.72 | 5.4 (5.4-8.9) | 0.5 medium | Right | Name equal, 70 m against 74 m in DfI, joins Cedarhurst Rd as the section says. |
+| 16 | 306231738 | residential | Gray's Park Avenue | 7035U0500_20 | GRAY'S PK AV1 | 0.16 | 6.0 (6.0-6.0) | 0.516 medium | Right | Name equal; the DfI section is only 'No.7 to No.23' of a 295 m way, so 19 per cent covered. |
+| 17 | 370200858 | residential | Greer Park Heights | 7035U0511_91 | GREER PK HTS1 | 0.8 | 6.0 (6.0-7.0) | 0.75 high | Right | Name equal, whole way covered. |
+| 18 | 370707397 | residential | Royal Lodge Avenue | 7035U0527_13 | ROYAL LODGE AV1 | 1.02 | 5.5 (5.0-5.6) | 0.85 high | Right | Name equal, whole way covered, 1.0 m off. |
+| 19 | 370202290 | residential | Bests Hill Glen | 7035U0527_04 | BESTS HILL GLEN1 | 0.59 | 5.5 (5.5-5.5) | 0.975 high | Right | Name equal; joins Bests Hill as the section 'Bests Hill to end' says. |
+| 20 | 372846477 | residential | Beechwood Grove | 7035U0511_57 | BEECHWOOD GVE2 | 0.31 | 5.3 (5.3-5.3) | 1.0 high | Right | Name equal, 66.8 m against 71.1 m in DfI. |
+| 21 | 847368563 | service | (none) | 7065B0023_05 | BALLYLESSON RD1 | 1.84 | 5.4 (5.4-5.4) | 0.198 low | Doubtful | Unnamed service way 96 m, matched on one item of a 2.6 km Ballylesson Rd section 1.8 m away. Probably a lay-by or old alignment; the width may not apply. |
+| 22 | 694938314 | service | (none) | 7035U0500_15 | DRUMART DR1 | 3.63 | 5.0 (5.0-5.0) | 0.336 low | Plausible, not provable | Unnamed 24 m service way next to Drumart Drive; DfI section runs 'Dunseverick Av at church to Dunseverick Av'. 3.6 m off, 35 per cent covered. |
+| 23 | 370927383 | service | (none) | 7035U0500_21 | GRAYS PK2 | 5.39 | 7.0 (7.0-7.0) | 0.492 medium | Likely right | Unnamed; joins Gray's Park, which DfI calls 'Grays Pk: Belvoir Dr to Milltown Rd'. 36.6 m way, 93 per cent covered, 5.4 m off. |
+| 24 | 185555365 | unclassified | Ballycoan Road | 7065U0146_22 | BALLYCOAN RD1 | 1.33 | 5.3 (4.9-6.0) | 0.435 medium | Right | Name equal; DfI section is 2.0 km of this 3.0 km way, ends at Purdysburn Hill (B205) as the section says. |
+| 25 | 374712136 | unclassified | Belvoir Drive | 7035U0500_01 | BELVOIR DR1 | 1.72 | 6.7 (6.5-6.8) | 0.778 high | Right | Name equal and 1,877 m against 1,864 m in DfI: the same road. |
+| 26 | 127284812 | tertiary | Fort Road (C299) | 7065C0299_03 | FORT RD2 | 0.33 | 5.0 (4.5-5.0) | 0.453 medium | Right | Name and ref (C299) agree, 1,774 m against 1,777 m. Only 5 items, so 20 per cent covered. |
+| 27 | 362852746 | unclassified | Mill Road West | 7035U0144_01 | MILL RD W1 | 0.82 | 4.6 (4.5-5.3) | 0.539 medium | Right | Name equal ('Mill Rd W' is Mill Road West), 1,379 m against 1,395 m. |
+| 28 | 283605943 | secondary | Purdysburn Hill (B205) | 7065B0205_02 | PURDYSBURN HILL1 | 0.72 | 6.6 (6.6-6.6) | 0.787 high | Right | Name and ref (B205) agree; ends at Fort Rd and Hospital Rd as the section says. |
+| 29 | 374712135 | trunk | Belvoir Road (A55) | 7035A0055_17 | BELVOIR RD1 | 0.59 | 10.2 (10.1-10.5) | 0.535 medium | Right | Name and ref agree; 0.6 m off fits the north carriageway the section names (the south one is a different section). |
+| 30 | 194775124 | residential | Royal Lodge Road | 7035U0511_50 | ROYAL LODGE RD1 | 0.63 | 6.0 (6.0-6.3) | 0.909 high | Right | Name equal, 818 m against 688 m plus side sections, 68 items, 0.6 m off. |
+
+What the check says about the confidence score: the doubtful way (#21) got 0.20 and the three unprovable ones 0.15,
+0.34 and 0.41, but three ways I judge right also scored low (#1 0.21, #7 0.37, #10 0.37: a flared link road, a junction
+approach and a 7 m stub). So the score separates well-covered, named, steady-width ways (high) from the rest, but "low"
+means "do not trust this number", not "this is probably the wrong road". Thirty ways is too few to calibrate the
+thresholds, and I did not try.
+
+## Known limits (for T-406)
+
+- **Widths near junctions are inflated.** DfI measures the carriageway including flares, bell-mouths and turning
+  lanes. The step drops items above 20 m and takes a length-weighted median, but a short way at a junction (7 m
+  stub, junction approach) can still carry a 14 to 18 m width. Use the confidence.
+- **Dual carriageways**: each carriageway is its own DfI section. If OSM draws one carriageway per way (oneway) the width is
+  right for the way. If a dual carriageway were drawn as one two-way way, the width would be one carriageway's.
+- **Width is the whole carriageway** (kerb to kerb or edge to edge, DfI does not say which), not the lane. Compare
+  the 5 to 6 m of residential streets with the 3.3 to 3.7 m lane the game needs.
+- **One width per way.** A way that DfI measures 6 m in one place and 9 m in another gets the median; `width_q1_m`
+  and `width_q3_m` show the range, and a wide range lowers `spread`.
+- **Unnamed OSM ways** match on position alone (name part 0.55). The three unprovable ways above are of this kind.
+- The xlsx is from July 2021; the OSM extract is from 12 November 2026.
+- Items dropped for width (118 of 2,101 in the slice box) are counted in `coverage.dfi` of each output file.

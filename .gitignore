@@ -4,6 +4,7 @@ data/*
 !data/sources/
 data/sources/*
 !data/sources/osm.json
+!data/sources/dfi.json
 downloads/
 raw/
 cache/

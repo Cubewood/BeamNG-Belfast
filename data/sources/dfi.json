@@ -1,0 +1,36 @@
+{
+ "version": 1,
+ "licence": "UK Open Government Licence v3.0 (OGL)",
+ "attribution": "Contains public sector information licensed under the Open Government Licence v3.0. Source: Department for Infrastructure (DfI Roads), via OpenDataNI.",
+ "recipe": 1,
+ "files": {
+  "highway_network": {
+   "title": "DfI Highway Network",
+   "dataset_page": "https://www.opendatani.gov.uk/dataset/highway-network",
+   "url": "https://dfi.highway-iams.uk/OpenData/HIGHWAY_NETWORK.CSV",
+   "file": "HIGHWAY_NETWORK.CSV",
+   "dataset_metadata_modified": "2026-06-15T12:58:52Z",
+   "final_host": "dfi.highway-iams.uk",
+   "downloaded_utc": "2026-11-13T23:04:50Z",
+   "last_modified_header": "Fri, 13 Nov 2026 02:00:58 GMT",
+   "content_type": "application/octet-stream",
+   "size_bytes": 11187734,
+   "sha256": "28a1e37c9d1fd39004be8d8df431317ce5b38bf820b83954f9980264a9a4c07f",
+   "note": "Live link, rebuilt every evening; the SHA-256 below pins the copy that was used. No coordinates."
+  },
+  "carriageway_details": {
+   "title": "DfI Carriageway Details",
+   "dataset_page": "https://www.opendatani.gov.uk/dataset/carriageway-details",
+   "url": "https://admin.opendatani.gov.uk/dataset/1532f7f3-613a-4fb1-91db-008b0b24e990/resource/ce97f716-f2ff-4540-8033-3536eded8e49/download/carriageway-details-all-export-5-july-2021.xlsx",
+   "file": "carriageway-details-all-export-5-july-2021.xlsx",
+   "dataset_metadata_modified": "2021-09-20T13:32:56Z",
+   "final_host": "83025b28472d6aa2bf5ae59f3724aa78.eu.r2.cloudflarestorage.com",
+   "downloaded_utc": "2026-11-13T23:04:52Z",
+   "last_modified_header": "Mon, 01 Jan 2024 09:20:15 GMT",
+   "content_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+   "size_bytes": 55347548,
+   "sha256": "f987598b7e00fd5b11d34abc415a884a6a367a96ad754df8b454321e30e31654",
+   "note": "Export of 5 July 2021. The URL redirects to signed object storage; the signed address is not recorded."
+  }
+ }
+}
