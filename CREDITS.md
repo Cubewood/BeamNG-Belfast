@@ -9,6 +9,10 @@ Every data source used by the project, with the attribution it requires. Generat
 
 ## Attribution lines
 
+### dfi
+
+- Contains public sector information licensed under the Open Government Licence v3.0. Source: Department for Infrastructure (DfI Roads), via OpenDataNI.
+
 ### dfi_crossings
 
 - Contains public sector information licensed under the Open Government Licence v3.0. Source: Department for Infrastructure (DfI), via OpenData NI.
