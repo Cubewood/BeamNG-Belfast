@@ -1,0 +1,496 @@
+{
+  "uk_centre_1008_cubewood": {
+    "name": "uk_centre_1008_cubewood",
+    "mapTo": "uk_centre_1008_cubewood",
+    "class": "Material",
+    "persistentId": "03535e16-5f3b-5e61-8e34-3039c0c2ba81",
+    "Stages": [
+      {
+        "baseColorMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_white_cubewood_b.color.png",
+        "normalMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_flat_cubewood_nm.normal.png",
+        "opacityMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_centre_1008_cubewood_o.data.png",
+        "roughnessMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_cubewood_r.data.png"
+      },
+      {},
+      {},
+      {}
+    ],
+    "alphaRef": 8,
+    "annotation": "DASHED_LINE",
+    "castShadows": false,
+    "groundType": "ASPHALT",
+    "materialTag0": "RoadAndPath",
+    "materialTag1": "beamng",
+    "translucent": true,
+    "translucentZWrite": true,
+    "version": 1.5
+  },
+  "uk_centre_1008_1_cubewood": {
+    "name": "uk_centre_1008_1_cubewood",
+    "mapTo": "uk_centre_1008_1_cubewood",
+    "class": "Material",
+    "persistentId": "5d9b14a1-fd94-57cb-9f3c-63ff99ab2367",
+    "Stages": [
+      {
+        "baseColorMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_white_cubewood_b.color.png",
+        "normalMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_flat_cubewood_nm.normal.png",
+        "opacityMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_centre_1008_1_cubewood_o.data.png",
+        "roughnessMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_cubewood_r.data.png"
+      },
+      {},
+      {},
+      {}
+    ],
+    "alphaRef": 8,
+    "annotation": "DASHED_LINE",
+    "castShadows": false,
+    "groundType": "ASPHALT",
+    "materialTag0": "RoadAndPath",
+    "materialTag1": "beamng",
+    "translucent": true,
+    "translucentZWrite": true,
+    "version": 1.5
+  },
+  "uk_lane_1005_cubewood": {
+    "name": "uk_lane_1005_cubewood",
+    "mapTo": "uk_lane_1005_cubewood",
+    "class": "Material",
+    "persistentId": "277c0b8b-b4e3-578a-a7ee-651fdb18e45a",
+    "Stages": [
+      {
+        "baseColorMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_white_cubewood_b.color.png",
+        "normalMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_flat_cubewood_nm.normal.png",
+        "opacityMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_lane_1005_cubewood_o.data.png",
+        "roughnessMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_cubewood_r.data.png"
+      },
+      {},
+      {},
+      {}
+    ],
+    "alphaRef": 8,
+    "annotation": "DASHED_LINE",
+    "castShadows": false,
+    "groundType": "ASPHALT",
+    "materialTag0": "RoadAndPath",
+    "materialTag1": "beamng",
+    "translucent": true,
+    "translucentZWrite": true,
+    "version": 1.5
+  },
+  "uk_lane_1005_1_cubewood": {
+    "name": "uk_lane_1005_1_cubewood",
+    "mapTo": "uk_lane_1005_1_cubewood",
+    "class": "Material",
+    "persistentId": "a87649e0-1af2-51c7-af62-9e6168bf77c4",
+    "Stages": [
+      {
+        "baseColorMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_white_cubewood_b.color.png",
+        "normalMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_flat_cubewood_nm.normal.png",
+        "opacityMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_lane_1005_1_cubewood_o.data.png",
+        "roughnessMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_cubewood_r.data.png"
+      },
+      {},
+      {},
+      {}
+    ],
+    "alphaRef": 8,
+    "annotation": "DASHED_LINE",
+    "castShadows": false,
+    "groundType": "ASPHALT",
+    "materialTag0": "RoadAndPath",
+    "materialTag1": "beamng",
+    "translucent": true,
+    "translucentZWrite": true,
+    "version": 1.5
+  },
+  "uk_warning_1004_cubewood": {
+    "name": "uk_warning_1004_cubewood",
+    "mapTo": "uk_warning_1004_cubewood",
+    "class": "Material",
+    "persistentId": "ca695d1a-3388-513d-8cbe-1ab8b002c77a",
+    "Stages": [
+      {
+        "baseColorMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_white_cubewood_b.color.png",
+        "normalMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_flat_cubewood_nm.normal.png",
+        "opacityMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_warning_1004_cubewood_o.data.png",
+        "roughnessMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_cubewood_r.data.png"
+      },
+      {},
+      {},
+      {}
+    ],
+    "alphaRef": 8,
+    "annotation": "DASHED_LINE",
+    "castShadows": false,
+    "groundType": "ASPHALT",
+    "materialTag0": "RoadAndPath",
+    "materialTag1": "beamng",
+    "translucent": true,
+    "translucentZWrite": true,
+    "version": 1.5
+  },
+  "uk_warning_1004_1_cubewood": {
+    "name": "uk_warning_1004_1_cubewood",
+    "mapTo": "uk_warning_1004_1_cubewood",
+    "class": "Material",
+    "persistentId": "127c0e28-7fd6-57f8-aec5-606d09eac79d",
+    "Stages": [
+      {
+        "baseColorMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_white_cubewood_b.color.png",
+        "normalMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_flat_cubewood_nm.normal.png",
+        "opacityMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_warning_1004_1_cubewood_o.data.png",
+        "roughnessMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_cubewood_r.data.png"
+      },
+      {},
+      {},
+      {}
+    ],
+    "alphaRef": 8,
+    "annotation": "DASHED_LINE",
+    "castShadows": false,
+    "groundType": "ASPHALT",
+    "materialTag0": "RoadAndPath",
+    "materialTag1": "beamng",
+    "translucent": true,
+    "translucentZWrite": true,
+    "version": 1.5
+  },
+  "uk_solid_white_cubewood": {
+    "name": "uk_solid_white_cubewood",
+    "mapTo": "uk_solid_white_cubewood",
+    "class": "Material",
+    "persistentId": "505bc0eb-dca5-5a29-9f95-cf80e40608c2",
+    "Stages": [
+      {
+        "baseColorMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_white_cubewood_b.color.png",
+        "normalMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_flat_cubewood_nm.normal.png",
+        "opacityMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_solid_white_cubewood_o.data.png",
+        "roughnessMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_cubewood_r.data.png"
+      },
+      {},
+      {},
+      {}
+    ],
+    "alphaRef": 8,
+    "annotation": "SOLID_LINE",
+    "castShadows": false,
+    "groundType": "ASPHALT",
+    "materialTag0": "RoadAndPath",
+    "materialTag1": "beamng",
+    "translucent": true,
+    "translucentZWrite": true,
+    "version": 1.5
+  },
+  "uk_solid_yellow_cubewood": {
+    "name": "uk_solid_yellow_cubewood",
+    "mapTo": "uk_solid_yellow_cubewood",
+    "class": "Material",
+    "persistentId": "286bc64d-d538-5a1a-8bcb-6cdae83d050d",
+    "Stages": [
+      {
+        "baseColorMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_yellow_cubewood_b.color.png",
+        "normalMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_flat_cubewood_nm.normal.png",
+        "opacityMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_solid_yellow_cubewood_o.data.png",
+        "roughnessMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_cubewood_r.data.png"
+      },
+      {},
+      {},
+      {}
+    ],
+    "alphaRef": 8,
+    "annotation": "SOLID_LINE",
+    "castShadows": false,
+    "groundType": "ASPHALT",
+    "materialTag0": "RoadAndPath",
+    "materialTag1": "beamng",
+    "translucent": true,
+    "translucentZWrite": true,
+    "version": 1.5
+  },
+  "uk_dash_600_300_cubewood": {
+    "name": "uk_dash_600_300_cubewood",
+    "mapTo": "uk_dash_600_300_cubewood",
+    "class": "Material",
+    "persistentId": "f1d87dce-5337-5ccc-b662-8a98f430764c",
+    "Stages": [
+      {
+        "baseColorMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_white_cubewood_b.color.png",
+        "normalMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_flat_cubewood_nm.normal.png",
+        "opacityMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_dash_600_300_cubewood_o.data.png",
+        "roughnessMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_cubewood_r.data.png"
+      },
+      {},
+      {},
+      {}
+    ],
+    "alphaRef": 8,
+    "annotation": "DASHED_LINE",
+    "castShadows": false,
+    "groundType": "ASPHALT",
+    "materialTag0": "RoadAndPath",
+    "materialTag1": "beamng",
+    "translucent": true,
+    "translucentZWrite": true,
+    "version": 1.5
+  },
+  "uk_dash_1000_1000_cubewood": {
+    "name": "uk_dash_1000_1000_cubewood",
+    "mapTo": "uk_dash_1000_1000_cubewood",
+    "class": "Material",
+    "persistentId": "720e5011-7b8d-5337-adb5-3934a35d19e5",
+    "Stages": [
+      {
+        "baseColorMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_white_cubewood_b.color.png",
+        "normalMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_flat_cubewood_nm.normal.png",
+        "opacityMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_dash_1000_1000_cubewood_o.data.png",
+        "roughnessMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_cubewood_r.data.png"
+      },
+      {},
+      {},
+      {}
+    ],
+    "alphaRef": 8,
+    "annotation": "DASHED_LINE",
+    "castShadows": false,
+    "groundType": "ASPHALT",
+    "materialTag0": "RoadAndPath",
+    "materialTag1": "beamng",
+    "translucent": true,
+    "translucentZWrite": true,
+    "version": 1.5
+  },
+  "uk_giveway_mini_1003_3_cubewood": {
+    "name": "uk_giveway_mini_1003_3_cubewood",
+    "mapTo": "uk_giveway_mini_1003_3_cubewood",
+    "class": "Material",
+    "persistentId": "f2c07268-65f6-5368-b77e-efecd00d4137",
+    "Stages": [
+      {
+        "baseColorMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_white_cubewood_b.color.png",
+        "normalMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_flat_cubewood_nm.normal.png",
+        "opacityMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_giveway_mini_1003_3_cubewood_o.data.png",
+        "roughnessMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_cubewood_r.data.png"
+      },
+      {},
+      {},
+      {}
+    ],
+    "alphaRef": 8,
+    "annotation": "DASHED_LINE",
+    "castShadows": false,
+    "groundType": "ASPHALT",
+    "materialTag0": "RoadAndPath",
+    "materialTag1": "beamng",
+    "translucent": true,
+    "translucentZWrite": true,
+    "version": 1.5
+  },
+  "uk_giveway_1003a_cubewood": {
+    "name": "uk_giveway_1003a_cubewood",
+    "mapTo": "uk_giveway_1003a_cubewood",
+    "class": "Material",
+    "persistentId": "d8f10b4a-f1ea-539d-8adb-603d64ffa6ff",
+    "Stages": [
+      {
+        "baseColorMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_white_cubewood_b.color.png",
+        "normalMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_flat_cubewood_nm.normal.png",
+        "opacityMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_giveway_1003a_cubewood_o.data.png",
+        "roughnessMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_cubewood_r.data.png"
+      },
+      {},
+      {},
+      {}
+    ],
+    "alphaRef": 8,
+    "annotation": "DASHED_LINE",
+    "castShadows": false,
+    "groundType": "ASPHALT",
+    "materialTag0": "RoadAndPath",
+    "materialTag1": "beamng",
+    "translucent": true,
+    "translucentZWrite": true,
+    "version": 1.5
+  },
+  "uk_double_white_mixed_1013_1_cubewood": {
+    "name": "uk_double_white_mixed_1013_1_cubewood",
+    "mapTo": "uk_double_white_mixed_1013_1_cubewood",
+    "class": "Material",
+    "persistentId": "7c74dd62-52e8-5ff2-97e2-4dc85f2bfb3f",
+    "Stages": [
+      {
+        "baseColorMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_white_cubewood_b.color.png",
+        "normalMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_flat_cubewood_nm.normal.png",
+        "opacityMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_double_white_mixed_1013_1_cubewood_o.data.png",
+        "roughnessMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_cubewood_r.data.png"
+      },
+      {},
+      {},
+      {}
+    ],
+    "alphaRef": 8,
+    "annotation": "SOLID_LINE",
+    "castShadows": false,
+    "groundType": "ASPHALT",
+    "materialTag0": "RoadAndPath",
+    "materialTag1": "beamng",
+    "translucent": true,
+    "translucentZWrite": true,
+    "version": 1.5
+  },
+  "uk_double_white_solid_1013_1_cubewood": {
+    "name": "uk_double_white_solid_1013_1_cubewood",
+    "mapTo": "uk_double_white_solid_1013_1_cubewood",
+    "class": "Material",
+    "persistentId": "1b31a033-cfb3-5ea5-a0c1-17b8dc0ec88d",
+    "Stages": [
+      {
+        "baseColorMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_white_cubewood_b.color.png",
+        "normalMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_flat_cubewood_nm.normal.png",
+        "opacityMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_double_white_solid_1013_1_cubewood_o.data.png",
+        "roughnessMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_cubewood_r.data.png"
+      },
+      {},
+      {},
+      {}
+    ],
+    "alphaRef": 8,
+    "annotation": "SOLID_LINE",
+    "castShadows": false,
+    "groundType": "ASPHALT",
+    "materialTag0": "RoadAndPath",
+    "materialTag1": "beamng",
+    "translucent": true,
+    "translucentZWrite": true,
+    "version": 1.5
+  },
+  "uk_double_yellow_1018_1_cubewood": {
+    "name": "uk_double_yellow_1018_1_cubewood",
+    "mapTo": "uk_double_yellow_1018_1_cubewood",
+    "class": "Material",
+    "persistentId": "3881568d-3b08-51af-9051-82c7aac3b2f3",
+    "Stages": [
+      {
+        "baseColorMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_yellow_cubewood_b.color.png",
+        "normalMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_flat_cubewood_nm.normal.png",
+        "opacityMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_double_yellow_1018_1_cubewood_o.data.png",
+        "roughnessMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_cubewood_r.data.png"
+      },
+      {},
+      {},
+      {}
+    ],
+    "alphaRef": 8,
+    "annotation": "SOLID_LINE",
+    "castShadows": false,
+    "groundType": "ASPHALT",
+    "materialTag0": "RoadAndPath",
+    "materialTag1": "beamng",
+    "translucent": true,
+    "translucentZWrite": true,
+    "version": 1.5
+  },
+  "uk_giveway_triangle_1023a_cubewood": {
+    "name": "uk_giveway_triangle_1023a_cubewood",
+    "mapTo": "uk_giveway_triangle_1023a_cubewood",
+    "class": "Material",
+    "persistentId": "4ecbc244-4054-57c7-942e-bebd50a5aa0d",
+    "Stages": [
+      {
+        "baseColorMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_white_cubewood_b.color.png",
+        "normalMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_flat_cubewood_nm.normal.png",
+        "opacityMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_giveway_triangle_1023a_cubewood_o.data.png",
+        "roughnessMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_cubewood_r.data.png"
+      },
+      {},
+      {},
+      {}
+    ],
+    "alphaRef": 8,
+    "annotation": "DRIVING_INSTRUCTIONS",
+    "castShadows": false,
+    "groundType": "ASPHALT",
+    "materialTag0": "RoadAndPath",
+    "materialTag1": "beamng",
+    "translucent": true,
+    "translucentZWrite": true,
+    "version": 1.5
+  },
+  "uk_zigzag_1001_4_cubewood": {
+    "name": "uk_zigzag_1001_4_cubewood",
+    "mapTo": "uk_zigzag_1001_4_cubewood",
+    "class": "Material",
+    "persistentId": "872b99fc-1b4d-56aa-81e9-906c5e6c15b9",
+    "Stages": [
+      {
+        "baseColorMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_white_cubewood_b.color.png",
+        "normalMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_flat_cubewood_nm.normal.png",
+        "opacityMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_zigzag_1001_4_cubewood_o.data.png",
+        "roughnessMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_cubewood_r.data.png"
+      },
+      {},
+      {},
+      {}
+    ],
+    "alphaRef": 8,
+    "annotation": "RESTRICTED_STREET",
+    "castShadows": false,
+    "groundType": "ASPHALT",
+    "materialTag0": "RoadAndPath",
+    "materialTag1": "beamng",
+    "translucent": true,
+    "translucentZWrite": true,
+    "version": 1.5
+  },
+  "uk_box_hatch_1043_cubewood": {
+    "name": "uk_box_hatch_1043_cubewood",
+    "mapTo": "uk_box_hatch_1043_cubewood",
+    "class": "Material",
+    "persistentId": "cac05aa3-0b3e-5768-9fdb-77a899421769",
+    "Stages": [
+      {
+        "baseColorMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_yellow_cubewood_b.color.png",
+        "normalMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_flat_cubewood_nm.normal.png",
+        "opacityMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_box_hatch_1043_cubewood_o.data.png",
+        "roughnessMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_cubewood_r.data.png"
+      },
+      {},
+      {},
+      {}
+    ],
+    "alphaRef": 8,
+    "annotation": "RESTRICTED_STREET",
+    "castShadows": false,
+    "groundType": "ASPHALT",
+    "materialTag0": "RoadAndPath",
+    "materialTag1": "beamng",
+    "translucent": true,
+    "translucentZWrite": true,
+    "version": 1.5
+  },
+  "uk_box_hatch_1043_wide_cubewood": {
+    "name": "uk_box_hatch_1043_wide_cubewood",
+    "mapTo": "uk_box_hatch_1043_wide_cubewood",
+    "class": "Material",
+    "persistentId": "98cff768-46a7-51b2-b10e-ff51e0061ce6",
+    "Stages": [
+      {
+        "baseColorMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_yellow_cubewood_b.color.png",
+        "normalMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_flat_cubewood_nm.normal.png",
+        "opacityMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_box_hatch_1043_wide_cubewood_o.data.png",
+        "roughnessMap": "/levels/belfast_slice/art/uk_markings_cubewood/uk_paint_cubewood_r.data.png"
+      },
+      {},
+      {},
+      {}
+    ],
+    "alphaRef": 8,
+    "annotation": "RESTRICTED_STREET",
+    "castShadows": false,
+    "groundType": "ASPHALT",
+    "materialTag0": "RoadAndPath",
+    "materialTag1": "beamng",
+    "translucent": true,
+    "translucentZWrite": true,
+    "version": 1.5
+  }
+}
