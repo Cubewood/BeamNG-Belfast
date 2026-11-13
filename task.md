@@ -254,7 +254,7 @@ Outcome: every night, a build is tested without you or Claude, and you get a sho
 
 | ID | Status | Task | Model | Effort | Where | Needs | Done when |
 |---|---|---|---|---|---|---|---|
-| T-301 | todo | Static checks: MapNG's linter plus connection, one-way, height and budget checks against the pinned data | sonnet | high | any | T-103, T-202 | Planted faults are all caught |
+| T-301 | todo | Static checks: MapNG's linter plus connection, one-way, height and budget checks against the pinned data (note: T-106 re-ranked this first: start on the current slice export without T-202; add OSM buildings reaching into the driving lanes by area, terrain steps across drivable lanes, and missing stock assets via a game file index; see `docs/decisions/001-generator.md` gaps 1, 2, 14) | sonnet | high | any | T-103 | Planted faults are all caught |
 | T-302 | done | Route drive suite: adapt MapNG's `driveTest` to named routes around the test centre, with per-frame telemetry | sonnet | high | game | T-104 | Runs unattended and writes metrics JSON |
 | T-303 | doing | Junction camera sweep: driver's-eye view from the right-hand seat at 30 m and 10 m before every route junction, at fixed lighting | sonnet | medium | game | T-302 | JPG and pose file for each junction approach |
 | T-304 | todo | Image judge: close the game, load Qwen, judge frames against a JSON schema, unload | sonnet | high | gpu | T-303, T-007 | Each frame gets defect type, confidence and reason |
@@ -264,6 +264,7 @@ Outcome: every night, a build is tested without you or Claude, and you get a sho
 | T-308 | done | Flag-this-spot key: a dev-only extension that logs position, heading, speed and a screenshot when you press a bound key or wheel button in VR | sonnet | medium | game | T-006 | A test flag produces a complete record |
 | T-309 | todo | `qa/nightly.ps1`: build, G0 to G4, digest, clean shutdown. Register it in Windows Task Scheduler for 01:00 | sonnet | high | game | T-301, T-304, T-307 | Three unattended nights with nothing left running |
 | T-310 | todo | Regression gate: compare each night with the last accepted metrics and block release candidates that get worse | sonnet | medium | any | T-309 | A planted regression is blocked |
+| T-311 | todo | Drive suite accuracy (from T-106, `docs/decisions/001-generator.md` gaps 3 and 4): slow to a learner's speed over mapped traffic calming (or exempt it from the bump limit), and judge lane side against the lane the car is in, not the way centreline, on roads with unequal lanes such as Hospital Road `lanes=4` | sonnet | medium | game | T-302 | A rerun logs no bump event at mapped traffic calming, and no wrong-side samples that the lane layout explains |
 
 ### M4: UK road correctness
 
@@ -271,17 +272,19 @@ Outcome: roads read like Belfast roads, and the Slice passes G0 to G4.
 
 | ID | Status | Task | Model | Effort | Where | Needs | Done when |
 |---|---|---|---|---|---|---|---|
+| T-412 | todo | MapNG patch (first on the `belfast` branch, set it up as T-403 describes): cut OSM buildings back from the driving lanes by overlap area or depth, not by share of the footprint (`services/buildingRoadConflicts.js:232` keeps building 1260690275 in the lane at (-211, -93)), and list what stays. From T-106, `docs/decisions/001-generator.md` gap 1 | sonnet | high | any | T-301 | Upstream tests pass, a new test covers a large footprint with a small lane overlap, and the T-301 check reports no OSM building in the lanes on the Slice |
+| T-413 | todo | MapNG patch: blend the graded corridors of meeting roads across their full width at junction mouths (26 to 28 cm step on Hospital Road at Newtownbreda Road, (199, 284); MapNG's joint check only compares centreline ends, `services/structures/metrics.js:105-144`). From T-106, gap 2 | opus | xhigh | game | T-412 | Upstream tests pass, the T-301 step check finds no step over 0.15 m across drivable lanes off bridges, and the drive suite has no crash at (-211, -93) or (194, 284) |
+| T-407 | todo | Left-hand traffic and AI: `rightHandDrive: true`, UK light sequence (red, red and amber, green, amber), one-ways, turn restrictions (note: T-106 moved this up and dropped T-403: `rightHandDrive` is set and AI keeps left on two roads (I-001); still to check are roundabouts, one-ways, turn restrictions and signals, none of which needs UK markings) | sonnet | high | game | T-302 | AI keeps left and obeys signals on all routes |
 | T-401 | todo | `rules/uk_markings.yaml` from the Traffic Signs Manual. Check Northern Ireland's own regulations against the GB values, and add zebra and zig-zag rules | sonnet | high | any | T-106 | Every rule cites its diagram and source |
 | T-402 | todo | UK decal materials made by us: centre, lane and warning line patterns, give-way, double yellow, zig-zag and box junction | sonnet | high | any | T-401 | Materials load with no missing textures |
 | T-403 | todo | Apply UK markings inside MapNG with the smallest possible patch, kept on a `belfast` branch | opus | xhigh | any | T-102, T-402 | Upstream tests pass, and new tests cover each UK pattern |
-| T-404 | todo | Junctions: give-way and stop line placement, kerb radii, roundabouts, mini-roundabouts and signalled junction layout | opus | xhigh | any | T-403 | Static geometry tests pass, and G3 passes on the Slice |
+| T-404 | todo | Junctions: give-way and stop line placement, kerb radii, roundabouts, mini-roundabouts and signalled junction layout (note: T-106: the Slice's OSM has no mini-roundabouts or box junctions, so do give-way lines, stop lines and the two roundabouts first) | opus | xhigh | any | T-403 | Static geometry tests pass, and G3 passes on the Slice |
 | T-405 | todo | Spike: do osm2streets (Apache-2.0) lane and junction polygons improve complex junctions enough to justify adding them? | opus | medium | any | T-404 | Written verdict with five before-and-after junctions |
 | T-406 | todo | Road widths: DfI where matched, then OSM tags, then class defaults for NI | sonnet | high | any | T-205, T-403 | G0 width target is met where DfI data exists |
-| T-407 | todo | Left-hand traffic and AI: `rightHandDrive: true`, UK light sequence (red, red and amber, green, amber), one-ways, turn restrictions | sonnet | high | game | T-302, T-403 | AI keeps left and obeys signals on all routes |
 | T-408 | todo | Speed limits: mph throughout, with NI defaults where `maxspeed` is missing | sonnet | medium | any | T-202 | Every road edge has a limit |
 | T-409 | todo | UK road signs from the Department for Transport sign images (Crown copyright, reproducible if accurate and not misleading), placed from OSM rules | sonnet | high | any | T-403 | Signs face the driver and are readable at 20 m |
-| T-410 | todo | Bus lanes, cycle lanes, yellow boxes and kerbside lines from OSM tags | sonnet | medium | any | T-403 | Static checks match the tagged lengths |
-| T-411 | todo | Fix the Slice until it passes G0 to G4 | sonnet | high | game | T-404, T-406, T-407, T-408, T-409, T-309 | Three consecutive nightly passes |
+| T-410 | todo | Bus lanes, cycle lanes, yellow boxes and kerbside lines from OSM tags (note: T-106: none are tagged in the Slice; lowest priority until a larger area is built) | sonnet | medium | any | T-403 | Static checks match the tagged lengths |
+| T-411 | todo | Fix the Slice until it passes G0 to G4 | sonnet | high | game | T-404, T-406, T-407, T-408, T-409, T-309, T-311, T-413 | Three consecutive nightly passes |
 
 ### M5: Street truth
 
