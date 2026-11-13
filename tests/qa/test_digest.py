@@ -161,6 +161,17 @@ def test_findings_file_from_lint_or_image_judge(tmp_path):
     assert "image_judge" in text
 
 
+def test_crlf_checkout_of_cards_is_read_and_commas_in_where_are_safe(tmp_path):
+    f = write(tmp_path / "m.json", {"source": "lint", "run": "2026-11-13T02:00:00", "findings": [
+        {"kind": "one-way", "x": 1, "y": 1, "where": "route (a, b)"}]})
+    run(tmp_path, [f])
+    for p in (tmp_path / "issues").glob("Q-*.md"):                      # what a Windows checkout can produce
+        p.write_bytes(p.read_bytes().replace(b"\n", b"\r\n"))
+    cards, stats, _ = run(tmp_path, [f])
+    assert stats["new"] == [] and len(cards) == 1
+    assert next(iter(cards.values())).where_all() == ["route (a; b)"]
+
+
 def test_card_text_round_trips(tmp_path):
     cards, _, _ = run(tmp_path, [basic_run(tmp_path)])
     for c in cards.values():

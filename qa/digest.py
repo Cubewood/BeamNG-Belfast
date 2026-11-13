@@ -51,6 +51,7 @@ def clean(text) -> str:
 def finding(source, when, kind, *, x=None, y=None, where="", severity=None, value=None, metric="", detail="",
             image=""):
     kind = slug(kind)
+    where = str(where).replace(",", ";")      # "where" is stored comma-separated
     return {"source": source, "when": when, "kind": kind,
             "x": None if x is None else float(x), "y": None if y is None else float(y),
             "where": clean(where), "value": None if value is None else float(value),
@@ -192,7 +193,7 @@ def parse_mapng_drive(path: Path, data: dict) -> dict:
 
     fs, results = [], data.get("results") or []
     for r in results:
-        label = f"mapng route {r.get('i', 0) + 1} ({r.get('kind', '?')}, {r.get('road', '?')})"
+        label = f"mapng route {r.get('i', 0) + 1} ({r.get('kind', '?')}/{r.get('road', '?')})"   # no commas
         fs += route_findings("mapng_drive", when, r, {"BUMP_ACC": 7}, label, image_for)
     done = sum(1 for r in results if r.get("completed"))
     line = f"MapNG drive test {path.parent.name}: {done}/{len(results)} routes completed"
@@ -367,7 +368,7 @@ class Card:
 def load_cards(issues: Path) -> dict[str, Card]:
     cards = {}
     for p in sorted(issues.glob("Q-*.md")):
-        c = Card.parse(p.read_text(encoding="utf-8"))
+        c = Card.parse(p.read_text(encoding="utf-8").replace("\r\n", "\n"))     # git on Windows may give CRLF
         if c:
             cards[c.id] = c
     return cards
