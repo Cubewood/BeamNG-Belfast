@@ -135,3 +135,20 @@ def test_partner_just_outside_square_still_matches(slice_area):
                           inside(slice_area), "slice")
     assert rows == []
     assert c["matched_agree"] == 1
+
+
+def test_load_osm_reads_cut_and_side_file_once_per_node(tmp_path):
+    import json
+    cut = tmp_path / "a.overpass.json"
+    side = tmp_path / "a.crossings.json"
+    sig = {"type": "node", "id": 1, "lat": 54.5, "lon": -5.9, "tags": {"highway": "traffic_signals"}}
+    both = {"type": "node", "id": 2, "lat": 54.5, "lon": -5.9,
+            "tags": {"highway": "traffic_signals", "crossing": "traffic_signals"}}
+    zebra = {"type": "node", "id": 3, "lat": 54.5, "lon": -5.9, "tags": {"highway": "crossing", "crossing": "zebra"}}
+    lamp = {"type": "node", "id": 4, "lat": 54.5, "lon": -5.9, "tags": {"highway": "street_lamp"}}
+    cut.write_text(json.dumps({"elements": [sig, both, lamp]}), encoding="utf-8")
+    side.write_text(json.dumps({"elements": [both, zebra]}), encoding="utf-8")
+    items = dc.load_osm(cut, side)
+    assert [i["id"] for i in items] == ["node/1", "node/2", "node/3"]
+    assert [i["kind"] for i in items] == ["signal", "signal", "uncontrolled"]
+    assert [i["id"] for i in dc.load_osm(cut)] == ["node/1", "node/2"]

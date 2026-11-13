@@ -34,6 +34,11 @@ NODES = [
     (2, 54.005, -6.004, {"shop": "bakery"}),                  # inside, not a MapNG node tag
     (3, 54.050, -6.005, {"highway": "stop"}),                 # outside
     (4, 54.006, -6.006, {"amenity": "pub", "name": "Café Ó"}),   # kept, non-ASCII
+    (5, 54.002, -6.002, {"highway": "crossing", "crossing": "zebra"}),            # side file only
+    (6, 54.003, -6.003, {"crossing": "traffic_signals"}),                          # side file only (no highway tag)
+    (7, 54.050, -6.003, {"highway": "crossing"}),                                  # outside the box
+    (8, 54.007, -6.007, {"highway": "traffic_signals", "crossing": "traffic_signals"}),  # both
+    (9, 54.008, -6.008, {"highway": "crossing", "crossing:markings": "zebra"}),   # side file, untyped
     (10, 54.001, -6.009, {}), (11, 54.002, -6.008, {}), (12, 54.003, -6.007, {}),
     (20, 54.005, -6.020, {}), (21, 54.005, -5.990, {}),  # west of and east of the box
     (30, 54.100, -6.100, {}), (31, 54.101, -6.101, {}),
@@ -88,7 +93,7 @@ def ids(elements, kind):
 
 def test_cut_selects_like_the_overpass_query(extract):
     els = osm_pin.cut_many(extract, {"a": BOX})["a"]
-    assert ids(els, "node") == [1, 4]
+    assert ids(els, "node") == [1, 4, 8]               # crossing nodes 5, 6, 9 are not MapNG's; 8 is a signal as well
     assert ids(els, "way") == [100, 101, 104]          # 102 far, 103 no key, 105 not selected on its own
     assert ids(els, "relation") == [200]
     by_id = {(e["type"], e["id"]): e for e in els}
@@ -110,6 +115,28 @@ def test_cut_is_sorted_and_byte_identical_between_runs(extract, tmp_path):
     assert [(order[e["type"]], e["id"]) for e in els] == sorted((order[e["type"]], e["id"]) for e in els)
     assert b"\r" not in a and a.endswith(b"]}\n")
     assert "Café".encode("utf-8") in a
+
+
+def test_crossing_side_file_has_every_crossing_node_and_leaves_the_cut_alone(extract):
+    side = {}
+    with_side = osm_pin.cut_many(extract, {"a": BOX}, crossings_out=side)["a"]
+    assert with_side == osm_pin.cut_many(extract, {"a": BOX})["a"]          # MapNG-facing output is unchanged
+    assert osm_pin.cut_bytes(with_side) == osm_pin.cut_bytes(osm_pin.cut_many(extract, {"a": BOX})["a"])
+    assert ids(side["a"], "node") == [5, 6, 8, 9]                             # 7 is outside, 1 is not a crossing
+    assert all(osm_pin.crossing_matches(e["tags"]) for e in side["a"])
+    assert not any(osm_pin.node_matches(e["tags"]) and e["id"] in (5, 6, 9) for e in with_side)
+    again = {}
+    osm_pin.cut_many(extract, {"a": BOX}, crossings_out=again)
+    assert osm_pin.cut_bytes(side["a"]) == osm_pin.cut_bytes(again["a"])
+
+
+def test_crossing_matcher():
+    assert osm_pin.crossing_matches({"highway": "crossing"})
+    assert osm_pin.crossing_matches({"crossing": "uncontrolled"})
+    assert osm_pin.crossing_matches({"highway": "traffic_signals", "crossing": "traffic_signals"})
+    assert not osm_pin.crossing_matches({"highway": "traffic_signals"})
+    assert not osm_pin.crossing_matches({"crossing:markings": "zebra"})
+    assert not osm_pin.node_matches({"highway": "crossing"})                 # still not a MapNG node tag
 
 
 def test_several_boxes_in_one_read_equal_separate_reads(extract):
@@ -172,6 +199,7 @@ def test_committed_manifest_is_complete():
     assert m["pbf_header"]["data_timestamp_utc"] and m["downloaded_utc"]
     for name, c in m["cuts"].items():
         assert len(c["sha256"]) == 64 and c["elements"]["ways"] > 0, name
+        assert len(c["crossings"]["sha256"]) == 64 and c["crossings"]["nodes"] > 0, name   # I-002 side file
 
 
 @needs_mapng
