@@ -231,7 +231,7 @@ Outcome: you have driven a real slice of Belfast and we know what is wrong with 
 | T-103 | done | Generate `belfast_slice`: a 2048 m square at 1 m per pixel around your test centre, using stock OSM and free elevation, without satellite imagery | sonnet | medium | any | T-102 | Level linter reports 0 errors. Zip installed in the QA profile only |
 | T-104 | done | Run MapNG's `runIngameTests` and `driveTest --no-street` on the slice | sonnet | medium | game | T-103, T-006 | Results saved, summary in `docs/spikes/baseline.md` |
 | T-105 | todo | Ask Claude to deploy the slice to your normal mods folder, drive it in VR for 15 minutes, and write notes using the template in GUIDE.md section 4 (note: deferred by you on 13 Nov 2026 until the map is further along) | you | - | you | T-103 | Notes in `feedback/` |
-| T-106 | doing | Write the gap report. Decide whether MapNG stays as the generator with patches (expected) or parts need replacing. Re-rank M3 and M4 to match (note: on 13 Nov 2026 you deferred the VR drive, so this runs on the automated findings only; revisit after T-105) | opus | high | any | T-104 | `docs/decisions/001-generator.md` written, this file updated |
+| T-106 | done | Write the gap report. Decide whether MapNG stays as the generator with patches (expected) or parts need replacing. Re-rank M3 and M4 to match (note: on 13 Nov 2026 you deferred the VR drive, so this runs on the automated findings only; revisit after T-105) | opus | high | any | T-104 | `docs/decisions/001-generator.md` written, this file updated |
 
 ### M2: Belfast data
 
@@ -241,7 +241,7 @@ Outcome: official heights and widths, and a pinned, repeatable set of inputs.
 |---|---|---|---|---|---|---|---|
 | T-201 | todo | `config/aoi.yaml`: Slice, City South and Full squares, coordinate systems, and lat/lon to game-world transforms | sonnet | high | any | T-106 | Round-trip tests accurate to under 1 cm |
 | T-202 | todo | Pinned OSM: download the Geofabrik extract for Ireland and Northern Ireland, cut the map area, record hash and date | sonnet | medium | any | T-201 | Rebuild is byte-identical. No Overpass calls in the build |
-| T-203 | todo | Elevation: download the four Belfast City LiDAR zones (about 1.4 GB), mosaic them, check coverage, fill gaps from the OSNI 10 m model, resample to the level grid and write MapNG's height file | sonnet | high | any | T-201 | Coverage map shows no gaps inside the map area |
+| T-203 | todo | Elevation: download the four Belfast City LiDAR zones (about 1.4 GB), mosaic them, check coverage, fill gaps from the OSNI 10 m model, resample to the level grid and write MapNG's height file (note from T-106: write it as `gpxz.f32` with `gpxzSmooth: false` and give `tools/mapng_export.py` a DEM option, or MapNG adds synthetic relief) | sonnet | high | any | T-201 | Coverage map shows no gaps inside the map area |
 | T-204 | todo | Elevation check: compare 2006 LiDAR with newer sources along roads. Flag where the city has changed, using the 2012 York Street LiDAR where useful | sonnet | high | any | T-203 | Changed areas listed, each with a chosen handling |
 | T-205 | todo | Ingest DfI Highway Network and Carriageway Details, match them to OSM ways, and output width per way with a confidence score | sonnet | high | any | T-202 | Coverage report for the map area, with a hand-checked sample of 30 ways |
 | T-206 | todo | Ingest DfI Controlled Pedestrian Crossings and compare with OSM signals and crossings | haiku | medium | any | T-202 | Mismatch list written |
