@@ -82,3 +82,8 @@ Area `hydebank_sample`: centre 54.553 N, -5.925 E (from the task brief), 512 m s
 ## DEM option (T-203)
 
 `export NAME --dem gpxz` reads `<area>/gpxz.f32` (MapNG fine-DEM path, no synthetic relief) instead of `t30.f32`; the file is written by `pipeline/elevation.py` (docs/elevation.md). The wrapper checks its size and that `meta.json` has `gpxzSmooth` false.
+
+## Speed limits (T-408)
+
+`fetch`, `pinned-osm` and `export` run `pipeline/speed_limits.py` on the area's `osm.json` first, so every road way
+carries `maxspeed` in mph (`docs/speed_limits.md`). It is idempotent. The summary lands in `<area>/speed_limits.json`.

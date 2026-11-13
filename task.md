@@ -201,7 +201,7 @@ New requests land here. The dispatcher takes them before the milestones.
 | ID | Status | Task | Model | Effort | Where | Needs | Done when |
 |---|---|---|---|---|---|---|---|
 | I-001 | done | Diagnose why AI traffic does not move on `belfast_slice`: fatal Lua error `graphpath.lua:268` edgeList nil (edge 3230) from `mapmgr.lua:281`, near (-122,109). See `docs/spikes/baseline.md` | opus | high | game | T-104 | Cause and proposed fix in `docs/spikes/ai-graph.md` |
-| I-002 | todo | Pinned OSM cut drops most crossing nodes: add `highway=crossing` and `crossing=*` to `NODE_TAGS` in `pipeline/osm_pin.py`, recut the three squares, update `data/sources/osm.json`, rerun `pipeline/dfi_crossings.py` and refresh `docs/dfi_crossings.md` (found by T-206; its mismatch list is candidates only until this is done) | sonnet | medium | any | T-206 | Slice cut contains every OSM crossing node in the square, rebuild still byte-identical, mismatch list regenerated |
+| I-002 | doing | Pinned OSM cut drops most crossing nodes: add `highway=crossing` and `crossing=*` to `NODE_TAGS` in `pipeline/osm_pin.py`, recut the three squares, update `data/sources/osm.json`, rerun `pipeline/dfi_crossings.py` and refresh `docs/dfi_crossings.md` (found by T-206; its mismatch list is candidates only until this is done) | sonnet | medium | any | T-206 | Slice cut contains every OSM crossing node in the square, rebuild still byte-identical, mismatch list regenerated |
 
 ### M0: Foundations
 
@@ -282,7 +282,7 @@ Outcome: roads read like Belfast roads, and the Slice passes G0 to G4.
 | T-404 | todo | Junctions: give-way and stop line placement, kerb radii, roundabouts, mini-roundabouts and signalled junction layout (note: T-106: the Slice's OSM has no mini-roundabouts or box junctions, so do give-way lines, stop lines and the two roundabouts first) | opus | xhigh | any | T-403 | Static geometry tests pass, and G3 passes on the Slice |
 | T-405 | todo | Spike: do osm2streets (Apache-2.0) lane and junction polygons improve complex junctions enough to justify adding them? | opus | medium | any | T-404 | Written verdict with five before-and-after junctions |
 | T-406 | todo | Road widths: DfI where matched, then OSM tags, then class defaults for NI | sonnet | high | any | T-205, T-403 | G0 width target is met where DfI data exists |
-| T-408 | doing | Speed limits: mph throughout, with NI defaults where `maxspeed` is missing | sonnet | medium | any | T-202 | Every road edge has a limit |
+| T-408 | done | Speed limits: mph throughout, with NI defaults where `maxspeed` is missing | sonnet | medium | any | T-202 | Every road edge has a limit |
 | T-409 | todo | UK road signs from the Department for Transport sign images (Crown copyright, reproducible if accurate and not misleading), placed from OSM rules | sonnet | high | any | T-403 | Signs face the driver and are readable at 20 m |
 | T-410 | todo | Bus lanes, cycle lanes, yellow boxes and kerbside lines from OSM tags (note: T-106: none are tagged in the Slice; lowest priority until a larger area is built) | sonnet | medium | any | T-403 | Static checks match the tagged lengths |
 | T-411 | todo | Fix the Slice until it passes G0 to G4 | sonnet | high | game | T-404, T-406, T-407, T-408, T-409, T-309, T-311, T-413 | Three consecutive nightly passes |

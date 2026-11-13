@@ -107,6 +107,37 @@ def _name(f) -> str:
     return t.get("name") or f"way {way_id(f.id)}"
 
 
+# ------------------------------------------------------------------ speed limits (T-408)
+
+MPH_PER_MS = 2.2369362920544
+SPEED_STEP_MPH = 5.0       # every limit the game or the Highway Code uses is a multiple of 5 mph
+SPEED_TOL_MPH = 0.3        # MapNG rounds the m/s value to 3 decimals; 30 mph is 13.411
+SPEED_MAX_MPH = 70.0
+
+
+def check_speed_limits(level: Level, c: dict) -> list[dict]:
+    """Every road edge carries a limit, and it is a plausible mph value.
+
+    A road edge is a DecalRoad in the navigation graph (`drivability` above 0): the `_ai` road of each carriageway
+    and the body roads with no `_ai` twin. MapNG writes `speedLimit` (m/s) there only when OSM `maxspeed` parsed;
+    pipeline/speed_limits.py fills `maxspeed` in mph on every road way before the export, so a missing value here
+    means the export read an osm.json that step never saw."""
+    out = []
+    for r in nav_roads(level):
+        v = r.props.get("speedLimit")
+        x, y = (float(r.nodes[0, 0]), float(r.nodes[0, 1]))
+        if not isinstance(v, (int, float)) or v <= 0:
+            out.append(finding("road-no-speed-limit", x, y, where=r.name, severity="high",
+                               detail="navigation road with no speedLimit: BeamNG will work out a speed itself"))
+            continue
+        mph = v * MPH_PER_MS
+        near5 = round(mph / SPEED_STEP_MPH) * SPEED_STEP_MPH
+        if abs(mph - near5) > SPEED_TOL_MPH or not (0 < near5 <= SPEED_MAX_MPH):
+            out.append(finding("road-speed-not-mph-step", x, y, where=r.name, severity="low", value=mph, metric="mph",
+                               detail=f"speedLimit {v} m/s is {mph:.1f} mph, not a multiple of 5 up to {SPEED_MAX_MPH:.0f}"))
+    return out
+
+
 # ------------------------------------------------------------------ 1. public roads present
 
 def check_roads_present(level: Level, c: dict) -> list[dict]:

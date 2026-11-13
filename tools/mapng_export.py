@@ -354,6 +354,16 @@ def pinned_cut(area: str, manifest_path: Path = REPO_ROOT / "data" / "sources" /
     return path
 
 
+def apply_speed_limits(area_dir: Path) -> dict:
+    """T-408: give every road way of <area>/osm.json a limit in mph (pipeline/speed_limits.py). Safe to run twice."""
+    sys.path.insert(0, str(REPO_ROOT / "pipeline"))
+    import speed_limits
+    summary = speed_limits.run(area_dir / "osm.json", write=True, report=area_dir / "speed_limits.json")
+    print(f"speed limits: {summary['vehicle_road_features']} road ways, "
+          f"{summary['vehicle_road_features_without_limit']} without a limit")
+    return summary
+
+
 def cmd_pinned_osm(args: argparse.Namespace) -> int:
     """Write <areas>/NAME/osm.json from a pinned cut. No network: every request would be blocked and logged."""
     check_pin()
@@ -370,6 +380,7 @@ def cmd_pinned_osm(args: argparse.Namespace) -> int:
     if code != 0 or hosts["ALLOW"] or hosts["BLOCK"]:
         print(f"pinned-osm FAILED (node exit {code}, requests {hosts})", file=sys.stderr)
         return EXIT_NODE
+    apply_speed_limits(area_dir)
     return EXIT_OK
 
 
@@ -391,6 +402,7 @@ def cmd_fetch(args: argparse.Namespace) -> int:
     if code != 0:
         print(f"fetch FAILED (node exit {code})", file=sys.stderr)
         return EXIT_NODE
+    apply_speed_limits(AREAS_DIR / args.name)
     print(f"fetched {AREAS_DIR / args.name}")
     return EXIT_OK
 
@@ -408,6 +420,7 @@ def cmd_export(args: argparse.Namespace) -> int:
               + ("" if dem == "t30" else " and pipeline/elevation.py build"), file=sys.stderr)
         return EXIT_INPUTS
     check_dem_inputs(area_dir, dem)
+    apply_speed_limits(area_dir)   # no-op when fetch or pinned-osm already did it
     netlog, home = _prepare(f"export_{level}.log")
     allow = tuple(args.allow_host or ())
     env = build_env({**os.environ}, areas=AREAS_DIR, out=OUT_DIR, home=home, netlog=netlog,
