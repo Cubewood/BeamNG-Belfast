@@ -231,7 +231,7 @@ Outcome: you have driven a real slice of Belfast and we know what is wrong with 
 | T-103 | done | Generate `belfast_slice`: a 2048 m square at 1 m per pixel around your test centre, using stock OSM and free elevation, without satellite imagery | sonnet | medium | any | T-102 | Level linter reports 0 errors. Zip installed in the QA profile only |
 | T-104 | done | Run MapNG's `runIngameTests` and `driveTest --no-street` on the slice | sonnet | medium | game | T-103, T-006 | Results saved, summary in `docs/spikes/baseline.md` |
 | T-105 | todo | Ask Claude to deploy the slice to your normal mods folder, drive it in VR for 15 minutes, and write notes using the template in GUIDE.md section 4 (note: deferred by you on 13 Nov 2026 until the map is further along) | you | - | you | T-103 | Notes in `feedback/` |
-| T-106 | todo | Write the gap report. Decide whether MapNG stays as the generator with patches (expected) or parts need replacing. Re-rank M3 and M4 to match (note: on 13 Nov 2026 you deferred the VR drive, so this runs on the automated findings only; revisit after T-105) | opus | high | any | T-104 | `docs/decisions/001-generator.md` written, this file updated |
+| T-106 | doing | Write the gap report. Decide whether MapNG stays as the generator with patches (expected) or parts need replacing. Re-rank M3 and M4 to match (note: on 13 Nov 2026 you deferred the VR drive, so this runs on the automated findings only; revisit after T-105) | opus | high | any | T-104 | `docs/decisions/001-generator.md` written, this file updated |
 
 ### M2: Belfast data
 
@@ -256,11 +256,11 @@ Outcome: every night, a build is tested without you or Claude, and you get a sho
 |---|---|---|---|---|---|---|---|
 | T-301 | todo | Static checks: MapNG's linter plus connection, one-way, height and budget checks against the pinned data | sonnet | high | any | T-103, T-202 | Planted faults are all caught |
 | T-302 | done | Route drive suite: adapt MapNG's `driveTest` to named routes around the test centre, with per-frame telemetry | sonnet | high | game | T-104 | Runs unattended and writes metrics JSON |
-| T-303 | todo | Junction camera sweep: driver's-eye view from the right-hand seat at 30 m and 10 m before every route junction, at fixed lighting | sonnet | medium | game | T-302 | JPG and pose file for each junction approach |
+| T-303 | doing | Junction camera sweep: driver's-eye view from the right-hand seat at 30 m and 10 m before every route junction, at fixed lighting | sonnet | medium | game | T-302 | JPG and pose file for each junction approach |
 | T-304 | todo | Image judge: close the game, load Qwen, judge frames against a JSON schema, unload | sonnet | high | gpu | T-303, T-007 | Each frame gets defect type, confidence and reason |
 | T-305 | todo | Build a labelled evaluation set of at least 150 frames, half with planted faults. Label with Claude vision, and you spot-check the disagreements | sonnet | high | any | T-303 | Set saved in `qa/eval/` |
 | T-306 | todo | Measure Qwen on the evaluation set. Write a trust table per defect type. Fault types under 90% precision go to Sonnet or are dropped | sonnet | medium | gpu | T-304, T-305 | `docs/spikes/vlm-eval.md` with thresholds |
-| T-307 | todo | Digest and issue cards: `DIGEST.md` under 60 lines, plus `issues/Q-*.md` with location, metric and image path, de-duplicated between runs | sonnet | medium | any | T-302 | A rerun creates no duplicate cards |
+| T-307 | doing | Digest and issue cards: `DIGEST.md` under 60 lines, plus `issues/Q-*.md` with location, metric and image path, de-duplicated between runs | sonnet | medium | any | T-302 | A rerun creates no duplicate cards |
 | T-308 | done | Flag-this-spot key: a dev-only extension that logs position, heading, speed and a screenshot when you press a bound key or wheel button in VR | sonnet | medium | game | T-006 | A test flag produces a complete record |
 | T-309 | todo | `qa/nightly.ps1`: build, G0 to G4, digest, clean shutdown. Register it in Windows Task Scheduler for 01:00 | sonnet | high | game | T-301, T-304, T-307 | Three unattended nights with nothing left running |
 | T-310 | todo | Regression gate: compare each night with the last accepted metrics and block release candidates that get worse | sonnet | medium | any | T-309 | A planted regression is blocked |
