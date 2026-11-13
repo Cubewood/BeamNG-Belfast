@@ -201,7 +201,7 @@ New requests land here. The dispatcher takes them before the milestones.
 | ID | Status | Task | Model | Effort | Where | Needs | Done when |
 |---|---|---|---|---|---|---|---|
 | I-001 | done | Diagnose why AI traffic does not move on `belfast_slice`: fatal Lua error `graphpath.lua:268` edgeList nil (edge 3230) from `mapmgr.lua:281`, near (-122,109). See `docs/spikes/baseline.md` | opus | high | game | T-104 | Cause and proposed fix in `docs/spikes/ai-graph.md` |
-| I-002 | doing | Pinned OSM cut drops most crossing nodes: add `highway=crossing` and `crossing=*` to `NODE_TAGS` in `pipeline/osm_pin.py`, recut the three squares, update `data/sources/osm.json`, rerun `pipeline/dfi_crossings.py` and refresh `docs/dfi_crossings.md` (found by T-206; its mismatch list is candidates only until this is done) | sonnet | medium | any | T-206 | Slice cut contains every OSM crossing node in the square, rebuild still byte-identical, mismatch list regenerated |
+| I-002 | done | Pinned OSM cut drops most crossing nodes: add `highway=crossing` and `crossing=*` to `NODE_TAGS` in `pipeline/osm_pin.py`, recut the three squares, update `data/sources/osm.json`, rerun `pipeline/dfi_crossings.py` and refresh `docs/dfi_crossings.md` (found by T-206; its mismatch list is candidates only until this is done) | sonnet | medium | any | T-206 | Slice cut contains every OSM crossing node in the square, rebuild still byte-identical, mismatch list regenerated |
 
 ### M0: Foundations
 
