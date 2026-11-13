@@ -1,0 +1,701 @@
+# UK road markings for the Belfast map (T-401).
+#
+# One entry per marking. Every rule names its diagram, its dimensions, where it
+# applies, its sources and whether Northern Ireland (NI) uses the same value.
+# Lengths are millimetres unless the key ends in _m. Diagram numbers are the
+# GB TSRGD 2016 numbers; `diagram_ni` is the number in the Traffic Signs
+# Regulations (Northern Ireland) 1997 (SR 1997/386) where it differs.
+#
+# How a MapNG patch (T-403) and the decal materials (T-402) should read this:
+#   geometry.kind        continuous | dashed | double_dashed | double_continuous
+#                        | double_mixed | hatched | pattern
+#   geometry.width_mm    line width. A list means "pick one"; default_width_mm
+#                        is the value to use when nothing else is known.
+#   geometry.mark_mm     painted length of one dash
+#   geometry.gap_mm      unpainted length between dashes
+#   geometry.module_mm   mark + gap (one repeat)
+#   colour               white | yellow | black_white
+#   applies              road type and speed limit (mph) the rule is chosen by
+#
+# Source tags are defined under `sources`. TSRGD citations of the form
+# "S11-4-6" mean Schedule 11, Part 4, item 6, the same way the Traffic Signs
+# Manual writes them ("S1146"). The TSRGD text read for this file is the
+# "original version (as made)" from legislation.gov.uk. Later amendments to
+# TSRGD 2016 were NOT checked. See docs/uk_markings.md.
+#
+# `ni.same` is one of: same | differs | partial | unverified.
+# `unverified` needs `ni.reason`. `verified: false` needs `unverified_reason`.
+
+meta:
+  version: 1
+  task: T-401
+  date: 2026-11-13
+  scope: GB values with NI checked against SR 1997/386. Nothing here came from Google content.
+  units: mm unless a key ends in _m
+
+sources:
+  tsm5:
+    title: Traffic Signs Manual Chapter 5, Road Markings (2018, published 2019); joint DfT, DfI, Scottish and Welsh Governments
+    url: https://assets.publishing.service.gov.uk/media/5c4ace6ded915d38a0611abc/traffic-signs-manual-chapter-05.pdf
+  tsm3:
+    title: Traffic Signs Manual Chapter 3, Regulatory Signs (2019)
+    url: https://assets.publishing.service.gov.uk/media/5c78f895e5274a0ebfec719b/traffic-signs-manual-chapter-03.pdf
+  tsm6:
+    title: Traffic Signs Manual Chapter 6, Traffic Control (2019), section numbering as in the 2019 PDF
+    url: https://assets.publishing.service.gov.uk/media/5df0e29fed915d15f42c4820/dft-traffic-signs-manual-chapter-6.pdf
+  tsrgd2016:
+    title: The Traffic Signs Regulations and General Directions 2016, SI 2016/362, original version (as made)
+    url: https://www.legislation.gov.uk/uksi/2016/362/made
+  ni1997:
+    title: The Traffic Signs Regulations (Northern Ireland) 1997, SR 1997/386, original version (as made). Image-only PDF, diagrams read by eye
+    url: https://www.legislation.gov.uk/nisr/1997/386/pdfs/nisr_19970386_en.pdf
+  tsm5_appA:
+    title: Traffic Signs Manual Chapter 5, Appendix A "Northern Ireland variations" and 1.4.2, 1.4.3, 2.1.2
+    url: https://assets.publishing.service.gov.uk/media/5c4ace6ded915d38a0611abc/traffic-signs-manual-chapter-05.pdf
+
+module_selection:
+  # Which of the two module sizes to use for centre, lane and warning lines.
+  ni_rule:
+    text: In Northern Ireland the small module (1008, 1005, 1004) is used where the speed limit is 40 mph or less and the large module (1008.1, 1005.1, 1004.1) where it is over 40 mph.
+    source: {doc: tsm5_appA, ref: "2.1.2"}
+  gb_rule:
+    text: GB guidance is the same split (40 mph or less, over 40 mph) but is advice, not a requirement. Use the small module where the 85th percentile speed is below 40 mph over most of the road.
+    source: {doc: tsm5, ref: "2.1.1, 2.2.1, Table 2-1 note 1"}
+  by_speed_mph:
+    20: {centre: "1008", lane: "1005", warning: "1004", module_mm: 6000}
+    30: {centre: "1008", lane: "1005", warning: "1004", module_mm: 6000}
+    40: {centre: "1008", lane: "1005", warning: "1004", module_mm: 6000}
+    50: {centre: "1008.1", lane: "1005.1", warning: "1004.1", module_mm: 9000}
+    60: {centre: "1008.1", lane: "1005.1", warning: "1004.1", module_mm: 9000}
+    70: {centre: "1008.1", lane: "1005.1", warning: "1004.1", module_mm: 9000}
+  verified: true
+
+rules:
+  # ---------------------------------------------------------------- longitudinal
+  - id: centre_1008
+    name: Centre line, small module
+    diagram: "1008"
+    diagram_ni: "1008"
+    category: longitudinal
+    colour: white
+    geometry: {kind: dashed, width_mm: [100, 150], default_width_mm: 100, mark_mm: 2000, gap_mm: 4000, module_mm: 6000}
+    applies:
+      road_types: [single_carriageway]
+      speed_limit_mph: {max: 40}
+      notes: Width 100 on one lane each way; 150 on two-lane roads 10 m or wider, four-lane roads, and three-lane roads marked two lanes one way. Never narrower than the lane line. Omit on roads under 5.5 m wide.
+    studs_spacing_m: {100: 12, 150: 6}
+    sources:
+      - {doc: tsm5, ref: "2.2.1, 2.2.2, Table 2-1, Figure 2-1"}
+      - {doc: tsrgd2016, ref: "Schedule 11, Part 4, item 6 (S11-4-6)"}
+    ni:
+      same: same
+      citation: "SR 1997/386 Schedule 6, diagram 1008 (printed p.243); small module rule at TSM 5 para 2.1.2"
+    verified: true
+
+  - id: centre_1008_1
+    name: Centre line, large module
+    diagram: "1008.1"
+    diagram_ni: "1008.1"
+    category: longitudinal
+    colour: white
+    geometry: {kind: dashed, width_mm: [100, 150], default_width_mm: 100, mark_mm: 3000, gap_mm: 6000, module_mm: 9000}
+    applies:
+      road_types: [single_carriageway]
+      speed_limit_mph: {min: 41}
+      notes: Use 150 on four-lane roads, on three-lane roads marked two lanes one way, and on two-lane roads 10 m or wider. HGV volume and speed also count.
+    sources:
+      - {doc: tsm5, ref: "2.2.1, 2.2.2, Table 2-1, Figure 2-1"}
+      - {doc: tsrgd2016, ref: "Schedule 11, Part 4, item 7 (S11-4-7)"}
+    ni:
+      same: same
+      citation: "SR 1997/386 Schedule 6, diagram 1008.1 (printed p.244); module rule at TSM 5 para 2.1.2"
+    verified: true
+
+  - id: lane_1005
+    name: Lane line, small module
+    diagram: "1005"
+    diagram_ni: "1005"
+    category: longitudinal
+    colour: white
+    geometry: {kind: dashed, width_mm: [100, 150], default_width_mm: 100, mark_mm: 1000, gap_mm: 5000, module_mm: 6000}
+    applies:
+      road_types: [multi_lane, dual_carriageway, single_carriageway_multi_lane]
+      speed_limit_mph: {max: 40}
+      notes: Lanes in the same direction only. Change to a warning line (1004 or 1004.1) on the approach to Give Way or Stop lines, roundabouts and signals.
+    studs_spacing_m: 12
+    sources:
+      - {doc: tsm5, ref: "2.3.1, 2.3.2, 2.3.3, Table 2-2, Figure 2-3"}
+      - {doc: tsrgd2016, ref: "Schedule 11, Part 4, item 4 (S11-4-4)"}
+    ni:
+      same: same
+      citation: "SR 1997/386 Schedule 6, diagram 1005 (printed p.241); module rule at TSM 5 para 2.1.2"
+    verified: true
+
+  - id: lane_1005_1
+    name: Lane line, large module
+    diagram: "1005.1"
+    diagram_ni: "1005.1"
+    category: longitudinal
+    colour: white
+    geometry: {kind: dashed, width_mm: [100, 150], default_width_mm: 100, mark_mm: 2000, gap_mm: 7000, module_mm: 9000}
+    applies:
+      road_types: [multi_lane, dual_carriageway, single_carriageway_multi_lane]
+      speed_limit_mph: {min: 41}
+      notes: 150 mm on 70 mph dual carriageways and motorways. The lane line must never be wider than the centre or warning line on the same road.
+    studs_spacing_m: 18
+    sources:
+      - {doc: tsm5, ref: "2.3.1, 2.3.4, 2.3.5, Table 2-2, Figure 2-3"}
+      - {doc: tsrgd2016, ref: "Schedule 11, Part 4, item 5 (S11-4-5)"}
+    ni:
+      same: same
+      citation: "SR 1997/386 Schedule 6, diagram 1005.1 (printed p.242); module rule at TSM 5 para 2.1.2"
+    verified: true
+
+  - id: warning_1004
+    name: Warning line, small module
+    diagram: "1004"
+    diagram_ni: "1004"
+    category: longitudinal
+    colour: white
+    geometry: {kind: dashed, width_mm: [100, 150], default_width_mm: 100, mark_mm: 4000, gap_mm: 2000, module_mm: 6000}
+    applies:
+      road_types: [single_carriageway, multi_lane, dual_carriageway]
+      speed_limit_mph: {max: 40}
+      notes: Replaces the centre line at bends, crests, junction approaches and refuges, and replaces lane lines on the approach to roundabouts and signals. The marks are the inverse of the centre line (4 m mark, 2 m gap). Always single, never part of a double line.
+    min_marks_per_approach: {speed_limit_30: 5, speed_limit_40: 7, four_or_six_lane_single_carriageway_30: 7, four_or_six_lane_single_carriageway_40: 10}
+    width_by_road:
+      two_lane_under_10m: 100
+      two_lane_10m_or_more: 150
+      four_or_six_lane_single_carriageway: 150
+      lane_line_approach: 100
+    studs_spacing_m: 6
+    sources:
+      - {doc: tsm5, ref: "2.4.1 to 2.4.14, Table 2-3, Figure 2-4"}
+      - {doc: tsrgd2016, ref: "Schedule 11, Part 4, item 2 (S11-4-2)"}
+    ni:
+      same: same
+      citation: "SR 1997/386 Schedule 6, diagram 1004 (printed p.239); module rule at TSM 5 para 2.1.2"
+    verified: true
+
+  - id: warning_1004_1
+    name: Warning line, large module
+    diagram: "1004.1"
+    diagram_ni: "1004.1"
+    category: longitudinal
+    colour: white
+    geometry: {kind: dashed, width_mm: [100, 150], default_width_mm: 100, mark_mm: 6000, gap_mm: 3000, module_mm: 9000}
+    applies:
+      road_types: [single_carriageway, multi_lane, dual_carriageway]
+      speed_limit_mph: {min: 41}
+      notes: Minimum 7 marks on each approach (10 on four or six-lane single carriageways). Width 150 on 70 mph roads and on wide or multi-lane roads; 100 on 50 and 60 mph lane-line approaches.
+    min_marks_per_approach: {over_40: 7, four_or_six_lane_single_carriageway_over_40: 10}
+    studs_spacing_m: 9
+    sources:
+      - {doc: tsm5, ref: "2.4.1 to 2.4.14, Table 2-3, Figure 2-4"}
+      - {doc: tsrgd2016, ref: "Schedule 11, Part 4, item 3 (S11-4-3)"}
+    ni:
+      same: same
+      citation: "SR 1997/386 Schedule 6, diagram 1004.1 (printed p.240); module rule at TSM 5 para 2.1.2"
+    verified: true
+
+  - id: double_white_1013_1
+    name: Double white lines (no-overtaking system), version A and B
+    diagram: "1013.1"
+    diagram_ni: "1013.1"
+    category: longitudinal
+    colour: white
+    geometry:
+      kind: double_mixed
+      line_width_mm: {min: 100, recommended: 150}
+      gap_between_lines_mm: {recommended: 175, min: 90}
+      overall_width_mm: {max_version_a: 900, max_version_b: 1200}
+      broken_line: {mark_mm: 1000, gap_mm: 5000}
+    applies:
+      road_types: [single_carriageway]
+      speed_limit_mph: {}
+      notes: Continuous line on the driver's side prohibits crossing; a broken line on the driver's side permits crossing when safe. Drivers must not stop on the road (single lane each way). White road studs between the lines at 3 m to 4.5 m, 4.5 m recommended. Deflection arrows (1014) before a continuous line on the driver's side. Never use raised ribs.
+    sources:
+      - {doc: tsm5, ref: "3.1.1, 3.2.1, 3.2.2, 3.3.1, 3.4.1, Figure 3-1"}
+      - {doc: tsrgd2016, ref: "Schedule 9, Part 6, item 23 (S9-6-23); legal meaning in Schedule 9 Part 7 paras 9 and 10"}
+    ni:
+      same: same
+      citation: "SR 1997/386 Schedule 6, diagram 1013.1 (printed p.250), regulation 25. TSM 5 Table A-1: GB S9-7-9 and 10 = NI regulation 25"
+    verified: true
+
+  - id: edge_1012_1
+    name: Edge of carriageway line
+    diagram: "1012.1"
+    diagram_ni: "1012.1"
+    category: longitudinal
+    colour: white
+    geometry: {kind: continuous, width_mm: [100, 150, 200], default_width_mm: 100}
+    width_by_road:
+      all_purpose_no_hard_strip: {speed_40_or_less: 100, speed_50_60: 100, speed_70: 150}
+      all_purpose_with_hard_strip_or_shoulder: {any: 150, speed_70: 200}
+      motorway: 200
+    applies:
+      road_types: [rural_unlit_classified, all_purpose_with_hard_strip, motorway]
+      speed_limit_mph: {}
+      notes: Laid about 225 mm from the carriageway edge. Not carried across side road mouths (use 1009A or 1010 there). Not normally used on lit urban roads with kerbs; none of the Belfast slice roads need it by default.
+    sources:
+      - {doc: tsm5, ref: "2.5.1, 2.5.6, 2.5.8, Table 2-5, Figure 2-6"}
+      - {doc: tsrgd2016, ref: "Schedule 11, Part 4, item 11 (S11-4-11)"}
+    ni:
+      same: partial
+      citation: "SR 1997/386 Schedule 6, diagram 1012.1 (printed p.247) shows 150 with 100 or 200 as variants. TSM 5 Appendix A note on 2.5: NI policy on edge lines and studs is still being developed, ask DfI headquarters"
+    verified: true
+
+  - id: edge_1009A
+    name: Edge line at a minor road mouth (beside Give Way or Stop line), private drive
+    diagram: "1009A"
+    diagram_ni: "1009"
+    category: longitudinal
+    colour: white
+    geometry: {kind: dashed, width_mm: [100, 150, 200], default_width_mm: 100, mark_mm: 600, gap_mm: 300, module_mm: 900}
+    applies:
+      road_types: [junction_minor_road, private_access]
+      speed_limit_mph: {}
+      notes: Width 100 unless the major road has a 150 or 200 mm edge line; then match it. Runs from the end of the Give Way or Stop line to the centre of the minor road. Omit it, and extend the line over the full width, where the line would be shorter than 2.75 m.
+    sources:
+      - {doc: tsm5, ref: "2.5.1, 2.5.3, Figure 2-6"}
+      - {doc: tsm3, ref: "2.3.2, 3.2.3, Figures 2-5 and 3-5"}
+      - {doc: tsrgd2016, ref: "Schedule 11, Part 4, item 8 (S11-4-8)"}
+    ni:
+      same: partial
+      citation: "SR 1997/386 Schedule 6, diagram 1009 (printed p.245) is the NI number, dimensions 600/300 with 100, 150, 200 widths and (300)/(150) alternatives"
+    verified: true
+
+  - id: edge_1010
+    name: Broken edge line at lay-bys, lane drops, accesses and bus lane starts
+    diagram: "1010"
+    diagram_ni: "1010"
+    category: longitudinal
+    colour: white
+    geometry: {kind: dashed, width_mm: [100, 150, 200, 250, 300], default_width_mm: 100, mark_mm: 1000, gap_mm: 1000, module_mm: 2000}
+    applies:
+      road_types: [junction, layby, bus_lane_start]
+      speed_limit_mph: {}
+      notes: Not used at a priority junction where a Give Way or Stop line belongs. Same width as 1049A when it marks the start of a bus lane.
+    sources:
+      - {doc: tsm5, ref: "2.5.4, Table 2-5 note 2, Figure 2-6"}
+      - {doc: tsm3, ref: "9.3.3"}
+      - {doc: tsrgd2016, ref: "Schedule 11, Part 4, item 10 (S11-4-10)"}
+    ni:
+      same: same
+      citation: "SR 1997/386 Schedule 6, diagram 1010 (printed p.246), 1000/1000 with the same width options"
+    verified: true
+
+  - id: hatched_1040
+    name: Hatched marking, centre of two-way road (boundary lines)
+    diagram: "1040"
+    diagram_ni: "1040"
+    category: hatched
+    colour: white
+    geometry:
+      kind: hatched
+      boundary_when_broken: {speed_40_or_less: {mark_mm: 4000, gap_mm: 2000}, over_40: {mark_mm: 6000, gap_mm: 3000}}
+      boundary_width_mm: [100, 150]
+      diagonal_angle_deg: 45
+    applies:
+      road_types: [single_carriageway, refuge_approach, junction_ghost_island]
+      speed_limit_mph: {}
+      notes: Boundary lines follow the 1004 or 1004.1 module. Diagonal spacing and tapers (Table 2-6, Table 2-7) are NOT transcribed here; read them from the manual when T-403 needs hatching.
+    sources:
+      - {doc: tsm5, ref: "2.7.1, 2.7.2, 2.7.3, Table 2-6, Table 2-7"}
+      - {doc: tsrgd2016, ref: "Schedule 11, Part 4, item 23 (S11-4-23)"}
+    ni:
+      same: same
+      citation: "SR 1997/386 Schedule 6, diagram 1040 (printed p.278). Proportional hatch dimensions: TSM 5 Table A-1, GB regulation 7 = NI regulation 10(4)"
+    verified: false
+    unverified_reason: Boundary module read from text. Diagonal width, spacing and taper tables were not transcribed for this task.
+
+  # ---------------------------------------------------------------- junction lines
+  - id: stop_1002_1
+    name: Stop line at a STOP sign
+    diagram: "1002.1"
+    diagram_ni: "1002.1"
+    category: transverse
+    colour: white
+    geometry: {kind: continuous, width_mm: 400}
+    applies:
+      road_types: [junction_minor_road]
+      speed_limit_mph: {}
+      notes: Only with the STOP sign (601.1) and the STOP legend (1022). The line edge nearest the major road continues the major road edge. On a two-way minor road the line runs to the centre, with 1009A beside it; if that leaves under 2.75 m, run the line across the full width. On a one-way minor road, always full width. Legend 1022 is 1600 high (speed up to 40 mph) or 2800 (over 50 mph), top edge 2.1 m to 2.75 m from the line.
+    legend_1022_height_mm: {speed_up_to_40: 1600, speed_41_50: "1600 (2800 where site or accident record needs emphasis)", speed_over_50: 2800}
+    legend_distance_from_line_mm: {min: 2100, max: 2750, exceptional_max: 15000}
+    sources:
+      - {doc: tsm3, ref: "2.1.7, 2.3.1 to 2.3.4, Table 2-2, Figure 2-5"}
+      - {doc: tsrgd2016, ref: "Schedule 9, Part 6, items 1 and 2 (S9-6-1, S9-6-2)"}
+    ni:
+      same: same
+      citation: "SR 1997/386 Schedule 6, diagram 1002.1 (printed p.234) 400 wide; diagram 1022 (printed p.256)"
+    verified: true
+
+  - id: giveway_1003a
+    name: Give Way line at a priority junction (double dashed)
+    diagram: "1003A"
+    diagram_ni: "1003"
+    category: transverse
+    colour: white
+    geometry:
+      kind: double_dashed
+      row_width_mm: 200
+      row_gap_mm: 300
+      mark_mm: 600
+      gap_mm: 300
+      module_mm: 900
+    applies:
+      road_types: [junction_minor_road]
+      speed_limit_mph: {}
+      notes: Two rows of dashes, each 200 wide with a 300 mm gap between rows, dashes 600 long and 300 apart. Same siting rules as the Stop line. Never on all arms of one junction. With the triangle 1023A, and with the GIVE WAY sign (602) at busier junctions. Not normally used on minor residential roads with low speed and good visibility.
+    sources:
+      - {doc: tsm3, ref: "3.1.1, 3.1.4, 3.1.6, 3.2.1 to 3.2.5, Figures 3-1 and 3-5"}
+      - {doc: tsrgd2016, ref: "Schedule 9, Part 6, item 3 (S9-6-3)"}
+    ni:
+      same: partial
+      citation: "SR 1997/386 Schedule 6, diagram 1003 (printed p.235), regulation 24. Same 600/300 dash and 200/300/200 rows. NI also permits a half-size variant: dash 300, gap 150, rows 100 with a 150 gap. Numbering differs: NI 1003 = GB 1003A"
+    verified: true
+
+  - id: triangle_1023a
+    name: Give Way triangle on the approach
+    diagram: "1023A"
+    diagram_ni: "1023"
+    category: symbol
+    colour: white
+    geometry: {kind: pattern, shape: inverted_triangle_outline, width_mm: 1250, length_mm: 3750, line_width_mm: 150}
+    applies:
+      road_types: [junction_minor_road, mini_roundabout_approach]
+      speed_limit_mph: {}
+      notes: Only with a transverse Give Way line. Leading edge 2100 mm to 2750 mm from the line (up to 15 m if bends or crests hide it). Centre of the lane; one per lane. Cycle-track version 1023B is 625 wide by 1875 long, 75 line.
+    placement_from_line_mm: {min: 2100, max: 2750, exceptional_max: 15000}
+    sources:
+      - {doc: tsm3, ref: "3.2.5, Figures 3-2 and 3-5"}
+      - {doc: tsrgd2016, ref: "Schedule 9, Part 6, item 4 (S9-6-4); 1023B at item 10"}
+    ni:
+      same: partial
+      citation: "SR 1997/386 Schedule 6, diagram 1023 (printed p.257) shows 1250 by 3750 with a smaller variant of 625 by 1875 and 75 line. Numbering differs: NI 1023 = GB 1023A"
+    verified: true
+
+  - id: giveway_roundabout_1003_1
+    name: Give Way line at a roundabout
+    diagram: "1003.1"
+    diagram_ni: "1003.1"
+    category: transverse
+    colour: white
+    geometry: {kind: dashed, width_mm: [200, 300], default_width_mm: 200, mark_mm: 1000, gap_mm: 1000, module_mm: 2000}
+    applies:
+      road_types: [roundabout, conventional_roundabout]
+      speed_limit_mph: {}
+      notes: Single broken line. 300 wide where the approach warning line is 1004.1 or a hatched boundary uses a 6 m mark and 3 m gap; otherwise 200. Used for conventional roundabouts (central island over about 4 m). Preceded by 1004 or 1004.1 on the approach.
+    sources:
+      - {doc: tsm5, ref: "6.2.1, 6.2.2, Figure 6-1"}
+      - {doc: tsrgd2016, ref: "Schedule 11, Part 4, item 1 (S11-4-1)"}
+    ni:
+      same: same
+      citation: "SR 1997/386 Schedule 6, diagram 1003.1 (printed p.235), 200 or (300) wide, 1000/1000"
+    verified: true
+
+  - id: giveway_mini_roundabout_1003_3
+    name: Give Way line at a mini-roundabout or small-island roundabout
+    diagram: "1003.3"
+    diagram_ni: "1003.3"
+    category: transverse
+    colour: white
+    geometry: {kind: dashed, width_mm: 500, mark_mm: 700, gap_mm: 300, module_mm: 1000}
+    applies:
+      road_types: [mini_roundabout, small_island_roundabout]
+      speed_limit_mph: {max: 30}
+      notes: Use for central islands up to about 4 m diameter. Needs the sign 611.1 about 1.5 m before it. Mark and gap are read from the diagram image (labels 300 and 700 give the gap and the mark), so see unverified_reason.
+    sources:
+      - {doc: tsm5, ref: "6.2.2, 6.3.6, Figure 6-3"}
+      - {doc: tsrgd2016, ref: "Schedule 9, Part 6, item 6 (S9-6-6)"}
+    ni:
+      same: same
+      citation: "SR 1997/386 Schedule 6, diagram 1003.3 (printed p.236), same 500 width and 300/700 labels"
+    verified: false
+    unverified_reason: Width 500 is printed. Which of 300 and 700 is the mark and which is the gap was read from the picture proportions, not from text. Check against TSRGD diagram 1003.3 before T-402 draws the decal.
+
+  - id: mini_roundabout_1003_4
+    name: Mini-roundabout central marking (three arrows round a disc)
+    diagram: "1003.4"
+    diagram_ni: "1003.4"
+    category: symbol
+    colour: white
+    geometry:
+      kind: pattern
+      size_1: {A_mm: {min: 1000, max: 2400}, B_mm: {min: 3500, max: 7000}, C_mm: 3025, D_mm: {min: 1250}}
+      size_2: {A_mm: {min: 2500, max: 4000}, B_mm: {min: 5000, max: 10000}, C_mm: 4450, D_mm: {min: 1250}}
+      arrows: 3
+      arrow_spacing_deg: 120
+      disc_diameter_max_m: 4
+      disc_height_mm: {max: 125, max_at_perimeter: 6}
+    applies:
+      road_types: [mini_roundabout]
+      speed_limit_mph: {max: 30}
+      notes: Clockwise circulation. All approaches 30 mph or less. Not for new junctions or dual carriageways. No annular rings. Domed disc and 1040 hatching on approaches optional.
+    sources:
+      - {doc: tsm5, ref: "6.3.1 to 6.3.7, Figure 6-2"}
+      - {doc: tsrgd2016, ref: "Schedule 9, Part 6, item 5 (S9-6-5)"}
+    ni:
+      same: same
+      citation: "SR 1997/386 Schedule 6, diagram 1003.4 (printed p.237), regulation 24"
+    verified: true
+
+  # ---------------------------------------------------------------- signals and crossings
+  - id: stop_signals_1001
+    name: Stop line at traffic signals
+    diagram: "1001"
+    diagram_ni: "1001"
+    category: transverse
+    colour: white
+    geometry: {kind: continuous, width_mm: [200, 300], default_width_mm: 200}
+    applies:
+      road_types: [signal_junction, signal_crossing]
+      speed_limit_mph: {}
+      notes: 200 mm in urban areas, 300 mm in rural areas or where the 85th percentile speed exceeds 35 mph. At right angles to the road centre line, at least 1.5 m (2.5 m preferred) in front of the near-side primary signal. At a signal crossing it sits 1.7 m to 3 m from the crossing studs (up to 10 m if needed). On two-way roads it runs edge to centre line, on one-way roads across the full width.
+    distance_to_crossing_studs_mm: {min: 1700, normal_max: 3000, exceptional_max: 10000}
+    sources:
+      - {doc: tsm6, ref: "4.2.1 to 4.2.3, 18.1.4, 18.1.5"}
+      - {doc: tsrgd2016, ref: "Schedule 14, Part 2 sign table, item 46 (S14246)"}
+    ni:
+      same: same
+      citation: "SR 1997/386 Schedule 6, diagram 1001 (printed p.232) 200 or (300) wide. Pelican crossings are still prescribed in NI (TSM 6 para 21.1.1); the Zebra, Pelican and Puffin Pedestrian Crossing Regulations (NI) 2006 were not read"
+    verified: true
+
+  - id: crossing_studs_1055_1
+    name: Signal-controlled crossing studs
+    diagram: "1055.1"
+    diagram_ni: null
+    category: crossing
+    colour: white
+    geometry:
+      kind: pattern
+      two_rows_of_studs: true
+      crossing_width_mm: {min: 2400, typical_max: 5000, max: 10000}
+      stud_shape: square_or_round
+      round_stud_diameter_mm: {min: 95, max: 110}
+    applies:
+      road_types: [signal_crossing, puffin, toucan, pedex]
+      speed_limit_mph: {}
+      notes: Rows of studs mark the edges of the crossing and must be within 10 m of the signals. Stop line 1001 sits 1.7 m to 3 m back. Square stud side length is NOT recorded here.
+    sources:
+      - {doc: tsm6, ref: "11.5.1, 4.2.3, 18.1.4"}
+      - {doc: tsrgd2016, ref: "Schedule 14, Part 2 sign table, items 55 to 57 (S14255 to S14257), variant 1 and 4"}
+    ni:
+      same: unverified
+      reason: "SR 1997/386 has no diagram 1055.1 that I could find (NI regulation of crossings is in the Zebra, Pelican and Puffin Pedestrian Crossing Regulations (NI) 2006, which I could not read). TSM 6 para 1.4.2 says NI markings are generally similar but can vary."
+      citation: "TSM 6 para 1.4.2, 1.4.3"
+    verified: false
+    unverified_reason: Crossing width and round-stud diameter come from text. The square stud side length and the stud spacing in the row were not read.
+
+  - id: zebra_crossing_1001_4
+    name: Zebra crossing (stripes, Give Way line, studs)
+    diagram: "1001.4"
+    diagram_ni: null
+    category: crossing
+    colour: black_white
+    geometry:
+      kind: pattern
+      stripes:
+        direction: along_the_road
+        crossing_length_across_road: full_carriageway_width
+        crossing_width_mm: {min: 2400, max: 10000}
+        stripe_width_mm: {normal_min: 500, normal_max: 715, extended_min: 380, extended_max: 840}
+        edge_stripe_colour: black
+        edge_stripe_width_mm_max: 1300
+      giveway_line: {kind: dashed, width_mm: 200, mark_mm: 500, gap_mm: 500, distance_from_stripes_mm: {min: 1100, normal_max: 3000, exceptional_max: 10000}, diagram: "1001.5"}
+      studs: {optional: true, max_from_stripe_end_mm: 155}
+    applies:
+      road_types: [zebra_crossing]
+      speed_limit_mph: {max: 40}
+      notes: Yellow globes (diagram 4007) at each end are signs, not markings. Advanced stop lines are not used at zebras. The black stripes may be the road surface if it contrasts with the white. The zig-zag controlled area is the next rule.
+    sources:
+      - {doc: tsm6, ref: "16.2.7 to 16.2.11, Figure 16-2"}
+      - {doc: tsrgd2016, ref: "Schedule 14, Part 1 para 18 (stripes), para 19 (Give Way line); Part 2 sign table item 52 (S14252) and 54 (give-way marking)"}
+    ni:
+      same: unverified
+      reason: "Zebra crossings in NI come under the Zebra, Pelican and Puffin Pedestrian Crossing Regulations (NI) 2006 plus SR 1997/386. The 2006 Regulations were not readable and SR 1997/386 has no zebra diagram that I found. TSM 6 para 1.4.2 says markings are generally similar but can vary."
+      citation: "TSM 6 para 1.4.2, 1.4.3"
+    verified: true
+
+  - id: zigzag_zebra_1001_4
+    name: Zig-zag controlled area at a zebra crossing
+    diagram: "1001.4"
+    diagram_ni: null
+    category: crossing
+    colour: white
+    geometry:
+      kind: pattern
+      standard_marks_per_line: 8
+      max_marks_per_line: 18
+      min_marks_per_line: 2
+      standard_mark_length_mm: 2000
+      mark_length_for_2m_unit_mm: 1979
+      gap_between_marks_mm: 150
+      guide_lines_apart_mm: 500
+      min_mark_length_mm: 1000
+      zigzag_line_width_mm: 150
+      terminal_line_width_mm: 200
+      giveway_line_width_mm: 200
+      distance_from_kerb_mm: {standard: 250, max_for_cyclists: 2000}
+      standard_marked_length_m: 17.585
+      length_formula: "L = N*X + (N+1)*150 + Y + Z, mm, where Y = Give Way line width and Z = terminal line width"
+    marks_by_available_length_m:
+      - {from_m: 2.750, to_m: 4.500, marks: 2}
+      - {from_m: 4.500, to_m: 6.500, marks: 3}
+      - {from_m: 6.500, to_m: 9.000, marks: 4}
+      - {from_m: 9.000, to_m: 11.000, marks: 5}
+      - {from_m: 11.000, to_m: 13.000, marks: 6}
+      - {from_m: 13.000, to_m: 15.500, marks: 7}
+      - {from_m: 15.500, to_m: 17.585, marks: 8}
+    lines:
+      each_kerb: true
+      centre_line: {road_up_to_6m: "may be omitted or replaced by warning line 1004", road_over_6m: "zig-zag line always used, may be reversed"}
+      refuge: double row in the centre
+      multi_lane: lane lines replaced by zig-zags
+    applies:
+      road_types: [zebra_crossing]
+      speed_limit_mph: {}
+      notes: The controlled area runs from the Give Way line up to and including the terminal line. No parking, no overtaking the moving vehicle nearest the crossing, no stopping. Where marks are fewer than eight, use the longest marks that fit (down to 1 m). Terminal line at least 1 m (500 mm if needed) from a junction Give Way line. Use 8 marks on both sides of dual carriageways and one-way streets where possible.
+    sources:
+      - {doc: tsm6, ref: "15.8.1 to 15.8.14, Table 15-2, Figure 15-3, 16.2.7"}
+      - {doc: tsrgd2016, ref: "Schedule 14, Part 2 sign table, item 52 (S14252) and its variants 1 to 9; Schedule 14 Part 1 para 20 (significance)"}
+    ni:
+      same: unverified
+      reason: "NI zebra markings fall under the Zebra, Pelican and Puffin Pedestrian Crossing Regulations (NI) 2006, not readable here. SR 1997/386 Schedule 6 has a zig-zag diagram 1003.5 (cited by TSM 6 for pelican crossings) that was not read. TSM 6 para 1.4.2 says markings are generally similar but can vary."
+      citation: "TSM 6 para 1.4.2, 1.4.3"
+    verified: false
+    unverified_reason: Marks, counts, lengths, formula and Table 15-2 are from text. The 150 mm zig-zag line width and the 200 mm terminal line width were read from the figure and by arithmetic (8 marks of 1979 plus nine 150 gaps plus Y plus Z gives the quoted 17.585 m only when Y plus Z is about 400), not from a printed label.
+
+  - id: zigzag_signal_crossing_1001_3
+    name: Zig-zag controlled area at a signal-controlled crossing
+    diagram: "1001.3"
+    diagram_ni: null
+    category: crossing
+    colour: white
+    geometry:
+      kind: pattern
+      standard_marks_per_line: 8
+      max_marks_per_line: 18
+      min_marks_per_line: 2
+      standard_mark_length_mm: 2000
+      gap_between_marks_mm: 150
+      guide_lines_apart_mm: 500
+      min_mark_length_mm: 1000
+      same_dimensions_as: zigzag_zebra_1001_4
+    applies:
+      road_types: [puffin, toucan, pedex, portable_signal_crossing]
+      speed_limit_mph: {}
+      notes: Same layout and counts as the zebra controlled area, measured from the Stop line (diagram 1001) instead of the Give Way line. Same Table 15-2 for the number of marks. TSRGD allows 8 to 18 marks, and as few as 2 where eight cannot be laid. The centre line may be reversed, or omitted where the road is not more than 6 m wide.
+    sources:
+      - {doc: tsm6, ref: "15.8.1 to 15.8.14, Table 15-2, 18.1.4, 18.1.5"}
+      - {doc: tsrgd2016, ref: "Schedule 14, Part 2 sign table, item 51 (S14251) and variants 1 to 5"}
+    ni:
+      same: unverified
+      reason: "NI Pelican crossings and their zig-zags are governed by the 2006 NI crossing Regulations, which could not be read. TSM 6 para 1.4.2 says markings are generally similar but can vary."
+      citation: "TSM 6 para 1.4.2, 1.4.3; SR 1997/386 Sch 6 diagram 1003.5 cited at TSM 6 for pelican zig-zags (not read)"
+    verified: true
+
+  # ---------------------------------------------------------------- box, kerb, bus lane
+  - id: yellow_box_1043
+    name: Yellow box junction
+    diagram: "1043"
+    diagram_ni: "1043"
+    category: area
+    colour: yellow
+    geometry:
+      kind: hatched
+      border_width_mm: 200
+      diagonal_width_mm: 150
+      diagonal_spacing_mm: {shortest_side_under_9m: 2000, shortest_side_9m_or_more: 2500}
+      diagonal_angle_deg: {gb_aim: 90, ni_min: 60, ni_max: 120}
+      min_size_mm: {gb_width: 3000, gb_length: 2000}
+    applies:
+      road_types: [junction, signal_roundabout, road_narrowing]
+      speed_limit_mph: {}
+      notes: Shape, size and angle are flexible. A 90 degree crossing hatch is the aim. Not at roundabouts unless entry is signal-controlled at all times. Vehicles may wait in the box only to turn right when blocked by oncoming traffic. The Belfast slice has none tagged.
+    sources:
+      - {doc: tsm5, ref: "8.1.1, 8.1.2, 8.2.1 to 8.2.4, 8.4.1, 6.9.1, Table A-1"}
+      - {doc: tsrgd2016, ref: "Schedule 9, Part 6, item 25 (S9-6-25); meaning in Schedule 9 Part 7 para 11"}
+    ni:
+      same: partial
+      citation: "SR 1997/386 Schedule 6, diagrams 1043 and 1044 (printed p.285), regulation 26. NI prints 200 border and 150 diagonals with a size range of 3000 to 30000 by 3000 to 40000 (2000 to 10000 for the half form). TSM 5 Table A-1: GB regulation 7 = NI regulation 10; legal meaning NI regulation 26"
+    verified: true
+
+  - id: yellow_single_1017
+    name: Single yellow line (waiting restriction for part of the day)
+    diagram: "1017"
+    diagram_ni: "1017"
+    category: kerbside
+    colour: yellow
+    geometry: {kind: continuous, width_mm: [50, 75, 100], default_width_mm: 75, offset_from_kerb_mm: 250, end_mark_width_mm: 150}
+    width_by_speed: {speed_40_or_less: 75, over_40: 100}
+    applies:
+      road_types: [urban_street, kerbside]
+      speed_limit_mph: {}
+      notes: Waiting prohibited for a time that is not continuous throughout the year; times are on upright signs. Transverse end marks are optional but used where line types change.
+    sources:
+      - {doc: tsm3, ref: "13.4.3 to 13.4.5, Figures 13-7 and 13-8"}
+      - {doc: tsrgd2016, ref: "Schedule 7, Part 4, item 2 (S7-4-2)"}
+    ni:
+      same: same
+      citation: "SR 1997/386 Schedule 6, diagram 1017 (printed p.253), widths (50) (75) 100, 150 end mark"
+    verified: true
+
+  - id: yellow_double_1018_1
+    name: Double yellow line (no waiting at any time)
+    diagram: "1018.1"
+    diagram_ni: "1018.1"
+    category: kerbside
+    colour: yellow
+    geometry: {kind: double_continuous, row_width_mm: [50, 75, 100], default_row_width_mm: 75, row_gap_mm: [50, 75, 100], offset_from_kerb_mm: 250, end_mark_width_mm: 150}
+    width_by_speed: {speed_40_or_less: 75, over_40: 100}
+    applies:
+      road_types: [urban_street, kerbside]
+      speed_limit_mph: {}
+      notes: Two lines of equal width, gap between them equal to the line width (50, 75 or 100). Applies at all times. Also marks a prohibition of stopping in a lay-by with an upright sign.
+    sources:
+      - {doc: tsm3, ref: "13.4.3 to 13.4.5, Figure 13-6"}
+      - {doc: tsrgd2016, ref: "Schedule 7, Part 4, item 1 (S7-4-1)"}
+    ni:
+      same: same
+      citation: "SR 1997/386 Schedule 6, diagram 1018.1 (printed p.254), widths (50) (75) 100 for each line and the gap, 150 end mark"
+    verified: true
+
+  - id: bus_lane_1049a
+    name: Bus lane boundary line
+    diagram: "1049A"
+    diagram_ni: "1049"
+    category: longitudinal
+    colour: white
+    geometry: {kind: continuous, width_mm: [250, 300], default_width_mm: 250}
+    width_by_speed: {speed_under_40: 250, speed_40_or_more: 300}
+    applies:
+      road_types: [bus_lane, with_flow_lane]
+      speed_limit_mph: {}
+      notes: Continuous. No road studs. The lane starts with a broken line 1010 of the same width at a taper no sharper than 1:10. The lane should be 4.25 m wide, 4 m at least, 3 m minimum recommended. The BUS LANE legend (1048) is white. The Belfast slice has none tagged.
+    sources:
+      - {doc: tsm3, ref: "9.3.1 to 9.3.3"}
+      - {doc: tsrgd2016, ref: "Schedule 9, Part 6, item 11 (S9-6-11)"}
+    ni:
+      same: partial
+      citation: "SR 1997/386 Schedule 6, diagram 1049 (printed p.290) shows (150) 250 (300): 250 default with 150 or 300 alternatives. Numbering differs: NI 1049 = GB 1049A. GB 1049A offers 250 or 300 only"
+    verified: true
+
+  - id: yellow_bars_roundabout_1067
+    name: Transverse yellow bars on dual-carriageway roundabout approaches
+    diagram: "1067"
+    diagram_ni: "1003.6"
+    category: area
+    colour: yellow
+    geometry: {kind: pattern, bars_main_carriageway: 90, bars_slip_road: 45, bar_end_clearance_mm: 150}
+    applies:
+      road_types: [dual_carriageway_roundabout_approach]
+      speed_limit_mph: {min: 50}
+      notes: Speed-reduction marking for high speed approaches. Not needed in the Belfast slice.
+    sources:
+      - {doc: tsm5, ref: "6.10.1 to 6.10.7"}
+    ni:
+      same: differs
+      citation: "TSM 5 Appendix A note on 6.10: in NI the yellow bar marking is diagram 1003.6, only for roundabouts on dual carriageways, and the dimension from the Give Way line to the first bar is 35 m or 50 m. SR 1997/386 Schedule 6, diagram 1003.6 (printed p.238)"
+    verified: true
