@@ -1,6 +1,7 @@
 # Data and downloads (raw data lives in H:\BelfastData, never in git)
 data/*
 !data/overrides/
+!data/sources/
 downloads/
 raw/
 cache/

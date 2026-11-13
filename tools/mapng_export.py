@@ -68,6 +68,10 @@ STRIP_EXACT = ("BASE", "TREEMIX", "LIDAR", "RAW", "NOWIDTH", "STRUCT", "EXPORT_O
 
 LEVEL_RE = re.compile(r"^[A-Za-z0-9_-]+$")
 
+# Which height file in the area folder exportArea.mjs reads: `t30` is MapNG's 30 m Terrarium data (MapNG then
+# adds synthetic relief), `gpxz` is a fine DEM such as the Belfast LiDAR (pipeline/elevation.py writes it).
+DEMS = ("t30", "gpxz")
+
 # Exit codes
 EXIT_OK = 0
 EXIT_ERROR = 1          # unexpected failure
@@ -163,6 +167,24 @@ def check_pin(root: Path = MAPNG_ROOT, runner=subprocess.run) -> str:
     if dirty:
         raise GuardError("MapNG has local changes (never edit the submodule): " + "; ".join(dirty[:5]), EXIT_PIN)
     return head
+
+
+def required_area_files(dem: str) -> tuple[str, ...]:
+    """Files exportArea.mjs needs in the area folder for this DEM."""
+    return (f"{dem}.f32", "meta.json", "osm.json")
+
+
+def check_dem_inputs(area_dir: Path, dem: str) -> None:
+    """The height file must be size x size float32 as meta.json says. For `gpxz`, meta.json must also say
+    gpxzSmooth false: exportArea.mjs treats gpxz as fine (`dem === 'gpxz' && !meta.gpxzSmooth`), which skips
+    the synthetic 'coarse' relief; true would smooth it as 30 m data. Raises GuardError (exit 6)."""
+    meta = json.loads((area_dir / "meta.json").read_text(encoding="utf-8"))
+    want = int(meta["size"]) ** 2 * 4
+    got = (area_dir / f"{dem}.f32").stat().st_size
+    if got != want:
+        raise GuardError(f"{area_dir / (dem + '.f32')} is {got} bytes, meta.json size {meta['size']} needs {want}", EXIT_INPUTS)
+    if dem == "gpxz" and meta.get("gpxzSmooth"):
+        raise GuardError(f"{area_dir / 'meta.json'} has gpxzSmooth true: MapNG would smooth the DEM as 30 m data", EXIT_INPUTS)
 
 
 def find_node() -> str:
@@ -331,17 +353,20 @@ def cmd_export(args: argparse.Namespace) -> int:
     if not LEVEL_RE.fullmatch(level):
         raise GuardError(f"level name {level!r} must use only A-Z a-z 0-9 - _")
     area_dir = AREAS_DIR / args.name
-    missing = [f for f in ("t30.f32", "meta.json", "osm.json") if not (area_dir / f).is_file()]
+    dem = args.dem
+    missing = [f for f in required_area_files(dem) if not (area_dir / f).is_file()]
     if missing:
-        print(f"area {area_dir} lacks {missing}; run: mapng_export.py fetch {args.name} LAT LNG", file=sys.stderr)
+        print(f"area {area_dir} lacks {missing}; run: mapng_export.py fetch {args.name} LAT LNG"
+              + ("" if dem == "t30" else " and pipeline/elevation.py build"), file=sys.stderr)
         return EXIT_INPUTS
+    check_dem_inputs(area_dir, dem)
     netlog, home = _prepare(f"export_{level}.log")
     allow = tuple(args.allow_host or ())
     env = build_env({**os.environ}, areas=AREAS_DIR, out=OUT_DIR, home=home, netlog=netlog,
                     allow_hosts=allow, trees=args.trees)
     zip_path = OUT_DIR / f"{level}.zip"
     zip_path.unlink(missing_ok=True)
-    code = _run_node([str(EXPORT_SCRIPT), args.name, "t30", level, "--out", str(OUT_DIR)], env, args.node_memory_mb)
+    code = _run_node([str(EXPORT_SCRIPT), args.name, dem, level, "--out", str(OUT_DIR)], env, args.node_memory_mb)
     hosts = read_netlog(netlog)
     print("hosts contacted (export):", json.dumps(hosts))
     if hosts["BLOCK"]:
@@ -361,7 +386,7 @@ def cmd_export(args: argparse.Namespace) -> int:
         raise
     summary = {
         "zip": str(zip_path), "bytes": zip_path.stat().st_size, "mapng_commit": commit,
-        "driving_side": found, "hosts": hosts, "base": "none", "trees": bool(args.trees),
+        "driving_side": found, "hosts": hosts, "base": "none", "trees": bool(args.trees), "dem": dem,
         "stubs": stubs,
     }
     (OUT_DIR / f"{level}.export.json").write_text(json.dumps(summary, indent=1), encoding="utf-8")
@@ -389,6 +414,8 @@ def build_parser() -> argparse.ArgumentParser:
     s = sub.add_parser("export", help="build the level zip and assert left-hand traffic")
     s.add_argument("name")
     s.add_argument("--level", help="level name (default belfast_<name>)")
+    s.add_argument("--dem", choices=DEMS, default="t30",
+                   help="height file: t30 (MapNG 30 m, default) or gpxz (the area folder's gpxz.f32, e.g. LiDAR)")
     s.add_argument("--trees", action="store_true", help="include trees (contacts ESA WorldCover)")
     s.add_argument("--allow-host", action="append", help="extra host the export may contact (repeatable)")
     s.add_argument("--no-fix-stubs", action="store_true",
