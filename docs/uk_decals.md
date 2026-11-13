@@ -2,7 +2,7 @@
 
 `pipeline/uk_decals.py` draws the UK road-marking textures from `rules/uk_markings.yaml` and writes the materials that use them. Every texture is drawn by the script (numpy, 4x4 supersampling per pixel); nothing is copied from the game or from MapNG. The names are `uk_<pattern>_cubewood`, none of which exists in the stock game or in MapNG's slice (checked against 864 `*.materials.json` files).
 
-Status: static checks pass. **NOT verified in the game.** See "In-game check" at the end.
+Status: static checks pass. **Verified in the game on 2026-11-13** (all 19 materials found, no missing texture or material error). See "In-game check" at the end. How the patterns look on a road is still open (T-403).
 
 ## Files
 
@@ -93,7 +93,18 @@ uv run --no-project --python 3.12 --with pillow --with numpy --with pyyaml pytho
 
 The second prints, per dashed material, the mark and gap measured in the PNG against the YAML (all within one pixel, for example `uk_warning_1004_cubewood: repeat 6000 mm, measured mark 4002 gap 1998 (YAML 4000/2000) ok`).
 
-## In-game check (not run; the dispatcher does this later)
+## In-game check (run 2026-11-13, passed)
+
+### Result, 2026-11-13 about 23:20 (T-402, QA profile only)
+
+Done as the steps below say: test zip built with `uk_decals_pack.py` (24 files under `levels/belfast_slice/art/uk_markings_cubewood/`, static check PASS), QA copy of `belfast_slice.zip` and `db.json` backed up and replaced, `gamectl start`, `gamectl load-level belfast_slice` (loaded in 12.8 s), checks, `gamectl stop`, original zip and `db.json` restored (zip SHA-256 `1528102d...ce8c8` before and after).
+
+- Positive check through MCP `run_lua`: `scenetree.findObject(name)` found a `Material` object for **19 of 19** names in `rules/uk_decals/manifest.json`; each material's 4 texture paths (base colour, normal, opacity, roughness) exist in the mounted level (`FS:fileExists`), 0 missing.
+- `beamng.log` (480 lines) has 0 lines naming `uk_*_cubewood` or `uk_markings_cubewood`, and no missing, not found or failed line about materials or textures from our files.
+- `gamectl log-errors --strict` exits 8 because of two lines that are not ours: `E OnlineServiceProvider Could not initialize online service provider: Steam - Error code 1` (QA profile, no Steam) and `W licensePlateDesign could not find vehicles/common/licenseplates/belfast_slice/licensePlate-default.sktemplate.json` (the slice has no plate template; unrelated to markings).
+- Not checked, still T-403: how each pattern looks on a road.
+
+### Steps (as run)
 
 Done-when is "materials load with no missing textures". That needs the game, which was busy. Steps, night only (outside 09:00 to 18:00), QA profile only:
 
