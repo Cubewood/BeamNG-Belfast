@@ -201,6 +201,7 @@ New requests land here. The dispatcher takes them before the milestones.
 | ID | Status | Task | Model | Effort | Where | Needs | Done when |
 |---|---|---|---|---|---|---|---|
 | I-001 | done | Diagnose why AI traffic does not move on `belfast_slice`: fatal Lua error `graphpath.lua:268` edgeList nil (edge 3230) from `mapmgr.lua:281`, near (-122,109). See `docs/spikes/baseline.md` | opus | high | game | T-104 | Cause and proposed fix in `docs/spikes/ai-graph.md` |
+| I-002 | todo | Pinned OSM cut drops most crossing nodes: add `highway=crossing` and `crossing=*` to `NODE_TAGS` in `pipeline/osm_pin.py`, recut the three squares, update `data/sources/osm.json`, rerun `pipeline/dfi_crossings.py` and refresh `docs/dfi_crossings.md` (found by T-206; its mismatch list is candidates only until this is done) | sonnet | medium | any | T-206 | Slice cut contains every OSM crossing node in the square, rebuild still byte-identical, mismatch list regenerated |
 
 ### M0: Foundations
 
@@ -244,7 +245,7 @@ Outcome: official heights and widths, and a pinned, repeatable set of inputs.
 | T-203 | done | Elevation: download the four Belfast City LiDAR zones (about 1.4 GB), mosaic them, check coverage, fill gaps from the OSNI 10 m model, resample to the level grid and write MapNG's height file (note from T-106: write it as `gpxz.f32` with `gpxzSmooth: false` and give `tools/mapng_export.py` a DEM option, or MapNG adds synthetic relief) | sonnet | high | any | T-201 | Coverage map shows no gaps inside the map area |
 | T-204 | todo | Elevation check: compare 2006 LiDAR with newer sources along roads. Flag where the city has changed, using the 2012 York Street LiDAR where useful | sonnet | high | any | T-203 | Changed areas listed, each with a chosen handling |
 | T-205 | doing | Ingest DfI Highway Network and Carriageway Details, match them to OSM ways, and output width per way with a confidence score | sonnet | high | any | T-202 | Coverage report for the map area, with a hand-checked sample of 30 ways |
-| T-206 | doing | Ingest DfI Controlled Pedestrian Crossings and compare with OSM signals and crossings | haiku | medium | any | T-202 | Mismatch list written |
+| T-206 | done | Ingest DfI Controlled Pedestrian Crossings and compare with OSM signals and crossings | haiku | medium | any | T-202 | Mismatch list written |
 | T-207 | done | Overrides system: file schema, apply step, conflict detection when OSM changes, tests | sonnet | high | any | T-202 | Tests pass, including a changed-way conflict |
 | T-208 | done | Generate `CREDITS.md` and in-level credits from a source manifest: OSM (ODbL), Open Government Licence statements, the Cyient Europe note the LiDAR requires, MapNG | haiku | medium | any | T-203 | Every data source has an attribution line |
 

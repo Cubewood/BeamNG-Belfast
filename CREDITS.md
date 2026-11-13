@@ -9,6 +9,10 @@ Every data source used by the project, with the attribution it requires. Generat
 
 ## Attribution lines
 
+### dfi_crossings
+
+- Contains public sector information licensed under the Open Government Licence v3.0. Source: Department for Infrastructure (DfI), via OpenData NI.
+
 ### elevation
 
 - Belfast City LIDAR is provided by the Department for Infrastructure (Rivers) with the permission of the copyright owner, Cyient Europe Limited, and licensed under the Open Government Licence v3.0
