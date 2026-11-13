@@ -2,7 +2,7 @@
 
 `tools/mapng_export.py` runs MapNG's headless export under the conditions of the T-101 review
 (`docs/spikes/mapng.md`). MapNG is the submodule `third_party/mapng`, pinned to
-`d605117d77857e91acb8234335e9f89263a94756` and never edited.
+`d605117d77857e91acb8234335e9f89263a94756`. It is never edited in place: our changes are patch files in `patches/mapng/`.
 
 ## Setup
 
@@ -10,6 +10,8 @@
 git submodule update --init third_party/mapng      # checks out the pinned commit
 cd third_party/mapng; npm ci --ignore-scripts      # Node 22, npm cache on H: (tools/bootstrap.ps1)
 ```
+
+Since T-412 the submodule must be the pin plus the `belfast` patches: after the checkout run `uv run --no-project --python 3.12 python tools/mapng_patches.py apply`, or the wrapper exits 3 (`docs/mapng_patches.md`). `export --out-dir H:\BelfastData\mapng\<folder>` writes the zip, provenance and netlog to a private folder instead of `mapng\out`.
 
 `--ignore-scripts` is enough: `sharp` (imported by `polyfill.mjs`) loads from its prebuilt package, and the export ran.
 `npm ci` reports 24 audit findings in dev dependencies; nothing here serves or exposes them.

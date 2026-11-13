@@ -1,0 +1,4 @@
+# Patch files are applied with `git am` and compared by patch-id: keep them byte-for-byte (LF), whatever core.autocrlf says
+patches/mapng/*.patch -text
+patches/mapng/series text eol=lf
+patches/mapng/BASE text eol=lf

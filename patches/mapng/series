@@ -1,0 +1,2 @@
+# MapNG patches, applied in this order on top of BASE by tools/mapng_patches.py
+0001-Cut-back-OSM-buildings-from-the-driving-lanes-by-ove.patch

@@ -10,7 +10,8 @@ own fetchArea.mjs needs a GPXZ key). `export` wraps third_party/mapng/scripts/sw
 and then asserts the zip's info.json is left-hand traffic in Europe. `check` runs only the assertion.
 
 What the wrapper enforces (docs/spikes/mapng.md section 6; details in docs/mapng_export.md):
-  * the submodule must sit at exactly PINNED_COMMIT, with no local changes to MapNG files;
+  * the submodule must sit at exactly PINNED_COMMIT plus the belfast patches (patches/mapng, applied by
+    tools/mapng_patches.py), with no other local changes to MapNG files;
   * BASE=none (no Esri satellite tiles), TREEMIX=climate (no iNaturalist), trees off unless asked
     (no WorldCover), LIDAR off, Overture buildings off at fetch;
   * GOOGLE_*, GPXZ_*, TRACESTRACK_*, MAPILLARY_* and MapNG's own switches are stripped from the child
@@ -36,8 +37,12 @@ import zipfile
 import zlib
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import mapng_patches  # noqa: E402  (the belfast patches: pin plus series check)
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 MAPNG_ROOT = REPO_ROOT / "third_party" / "mapng"
+PATCHES_DIR = mapng_patches.PATCHES_DIR
 PINNED_COMMIT = "d605117d77857e91acb8234335e9f89263a94756"
 DATA_DIR = Path(r"H:\BelfastData")
 WORK_DIR = DATA_DIR / "mapng"
@@ -148,8 +153,13 @@ def build_env(
     return env
 
 
-def check_pin(root: Path = MAPNG_ROOT, runner=subprocess.run) -> str:
-    """Require the submodule at PINNED_COMMIT with a clean tree (tracked files unchanged)."""
+def check_pin(root: Path = MAPNG_ROOT, runner=subprocess.run, patches_dir: Path = PATCHES_DIR) -> str:
+    """Require the submodule at PINNED_COMMIT plus exactly the belfast patches, with a clean tree.
+
+    With no patches in `patches_dir` this is the original check: HEAD == PINNED_COMMIT. With patches
+    (patches/mapng/series), HEAD must be the pin plus those patches, in order, each matching its patch
+    file (tools/mapng_patches.py verify); a changed pin, a missing or edited patch all exit 3.
+    """
     def git(*args: str) -> str:
         r = runner(["git", "-C", str(root), *args], capture_output=True, text=True)
         if r.returncode != 0:
@@ -157,7 +167,12 @@ def check_pin(root: Path = MAPNG_ROOT, runner=subprocess.run) -> str:
         return r.stdout.strip()
 
     head = git("rev-parse", "HEAD")
-    if head != PINNED_COMMIT:
+    if mapng_patches.read_series(patches_dir):
+        try:
+            mapng_patches.verify(root, PINNED_COMMIT, patches_dir, runner)
+        except mapng_patches.PatchError as exc:
+            raise GuardError(str(exc), EXIT_PIN) from exc
+    elif head != PINNED_COMMIT:
         raise GuardError(f"MapNG is at {head}, not the pinned {PINNED_COMMIT}", EXIT_PIN)
     dirty = [ln for ln in git("status", "--porcelain", "--untracked-files=no").splitlines() if ln.strip()]
     if dirty:
@@ -292,10 +307,10 @@ def read_netlog(path: Path) -> dict[str, dict[str, int]]:
 
 # ---------------------------------------------------------------- commands
 
-def _prepare(netlog_name: str) -> tuple[Path, Path]:
-    for d in (AREAS_DIR, OUT_DIR, HOME_DIR, NETLOG_DIR):
+def _prepare(netlog_name: str, out_dir: Path = OUT_DIR, netlog_dir: Path = NETLOG_DIR) -> tuple[Path, Path]:
+    for d in (AREAS_DIR, out_dir, HOME_DIR, netlog_dir):
         require_under_data(d, "work folder").mkdir(parents=True, exist_ok=True)
-    netlog = NETLOG_DIR / netlog_name
+    netlog = netlog_dir / netlog_name
     netlog.unlink(missing_ok=True)
     return netlog, HOME_DIR
 
@@ -327,6 +342,7 @@ def cmd_fetch(args: argparse.Namespace) -> int:
 
 def cmd_export(args: argparse.Namespace) -> int:
     commit = check_pin()
+    patches = mapng_patches.read_series()
     level = args.level or f"belfast_{args.name}"
     if not LEVEL_RE.fullmatch(level):
         raise GuardError(f"level name {level!r} must use only A-Z a-z 0-9 - _")
@@ -335,13 +351,15 @@ def cmd_export(args: argparse.Namespace) -> int:
     if missing:
         print(f"area {area_dir} lacks {missing}; run: mapng_export.py fetch {args.name} LAT LNG", file=sys.stderr)
         return EXIT_INPUTS
-    netlog, home = _prepare(f"export_{level}.log")
+    # --out-dir: a private output folder (zip, provenance, netlog) so a test build never overwrites the shared one
+    out_dir = require_under_data(Path(args.out_dir), "out-dir") if args.out_dir else OUT_DIR
+    netlog, home = _prepare(f"export_{level}.log", out_dir, out_dir / "netlog" if args.out_dir else NETLOG_DIR)
     allow = tuple(args.allow_host or ())
-    env = build_env({**os.environ}, areas=AREAS_DIR, out=OUT_DIR, home=home, netlog=netlog,
+    env = build_env({**os.environ}, areas=AREAS_DIR, out=out_dir, home=home, netlog=netlog,
                     allow_hosts=allow, trees=args.trees)
-    zip_path = OUT_DIR / f"{level}.zip"
+    zip_path = out_dir / f"{level}.zip"
     zip_path.unlink(missing_ok=True)
-    code = _run_node([str(EXPORT_SCRIPT), args.name, "t30", level, "--out", str(OUT_DIR)], env, args.node_memory_mb)
+    code = _run_node([str(EXPORT_SCRIPT), args.name, "t30", level, "--out", str(out_dir)], env, args.node_memory_mb)
     hosts = read_netlog(netlog)
     print("hosts contacted (export):", json.dumps(hosts))
     if hosts["BLOCK"]:
@@ -361,10 +379,11 @@ def cmd_export(args: argparse.Namespace) -> int:
         raise
     summary = {
         "zip": str(zip_path), "bytes": zip_path.stat().st_size, "mapng_commit": commit,
+        "mapng_pin": PINNED_COMMIT, "mapng_patches": patches,
         "driving_side": found, "hosts": hosts, "base": "none", "trees": bool(args.trees),
         "stubs": stubs,
     }
-    (OUT_DIR / f"{level}.export.json").write_text(json.dumps(summary, indent=1), encoding="utf-8")
+    (out_dir / f"{level}.export.json").write_text(json.dumps(summary, indent=1), encoding="utf-8")
     print(f"driving-side check PASSED: {found}")
     print(f"exported {zip_path} ({summary['bytes']} bytes)")
     return EXIT_OK
@@ -389,6 +408,7 @@ def build_parser() -> argparse.ArgumentParser:
     s = sub.add_parser("export", help="build the level zip and assert left-hand traffic")
     s.add_argument("name")
     s.add_argument("--level", help="level name (default belfast_<name>)")
+    s.add_argument("--out-dir", help=r"output folder under H:\BelfastData (default H:\BelfastData\mapng\out)")
     s.add_argument("--trees", action="store_true", help="include trees (contacts ESA WorldCover)")
     s.add_argument("--allow-host", action="append", help="extra host the export may contact (repeatable)")
     s.add_argument("--no-fix-stubs", action="store_true",
