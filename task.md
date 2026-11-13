@@ -230,8 +230,8 @@ Outcome: you have driven a real slice of Belfast and we know what is wrong with 
 | T-102 | done | Add MapNG as a pinned submodule in `third_party/mapng`, run its unit tests, and wrap `scripts/sweep/exportArea.mjs` in `tools/mapng_export.py` | sonnet | medium | any | T-101, T-003 | Unit tests pass and a sample area exports |
 | T-103 | done | Generate `belfast_slice`: a 2048 m square at 1 m per pixel around your test centre, using stock OSM and free elevation, without satellite imagery | sonnet | medium | any | T-102 | Level linter reports 0 errors. Zip installed in the QA profile only |
 | T-104 | done | Run MapNG's `runIngameTests` and `driveTest --no-street` on the slice | sonnet | medium | game | T-103, T-006 | Results saved, summary in `docs/spikes/baseline.md` |
-| T-105 | todo | Ask Claude to deploy the slice to your normal mods folder, drive it in VR for 15 minutes, and write notes using the template in GUIDE.md section 4 | you | - | you | T-103 | Notes in `feedback/` |
-| T-106 | todo | Write the gap report. Decide whether MapNG stays as the generator with patches (expected) or parts need replacing. Re-rank M3 and M4 to match | opus | high | any | T-104, T-105 | `docs/decisions/001-generator.md` written, this file updated |
+| T-105 | todo | Ask Claude to deploy the slice to your normal mods folder, drive it in VR for 15 minutes, and write notes using the template in GUIDE.md section 4 (note: deferred by you on 13 Nov 2026 until the map is further along) | you | - | you | T-103 | Notes in `feedback/` |
+| T-106 | todo | Write the gap report. Decide whether MapNG stays as the generator with patches (expected) or parts need replacing. Re-rank M3 and M4 to match (note: on 13 Nov 2026 you deferred the VR drive, so this runs on the automated findings only; revisit after T-105) | opus | high | any | T-104 | `docs/decisions/001-generator.md` written, this file updated |
 
 ### M2: Belfast data
 
