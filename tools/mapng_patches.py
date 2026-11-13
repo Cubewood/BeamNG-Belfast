@@ -25,12 +25,13 @@ Nothing here touches the network (the pinned commit must already be in the submo
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-MAPNG_ROOT = REPO_ROOT / "third_party" / "mapng"
+MAPNG_ROOT = Path(os.environ.get("BELFAST_MAPNG_ROOT") or REPO_ROOT / "third_party" / "mapng")  # as mapng_export.py
 PATCHES_DIR = REPO_ROOT / "patches" / "mapng"
 BRANCH = "belfast"
 

@@ -92,8 +92,12 @@ fs.writeFileSync(path.join(OUT, 'meta.json'), JSON.stringify(meta, null, 1));
 console.log(name, 'terrarium z15 tiles', (maxTx - minTx + 1) * (maxTy - minTy + 1));
 
 // OSM, as fetchArea.mjs (no `location` stand-in: that would switch on MapNG's own edge-cache endpoint)
-const { fetchOSMData } = await imp('services/osm.js');
-const features = await fetchOSMData(meta.bounds);
+// With MAPNG_OSM_CUT set (tools/mapng_export.py fetch --pinned-osm), the OSM comes from a pinned cut
+// (pipeline/osm_pin.py) through MapNG's own parser instead of Overpass: no OSM request is made at all.
+const { fetchOSMData, parseOverpassResponse } = await imp('services/osm.js');
+const features = process.env.MAPNG_OSM_CUT
+  ? parseOverpassResponse(JSON.parse(fs.readFileSync(process.env.MAPNG_OSM_CUT, 'utf8')), meta.bounds)
+  : await fetchOSMData(meta.bounds);
 if (features.length < MIN_OSM_FEATURES) {
   fs.rmSync(path.join(OUT, 'meta.json'));
   console.error(`${name}: only ${features.length} OSM features (an outage?): not saved, try again`);
