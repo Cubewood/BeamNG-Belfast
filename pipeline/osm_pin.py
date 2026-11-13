@@ -41,7 +41,8 @@ MANIFEST_PATH = ROOT / "data" / "sources" / "osm.json"
 
 GEOFABRIK_URL = "https://download.geofabrik.de/europe/ireland-and-northern-ireland-latest.osm.pbf"
 USER_AGENT = "BeamNGBelfast-osm-pin/1.0 (one download of a public extract; see docs/osm_pin.md)"
-CUT_RECIPE = 1          # bump when the selection or the output shape changes
+CUT_RECIPE = 1          # bump when the selection or the output shape changes (the MapNG-facing cut only)
+CROSSINGS_RECIPE = 1    # same for the side file of crossing nodes (not for MapNG; see crossing_matches)
 CUT_MARGIN_M = 100.0    # ground metres added to every side of a square's bounds
 METRES_PER_DEGREE = 111_320.0
 
@@ -81,6 +82,11 @@ _WAY_TAG_SET = frozenset(WAY_TAGS)
 _REL_KEY_SET = frozenset(RELATION_KEYS)
 _NODE_TAG_SET = frozenset(NODE_TAGS)
 NODE_KEYS = sorted({k for k, _ in NODE_TAGS})
+
+# Crossing nodes are NOT in MapNG's Overpass filter, so they are not in the MapNG-facing cut (adding them to NODE_TAGS
+# would change what MapNG receives and break the equality test). They go to a side file per square for our own steps.
+CROSSING_KEYS = ["highway", "crossing"]
+_NODE_FILTER_KEYS = sorted(set(NODE_KEYS) | set(CROSSING_KEYS))
 
 
 class PinError(Exception):
@@ -223,6 +229,12 @@ def node_matches(tags: dict) -> bool:
     return any((k, v) in _NODE_TAG_SET for k, v in tags.items())
 
 
+def crossing_matches(tags: dict) -> bool:
+    """A crossing node: highway=crossing, or any crossing=* tag (OSM's own tagging of a crossing; includes
+    crossing=traffic_signals on a node without highway=traffic_signals). Side file only, never MapNG's cut."""
+    return tags.get("highway") == "crossing" or "crossing" in tags
+
+
 def way_matches(tags: dict) -> bool:
     return any(k in _WAY_KEY_SET or (k, v) in _WAY_TAG_SET for k, v in tags.items())
 
@@ -257,8 +269,12 @@ def _way_coords(way) -> list[tuple[float, float]]:
     return out
 
 
-def cut_many(pbf: Path, boxes: dict[str, dict]) -> dict[str, list[dict]]:
+def cut_many(pbf: Path, boxes: dict[str, dict],
+             crossings_out: dict[str, list[dict]] | None = None) -> dict[str, list[dict]]:
     """Elements inside each box, sorted by type then id. One read of the file serves every box.
+
+    crossings_out, when given, is filled with {box: crossing nodes inside it, sorted by id} (crossing_matches). It does
+    not alter the returned MapNG-facing elements.
 
     Selection (Overpass semantics of MapNG's query, `out body geom`):
       nodes      tagged as in NODE_TAGS and inside the box;
@@ -274,16 +290,24 @@ def cut_many(pbf: Path, boxes: dict[str, dict]) -> dict[str, list[dict]]:
     nodes: dict[str, dict[int, dict]] = {n: {} for n in names}
     ways: dict[str, dict[int, dict]] = {n: {} for n in names}
 
+    crossings: dict[str, dict[int, dict]] = {n: {} for n in names}
+
     # pass 1a: tagged nodes (no locations needed, filtered in C++ on the keys we care about)
-    fp = osmium.FileProcessor(str(pbf), osmium.osm.NODE).with_filter(osmium.filter.KeyFilter(*NODE_KEYS))
+    fp = osmium.FileProcessor(str(pbf), osmium.osm.NODE).with_filter(osmium.filter.KeyFilter(*_NODE_FILTER_KEYS))
     for o in fp:
         tags = _tags(o)
-        if not node_matches(tags) or not o.location.valid():
+        want_node = node_matches(tags)
+        want_crossing = crossings_out is not None and crossing_matches(tags)
+        if not (want_node or want_crossing) or not o.location.valid():
             continue
         lat, lon = round(o.location.lat, 7), round(o.location.lon, 7)
         for n in names:
             if _inside(lat, lon, boxes[n]):
-                nodes[n][o.id] = {"type": "node", "id": o.id, "lat": lat, "lon": lon, "tags": tags}
+                el = {"type": "node", "id": o.id, "lat": lat, "lon": lon, "tags": tags}
+                if want_node:
+                    nodes[n][o.id] = el
+                if want_crossing:
+                    crossings[n][o.id] = el
 
     # pass 1b: tagged ways, with node locations
 
@@ -326,6 +350,9 @@ def cut_many(pbf: Path, boxes: dict[str, dict]) -> dict[str, list[dict]]:
 
         MemberHandler().apply_file(str(pbf), locations=True)
 
+    if crossings_out is not None:
+        for n in names:
+            crossings_out[n] = [crossings[n][i] for i in sorted(crossings[n])]
     result = {}
     for n in names:
         for rel in rels[n].values():
@@ -381,21 +408,39 @@ def cut_path(area: str, cut_dir: Path = CUT_DIR) -> Path:
     return cut_dir / f"{area}.overpass.json"
 
 
+def crossings_path(area: str, cut_dir: Path = CUT_DIR) -> Path:
+    return cut_dir / f"{area}.crossings.json"
+
+
+def write_if_changed(path: Path, data: bytes) -> bool:
+    """write_atomic unless the file already holds exactly these bytes (readers of an unchanged cut are not disturbed)."""
+    if path.is_file() and path.read_bytes() == data:
+        return False
+    write_atomic(path, data)
+    return True
+
+
 def run_cut(names: list[str] | None, *, manifest_path: Path = MANIFEST_PATH, osm_dir: Path = OSM_DIR,
             cut_dir: Path = CUT_DIR, record: bool = True) -> dict[str, dict]:
     """Cut the squares, write each to cut_dir, and (record=True) put bbox, counts and SHA-256 in the manifest."""
     manifest = load_manifest(manifest_path)
     pbf = verify_pbf(manifest, osm_dir)
     boxes = area_boxes(names, manifest.get("cut_margin_m", CUT_MARGIN_M))
-    cuts = cut_many(pbf, boxes)
+    side: dict[str, list[dict]] = {}
+    cuts = cut_many(pbf, boxes, crossings_out=side)
     info = {}
     for n, elements in cuts.items():
         data = cut_bytes(elements)
-        write_atomic(cut_path(n, cut_dir), data)
+        write_if_changed(cut_path(n, cut_dir), data)
+        cdata = cut_bytes(side[n])
+        write_if_changed(crossings_path(n, cut_dir), cdata)
         info[n] = {"bbox": boxes[n], "elements": cut_counts(elements), "bytes": len(data),
-                   "sha256": hashlib.sha256(data).hexdigest()}
+                   "sha256": hashlib.sha256(data).hexdigest(),
+                   "crossings": {"nodes": len(side[n]), "bytes": len(cdata),
+                                 "sha256": hashlib.sha256(cdata).hexdigest()}}
     if record:
         manifest["cut_recipe"] = CUT_RECIPE
+        manifest["crossings_recipe"] = CROSSINGS_RECIPE
         manifest["cut_margin_m"] = manifest.get("cut_margin_m", CUT_MARGIN_M)
         manifest.setdefault("cuts", {}).update(info)
         save_manifest(manifest, manifest_path)
@@ -434,8 +479,14 @@ def main(argv=None) -> int:
                     same = want == i["sha256"]
                     bad += not same
                     print(f"{n}: {'SAME' if same else 'DIFFERENT'} as manifest ({i['sha256']})")
+                    cwant = recorded.get(n, {}).get("crossings", {}).get("sha256")
+                    csame = cwant == i["crossings"]["sha256"]
+                    bad += not csame
+                    print(f"{n} crossings: {'SAME' if csame else 'DIFFERENT'} as manifest ({i['crossings']['sha256']})")
             for n, i in info.items():
                 print(f"{n}: {i['elements']} {i['bytes']} bytes sha256 {i['sha256']} -> {cut_path(n, args.out_dir)}")
+                print(f"{n}: crossing nodes {i['crossings']['nodes']} {i['crossings']['bytes']} bytes "
+                      f"sha256 {i['crossings']['sha256']} -> {crossings_path(n, args.out_dir)}")
             return 1 if bad else 0
     except PinError as exc:
         print(f"osm_pin: {exc}", file=sys.stderr)

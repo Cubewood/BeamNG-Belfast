@@ -9,6 +9,7 @@ The build reads OpenStreetMap from one dated Geofabrik file, not from Overpass. 
 | Manifest (committed) | `data/sources/osm.json`: URL, dated URL, download time, size, SHA-256, MD5 checked against Geofabrik, PBF header (data timestamp), and each cut's box, counts and SHA-256 |
 | Extract (not in git) | `H:\BelfastData\osm\ireland-and-northern-ireland-latest.osm.pbf` (about 420 MB) |
 | Cuts (not in git) | `H:\BelfastData\osm\cuts\<area>.overpass.json` for `slice`, `city_south`, `full` |
+| Crossings side files (not in git) | `H:\BelfastData\osm\cuts\<area>.crossings.json` for the same three squares (I-002; see "Crossing nodes") |
 | Parser | `tools/mapng_osm_parse.mjs`: MapNG's own `parseOverpassResponse`, no network |
 | Wiring | `tools/mapng_export.py fetch ... --pinned-osm AREA` and `tools/mapng_export.py pinned-osm NAME` |
 
@@ -52,6 +53,21 @@ clips everything to the square's bounds afterwards.
 Byte-identical output: elements are sorted by type then id; keys are in a fixed order; coordinates are rounded to
 7 decimals (OSM's own precision); the file is compact JSON, one element a line, UTF-8, LF. Nothing in it depends on
 the clock, the machine or the order the file is read in.
+
+## Crossing nodes (I-002)
+
+MapNG's own `OSM_FILTER` has no `highway=crossing` or `crossing=*` entry, so Overpass would never have returned plain
+crossing nodes to MapNG, and the cut, which copies that filter, does not hold them either (a `highway=crossing` node
+appears in it only if it also carries a selected tag such as `traffic_calming=table`). Adding them to `NODE_TAGS`
+would have changed what MapNG receives and broken the filter-equality test, so they are not there.
+
+Our own steps (DfI crossing check, later marking tasks) need them, so `cut` also writes a side file per square,
+`<area>.crossings.json`: same box (square plus margin), same shape and byte rules as a cut, nodes only, sorted by id.
+A node is in it when `highway=crossing` or it has any `crossing=*` tag (`crossing_matches`); a signal node with
+`crossing=traffic_signals` is in both files. MapNG never reads the side file; `mapng_export.py` and
+`mapng_osm_parse.mjs` ignore it. The manifest records each side file under `cuts.<area>.crossings` (`nodes`, `bytes`,
+`sha256`) and `crossings_recipe`; `cut --check` compares them too. When the MapNG-facing cut is unchanged, `cut` does
+not rewrite its file.
 
 ## How the build avoids Overpass
 

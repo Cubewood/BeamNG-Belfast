@@ -33,7 +33,12 @@
     "relations": 15
    },
    "bytes": 3578662,
-   "sha256": "9fe5abe07d120325930f0a852e130fe779262be7b08e0fad513fc4c5a18c8f52"
+   "sha256": "9fe5abe07d120325930f0a852e130fe779262be7b08e0fad513fc4c5a18c8f52",
+   "crossings": {
+    "nodes": 55,
+    "bytes": 10095,
+    "sha256": "546e8d9839bdbaea0786751e706c22de8fe43062a9e6d23dee0749b4e06cf28d"
+   }
   },
   "city_south": {
    "bbox": {
@@ -48,7 +53,12 @@
     "relations": 27
    },
    "bytes": 7406398,
-   "sha256": "296594c055649c1b02d9c3cc79ab30882a8ef50e3b10c961ae770e5d8cb2d975"
+   "sha256": "296594c055649c1b02d9c3cc79ab30882a8ef50e3b10c961ae770e5d8cb2d975",
+   "crossings": {
+    "nodes": 185,
+    "bytes": 31502,
+    "sha256": "dff2b427b6999152b698ca9a68612099d7197d3b208362bbf7f91ce1bd0c4f6c"
+   }
   },
   "full": {
    "bbox": {
@@ -63,7 +73,13 @@
     "relations": 71
    },
    "bytes": 54332863,
-   "sha256": "71d9fea65a63ed620691c6db9e56dcba5e6109c59c832f7e8f9fb2faa37e8104"
+   "sha256": "71d9fea65a63ed620691c6db9e56dcba5e6109c59c832f7e8f9fb2faa37e8104",
+   "crossings": {
+    "nodes": 2883,
+    "bytes": 499782,
+    "sha256": "742aa78e417f81cce43f1ee69dd8a9c374a2ae600969d0ff5fa0fd7f48209f6e"
+   }
   }
- }
+ },
+ "crossings_recipe": 1
 }
