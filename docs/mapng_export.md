@@ -78,3 +78,7 @@ Area `hydebank_sample`: centre 54.553 N, -5.925 E (from the task brief), 512 m s
 - `info.json`: `country "United Kingdom"`, `region "europe"`, `roadRules {"rightHandDrive": true, "turnOnRed": false}`. Assertion passed.
 - `info.json` still says `biome "East Coast USA"` (regional look), and trees were off. The road-marking style (`white` against `americas`) was not inspected in the zip.
 - Not loaded in the game; no console check.
+
+## DEM option (T-203)
+
+`export NAME --dem gpxz` reads `<area>/gpxz.f32` (MapNG fine-DEM path, no synthetic relief) instead of `t30.f32`; the file is written by `pipeline/elevation.py` (docs/elevation.md). The wrapper checks its size and that `meta.json` has `gpxzSmooth` false.

@@ -3,7 +3,7 @@ data/*
 !data/overrides/
 !data/sources/
 data/sources/*
-!data/sources/osm.json
+!data/sources/*.json
 downloads/
 raw/
 cache/
