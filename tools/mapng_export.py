@@ -336,7 +336,9 @@ def read_netlog(path: Path) -> dict[str, dict[str, int]]:
 
 # ---------------------------------------------------------------- commands
 
-def _prepare(netlog_name: str, out_dir: Path = OUT_DIR, netlog_dir: Path = NETLOG_DIR) -> tuple[Path, Path]:
+def _prepare(netlog_name: str, out_dir: Path | None = None, netlog_dir: Path | None = None) -> tuple[Path, Path]:
+    out_dir = out_dir or OUT_DIR
+    netlog_dir = netlog_dir or NETLOG_DIR
     for d in (AREAS_DIR, out_dir, HOME_DIR, netlog_dir):
         require_under_data(d, "work folder").mkdir(parents=True, exist_ok=True)
     netlog = netlog_dir / netlog_name
@@ -436,10 +438,15 @@ def cmd_export(args: argparse.Namespace) -> int:
               + ("" if dem == "t30" else " and pipeline/elevation.py build"), file=sys.stderr)
         return EXIT_INPUTS
     # --out-dir: a private output folder (zip, provenance, netlog) so a test build never overwrites the shared one
-    out_dir = require_under_data(Path(args.out_dir), "out-dir") if args.out_dir else OUT_DIR
+    custom_out = getattr(args, "out_dir", None)
     check_dem_inputs(area_dir, dem)
     apply_speed_limits(area_dir)   # no-op when fetch or pinned-osm already did it
-    netlog, home = _prepare(f"export_{level}.log", out_dir, out_dir / "netlog" if args.out_dir else NETLOG_DIR)
+    if custom_out:
+        out_dir = require_under_data(Path(custom_out), "out-dir")
+        netlog, home = _prepare(f"export_{level}.log", out_dir, out_dir / "netlog")
+    else:
+        out_dir = OUT_DIR
+        netlog, home = _prepare(f"export_{level}.log")
     allow = tuple(args.allow_host or ())
     env = build_env({**os.environ}, areas=AREAS_DIR, out=out_dir, home=home, netlog=netlog,
                     allow_hosts=allow, trees=args.trees)
