@@ -246,7 +246,7 @@ Outcome: official heights and widths, and a pinned, repeatable set of inputs.
 | T-205 | doing | Ingest DfI Highway Network and Carriageway Details, match them to OSM ways, and output width per way with a confidence score | sonnet | high | any | T-202 | Coverage report for the map area, with a hand-checked sample of 30 ways |
 | T-206 | doing | Ingest DfI Controlled Pedestrian Crossings and compare with OSM signals and crossings | haiku | medium | any | T-202 | Mismatch list written |
 | T-207 | done | Overrides system: file schema, apply step, conflict detection when OSM changes, tests | sonnet | high | any | T-202 | Tests pass, including a changed-way conflict |
-| T-208 | blocked | Generate `CREDITS.md` and in-level credits from a source manifest: OSM (ODbL), Open Government Licence statements, the Cyient Europe note the LiDAR requires, MapNG | haiku | medium | any | T-203 | Every data source has an attribution line |
+| T-208 | done | Generate `CREDITS.md` and in-level credits from a source manifest: OSM (ODbL), Open Government Licence statements, the Cyient Europe note the LiDAR requires, MapNG | haiku | medium | any | T-203 | Every data source has an attribution line |
 
 ### M3: Automatic QA
 
