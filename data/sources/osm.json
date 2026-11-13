@@ -1,0 +1,69 @@
+{
+ "version": 1,
+ "source": "Geofabrik GmbH extract of OpenStreetMap: Ireland and Northern Ireland",
+ "licence": "ODbL 1.0, (c) OpenStreetMap contributors (https://www.openstreetmap.org/copyright)",
+ "url": "https://download.geofabrik.de/europe/ireland-and-northern-ireland-latest.osm.pbf",
+ "dated_url": "https://download.geofabrik.de/europe/ireland-and-northern-ireland-261112.osm.pbf",
+ "file": "ireland-and-northern-ireland-latest.osm.pbf",
+ "downloaded_utc": "2026-11-13T22:18:25Z",
+ "last_modified_header": "Fri, 13 Nov 2026 01:38:09 GMT",
+ "size_bytes": 417951856,
+ "sha256": "7e52f404b5623a04b7a86026f045e0da1471cee70ea36e96351ffd47d17e9fe1",
+ "md5": "d418695f671e7aed0eba8f3b8ed69b07",
+ "md5_matches_geofabrik": true,
+ "pbf_header": {
+  "data_timestamp_utc": "2026-11-12T21:23:05Z",
+  "replication_sequence": "4962",
+  "generator": "osmium/1.16.0",
+  "box": "(-16.3082400/47.9605200 -5.0592650/56.8655300)"
+ },
+ "cut_recipe": 1,
+ "cut_margin_m": 100.0,
+ "cuts": {
+  "slice": {
+   "bbox": {
+    "south": 54.5326656,
+    "west": -5.947436,
+    "north": 54.5529323,
+    "east": -5.912564
+   },
+   "elements": {
+    "nodes": 206,
+    "ways": 4594,
+    "relations": 15
+   },
+   "bytes": 3578662,
+   "sha256": "9fe5abe07d120325930f0a852e130fe779262be7b08e0fad513fc4c5a18c8f52"
+  },
+  "city_south": {
+   "bbox": {
+    "south": 54.5234633,
+    "west": -5.9632688,
+    "north": 54.5621283,
+    "east": -5.8967312
+   },
+   "elements": {
+    "nodes": 1281,
+    "ways": 14168,
+    "relations": 27
+   },
+   "bytes": 7406398,
+   "sha256": "296594c055649c1b02d9c3cc79ab30882a8ef50e3b10c961ae770e5d8cb2d975"
+  },
+  "full": {
+   "bbox": {
+    "south": 54.5322528,
+    "west": -6.014999,
+    "north": 54.6077138,
+    "east": -5.885001
+   },
+   "elements": {
+    "nodes": 21738,
+    "ways": 134497,
+    "relations": 71
+   },
+   "bytes": 54332863,
+   "sha256": "71d9fea65a63ed620691c6db9e56dcba5e6109c59c832f7e8f9fb2faa37e8104"
+  }
+ }
+}

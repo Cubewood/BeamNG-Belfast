@@ -4,6 +4,8 @@
     uv run --no-project --python 3.12 python tools/mapng_export.py fetch NAME LAT LNG [--size 512]
     uv run --no-project --python 3.12 python tools/mapng_export.py export NAME [--level LEVEL]
     uv run --no-project --python 3.12 python tools/mapng_export.py check ZIP
+    ... mapng_export.py fetch NAME LAT LNG --pinned-osm slice   # OSM from the pinned Geofabrik cut (T-202)
+    ... mapng_export.py pinned-osm NAME [--cut slice]           # rewrite NAME/osm.json from the cut, offline
 
 `fetch` writes <areas>/NAME/{t30.f32, osm.json, meta.json} with tools/mapng_fetch_area.mjs (MapNG's
 own fetchArea.mjs needs a GPXZ key). `export` wraps third_party/mapng/scripts/sweep/exportArea.mjs
@@ -37,7 +39,9 @@ import zlib
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-MAPNG_ROOT = REPO_ROOT / "third_party" / "mapng"
+# BELFAST_MAPNG_ROOT: where the pinned submodule is checked out when it is not under this repo folder
+# (a git worktree has no submodule files). check_pin still demands the pinned commit and a clean tree.
+MAPNG_ROOT = Path(os.environ.get("BELFAST_MAPNG_ROOT") or REPO_ROOT / "third_party" / "mapng")
 PINNED_COMMIT = "d605117d77857e91acb8234335e9f89263a94756"
 DATA_DIR = Path(r"H:\BelfastData")
 WORK_DIR = DATA_DIR / "mapng"
@@ -47,6 +51,8 @@ HOME_DIR = WORK_DIR / "home"
 NETLOG_DIR = WORK_DIR / "netlog"
 PRELOAD = REPO_ROOT / "tools" / "mapng_preload.mjs"
 FETCH_SCRIPT = REPO_ROOT / "tools" / "mapng_fetch_area.mjs"
+OSM_PARSE_SCRIPT = REPO_ROOT / "tools" / "mapng_osm_parse.mjs"
+OSM_CUT_DIR = DATA_DIR / "osm" / "cuts"
 EXPORT_SCRIPT = MAPNG_ROOT / "scripts" / "sweep" / "exportArea.mjs"
 COUNTRY_RULES = MAPNG_ROOT / "public" / "country_rules.json"
 
@@ -59,6 +65,7 @@ FETCH_ALLOW_HOSTS = (
     "overpass.kumi.systems",
     "overpass.openstreetmap.ru",
 )
+PINNED_OSM_ALLOW_HOSTS = ("s3.amazonaws.com",)  # elevation tiles only; OSM comes from the pinned cut (T-202)
 TREES_ALLOW_HOSTS = ("esa-worldcover.s3.eu-central-1.amazonaws.com",)
 
 # Child environment variables removed before anything runs. Prefix match, case-insensitive.
@@ -307,13 +314,54 @@ def _run_node(args: list[str], env: dict[str, str], max_old_space_mb: int) -> in
     return subprocess.run(cmd, env=env, cwd=str(WORK_DIR)).returncode
 
 
+def pinned_cut(area: str, manifest_path: Path = REPO_ROOT / "data" / "sources" / "osm.json",
+               cut_dir: Path = OSM_CUT_DIR) -> Path:
+    """The pinned OSM cut of an AOI square (pipeline/osm_pin.py), after checking its SHA-256 against the manifest."""
+    import hashlib
+    if not re.fullmatch(r"[A-Za-z0-9_-]+", area):
+        raise GuardError(f"AOI area name {area!r} must match [A-Za-z0-9_-]+")
+    path = require_under_data(cut_dir / f"{area}.overpass.json", "pinned OSM cut")
+    if not path.is_file():
+        raise GuardError(f"{path} is missing; run pipeline/osm_pin.py cut --area {area}", EXIT_INPUTS)
+    if not manifest_path.is_file():
+        raise GuardError(f"{manifest_path} is missing; run pipeline/osm_pin.py download", EXIT_INPUTS)
+    want = json.loads(manifest_path.read_text(encoding="utf-8")).get("cuts", {}).get(area, {}).get("sha256")
+    got = hashlib.sha256(path.read_bytes()).hexdigest()
+    if got != want:
+        raise GuardError(f"{path} has sha256 {got}, the manifest says {want}; recut with pipeline/osm_pin.py", EXIT_INPUTS)
+    return path
+
+
+def cmd_pinned_osm(args: argparse.Namespace) -> int:
+    """Write <areas>/NAME/osm.json from a pinned cut. No network: every request would be blocked and logged."""
+    check_pin()
+    cut = pinned_cut(args.cut or args.name)
+    area_dir = AREAS_DIR / args.name
+    if not (area_dir / "meta.json").is_file():
+        print(f"area {area_dir} lacks meta.json (it gives the bounds); run fetch --pinned-osm first", file=sys.stderr)
+        return EXIT_INPUTS
+    netlog, home = _prepare(f"pinned_osm_{args.name}.log")
+    env = build_env({**os.environ}, areas=AREAS_DIR, out=OUT_DIR, home=home, netlog=netlog, allow_hosts=())
+    code = _run_node([str(OSM_PARSE_SCRIPT), str(cut), str(area_dir)], env, args.node_memory_mb)
+    hosts = read_netlog(netlog)
+    print("hosts contacted (pinned-osm):", json.dumps(hosts))
+    if code != 0 or hosts["ALLOW"] or hosts["BLOCK"]:
+        print(f"pinned-osm FAILED (node exit {code}, requests {hosts})", file=sys.stderr)
+        return EXIT_NODE
+    return EXIT_OK
+
+
 def cmd_fetch(args: argparse.Namespace) -> int:
     check_pin()
     if not re.fullmatch(r"[A-Za-z0-9_-]+", args.name):
         raise GuardError(f"area name {args.name!r} must match [A-Za-z0-9_-]+")
+    cut = pinned_cut(args.pinned_osm) if args.pinned_osm else None
     netlog, home = _prepare(f"fetch_{args.name}.log")
+    # with a pinned cut the Overpass mirrors are not even on the allow list: elevation tiles only
     env = build_env({**os.environ}, areas=AREAS_DIR, out=OUT_DIR, home=home, netlog=netlog,
-                    allow_hosts=FETCH_ALLOW_HOSTS)
+                    allow_hosts=PINNED_OSM_ALLOW_HOSTS if cut else FETCH_ALLOW_HOSTS)
+    if cut:
+        env["MAPNG_OSM_CUT"] = str(cut)
     env["MPP"] = "1"
     code = _run_node([str(FETCH_SCRIPT), args.name, str(args.lat), str(args.lng), str(args.size)], env, args.node_memory_mb)
     hosts = read_netlog(netlog)
@@ -384,8 +432,15 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("lat", type=float)
     s.add_argument("lng", type=float)
     s.add_argument("--size", type=int, default=512, help="power of two, metres at 1 m/px (default 512)")
+    s.add_argument("--pinned-osm", metavar="AREA",
+                   help="take OSM from the pinned cut of this AOI square (pipeline/osm_pin.py), not Overpass")
     s.add_argument("--node-memory-mb", type=int, default=12288)
     s.set_defaults(func=cmd_fetch)
+    s = sub.add_parser("pinned-osm", help="write osm.json for an area from a pinned cut, offline")
+    s.add_argument("name", help="area folder under areas/ (needs meta.json)")
+    s.add_argument("--cut", metavar="AREA", help="AOI square whose cut to use (default: same as NAME)")
+    s.add_argument("--node-memory-mb", type=int, default=4096)
+    s.set_defaults(func=cmd_pinned_osm)
     s = sub.add_parser("export", help="build the level zip and assert left-hand traffic")
     s.add_argument("name")
     s.add_argument("--level", help="level name (default belfast_<name>)")
