@@ -1,0 +1,93 @@
+# Areas of interest (T-201): the three map squares, the coordinate systems and the game-world frame.
+# Read by pipeline/aoi.py. Explained in docs/aoi.md. Numbers are metres and decimal degrees.
+version: 1
+
+# Coordinate systems. `proj4` is what the code uses (pinned, so a PROJ upgrade or an installed grid
+# file cannot move the data); `epsg` names the same system. tests/pipeline/test_aoi.py checks that the
+# pinned definition agrees with pyproj's own EPSG one to under 1 cm.
+crs:
+  wgs84:
+    epsg: 4326
+    proj4: "+proj=longlat +datum=WGS84 +no_defs"
+    note: "Latitude and longitude in degrees. OSM, MapNG and the game-world frame start here."
+  irish_grid:
+    epsg: 29903
+    # TM75 / Irish Grid. The datum shift is OSi's published 7-parameter Helmert (EPSG TM75 to WGS 84 (2)),
+    # good to about 1 to 2 m. OSi's grid-based shift (needs the ie_osi_* grid file) would be better and
+    # is NOT used; data in Irish Grid is therefore only as accurate as that shift.
+    proj4: "+proj=tmerc +lat_0=53.5 +lon_0=-8 +k=1.000035 +x_0=200000 +y_0=250000 +a=6377340.189 +rf=299.3249646 +towgs84=482.5,-130.6,564.6,-1.042,-0.214,-0.631,8.15 +units=m +no_defs"
+    note: "Older OSNI and Land and Property Services data, if any are used."
+  itm:
+    epsg: 2157
+    # IRENET95 is ETRS89 and treated as equal to WGS84 (no shift), which is what PROJ does for this pair.
+    proj4: "+proj=tmerc +lat_0=53.5 +lon_0=-8 +k=0.99982 +x_0=600000 +y_0=750000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"
+    note: "Irish Transverse Mercator: DfI Open Data and the Belfast LiDAR are in this."
+
+# The game-world frame. Not a map projection: it is the frame MapNG places things in (read from
+# third_party/mapng at the pinned commit; verified against the slice export by pipeline/aoi_check.py).
+#   x east, y north, z up, metres, origin at the middle of the square, `size_m` across.
+#   world x = ((lon - west) / (east - west) - 0.5) * size_m
+#   world y = (0.5 - (north - lat) / (north - south)) * size_m
+# i.e. LINEAR IN LATITUDE AND LONGITUDE across the bounds, not in metres. MapNG's own source says the same
+# (services/geoUtils.js createGridProjector, services/terrainLookup.js geoToWorldPoint).
+# The bounds are made the way tools/mapng_fetch_area.mjs makes them (as MapNG's fetchArea.mjs does):
+# a local transverse Mercator centred on the area centre, corners at +-(size_m / 2 + margin_m), then the
+# min and max latitude and longitude. The margin means the square covers 2 * margin_m MORE ground than
+# size_m, so one game metre is slightly more than one real metre (about 1.004 on the slice).
+game_world:
+  method: mapng_linear_bounds
+  margin_m: 4
+  tmerc: "+proj=tmerc +lat_0={lat} +lon_0={lon} +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs"
+  # Where MapNG puts the heightmap samples: pixel (col, row), row 0 at the north edge, size_px samples.
+  # MapNG sampled the DEM at lon = west + col / (size_px - 1) * span, but the game terrain puts column col
+  # at world x = col - size_px / 2 (and row r at y = size_px / 2 - 1 - r). The two differ by up to one
+  # metre at the north and east edges and agree at the south-west corner. See docs/aoi.md.
+
+# Reference places. `confirmed: false` means the position is approximate.
+points:
+  hydebank_test_centre:
+    lat: 54.5428
+    lon: -5.9300
+    confirmed: false
+    note: "Middle of Hospital Road (docs/belfast_slice.md). 4 Hospital Road, BT8 8JL is not in OSM; the user has not confirmed it."
+  balmoral_test_centre:
+    lat: 54.5700
+    lon: -5.9760
+    confirmed: false
+    note: "66 Balmoral Road, BT12 6QL, approximate (about 4 km from Hydebank, task.md). OSM way 1262986364 is the DVA site; read its position from the T-202 extract and replace this."
+  city_centre:
+    lat: 54.5966
+    lon: -5.9301
+    confirmed: false
+    note: "Belfast City Hall, approximate."
+
+# The three squares. `size_m` must be a power of two (MapNG needs it); `mpp` is metres per pixel, so
+# the heightmap is size_m / mpp pixels square. `bounds` is frozen only where MapNG already exported the
+# area (copied from its meta.json): the test checks that the computed bounds agree with it.
+areas:
+  slice:
+    description: "2 km square around the Hospital Road test centre. belfast_slice, built and driven (T-103, T-104)."
+    centre: {lat: 54.5428, lon: -5.9300}
+    size_m: 2048
+    mpp: 1
+    must_contain: [hydebank_test_centre]
+    bounds:
+      north: 54.552033996343305
+      south: 54.53356390406451
+      west: -5.945887460363565
+      east: -5.91411253963649
+    bounds_source: "H:/BelfastData/mapng/areas/belfast_slice/meta.json (MapNG 30 m export, 2026-11-11)"
+  city_south:
+    description: "4 km square, same centre as the slice, so the slice sits in the middle (T-704)."
+    centre: {lat: 54.5428, lon: -5.9300}
+    size_m: 4096
+    mpp: 1
+    must_contain: [hydebank_test_centre]
+    contains: [slice]
+  full:
+    description: "8 km square over south and central Belfast: both test centres and the city centre (T-705, only if T-701 allows). Centre is a provisional choice."
+    centre: {lat: 54.5700, lon: -5.9500}
+    size_m: 8192
+    mpp: 1
+    must_contain: [hydebank_test_centre, balmoral_test_centre, city_centre]
+    contains: [slice]
