@@ -337,8 +337,8 @@ Outcome: as much of Belfast as VR can carry.
 |---|---|---|---|---|---|---|---|
 | T-801 | todo | Private release packager producing `belfast_cubewood.zip` under BeamNG's naming rules, and a deploy script | haiku | medium | any | T-411 | The zip loads with only this mod enabled |
 | T-802 | todo | Public release checklist, only if decision 5 changes: no third-party imagery, full credits, ODbL obligations, BeamNG repository rules | sonnet | medium | any | T-801 | Checklist complete and approved by you |
-| T-803 | doing | Optional: review `llm-game-automation-mcp` at a pinned commit and build it from source | opus | high | any | T-001 | Written security review ends in go or no-go |
-| T-804 | todo | Optional: test it on a QA profile for real gamepad driving, if the review passes | sonnet | medium | game | T-803, T-006 | Report says what it adds beyond the built-in MCP |
+| T-803 | done | Optional: review `llm-game-automation-mcp` at a pinned commit and build it from source | opus | high | any | T-001 | Written security review ends in go or no-go |
+| T-804 | blocked | Optional: test it on a QA profile for real gamepad driving, if the review passes | sonnet | medium | game | T-803, T-006 | Report says what it adds beyond the built-in MCP |
 | T-805 | todo | Optional: weekly exploratory play-test by Qwen through LM Studio's MCP support, limited to safe tools (note: T-008 found game and Qwen cannot run together; would have to be turn-based) | sonnet | medium | game | T-008, T-306 | One useful report that scripts had missed |
 
 ## 8. Guard rails
