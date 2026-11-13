@@ -1,0 +1,9 @@
+{
+  "_note": "Provisional G0 object budget. The Slice (belfast_slice, T-103) loaded in game with 8467 objects, 4052 DecalRoads, 3185 TSStatics, a 71.6 MB zip and 495k building triangles; these limits are about 1.4x that. T-701 measures the real limits and replaces them.",
+  "objects": 12000,
+  "decal_roads": 6000,
+  "statics": 4500,
+  "building_triangles": 700000,
+  "terrain_px": 2048,
+  "zip_mb": 100
+}
