@@ -4,7 +4,7 @@
 
 ```powershell
 $env:UV_CACHE_DIR='H:\BelfastData\cache\uv'; $env:UV_PYTHON_INSTALL_DIR='H:\BelfastData\uv-python'
-uv run --no-project --python 3.12 --with requests --with pillow python qa/image_judge.py [--manifest SWEEP_DIR] [--limit N] [--min-confidence 0.7] [--restart]
+uv run --no-project --python 3.12 --with requests --with pillow python qa/image_judge.py [--manifest SWEEP_DIR] [--limit N] [--min-confidence X] [--restart]
 uv run --no-project --python 3.12 --with pytest --with requests --with pillow python -m pytest tests/qa/test_image_judge.py -q
 ```
 
@@ -34,13 +34,13 @@ The list follows the defect kinds in `docs/decisions/001-generator.md`. The prom
 | File | Content |
 |---|---|
 | `image_judge_results.json` | header (model, prompt, schema, config hash, GPU memory baseline / loaded / after, `back_to_baseline`), `frames{shot id: {result{defect_type, confidence, reason}, tokens, seconds, attempts, judged_at} or {error}}`, `summary` (frames, judged, `by_defect_type`, last run) |
-| `findings_image_judge.json` | `source: image_judge`, `run` = the sweep's start time, one finding per frame with a defect at or above `--min-confidence`: `kind` = defect type, `x`, `y` = the junction, `where` = junction id and distance, `severity` (high at 0.85 and above, else medium), `value`, `metric`, `detail` = the reason, `image` = frame path |
+| `findings_image_judge.json` | `source: image_judge`, `run` = the sweep's start time, one finding per frame with a defect at or above its type's threshold (`TYPE_MIN_CONFIDENCE`, measured in T-306; `--min-confidence X` sets one floor for all types), plus a `review_queue` list (same fields) for untrusted types at 0.7 or more: `kind` = defect type, `x`, `y` = the junction, `where` = junction id and distance, `severity` (high at 0.85 and above, else medium), `value`, `metric`, `detail` = the reason, `image` = frame path |
 
 The digest merges findings of one kind within 20 m, so the 30 m and 10 m frames of a junction give one card. Run it with `qa/digest.py --input <sweep dir>` (or let the nightly run scan `H:\BelfastData\qa`).
 
 ## Limits
 
-- `--min-confidence 0.7` and the 0.85 severity split are placeholders. T-306 measures precision per defect type on the evaluation set (T-305) and sets the real thresholds; until then treat findings as unverified.
+- Per-type thresholds come from T-306 (`docs/spikes/vlm-eval.md`): only terrain-step (0.7) and missing-texture (0.8) reached 90% precision; every other type is untrusted and goes to the review queue. The 0.85 severity split is still a placeholder.
 - The model's accuracy on real game frames is unmeasured. The result counts say what it reports, not what is wrong.
 - Frames are downscaled to 1280 px (the sweep frames already are 1280x720). The model always thinks 250 to 350 tokens per frame (`docs/spikes/vlm.md`).
 - One verdict per frame: two defects in one frame give the one the model finds worst.

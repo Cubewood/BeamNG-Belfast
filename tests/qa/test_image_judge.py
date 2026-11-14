@@ -252,3 +252,40 @@ def test_run_waits_for_a_held_lock_then_gives_up(tmp_path, fakevlm):
     fakevlm.load.assert_not_called()
     fakevlm.unload.assert_not_called()                      # never unload a model we did not load
     assert fakevlm.lock_path.read_text() == "t-005 something"
+
+
+# ---- per-type confidence thresholds (T-306)
+def _results(*rows):
+    return {"frames": {f"s{i}": {"result": {"defect_type": t, "confidence": c, "reason": "x"}}
+                       for i, (t, c) in enumerate(rows)}}
+
+
+def _manifest(n):
+    return {"shots": [{"id": f"s{i}", "image": f"s{i}.jpg", "junction_id": "J", "distance_m": 10}
+                      for i in range(n)]}
+
+
+def test_measured_thresholds_are_set_for_every_defect_type():
+    assert set(ij.TYPE_MIN_CONFIDENCE) == set(ij.DEFECT_TYPES) - {"none"}
+    assert ij.TYPE_MIN_CONFIDENCE["terrain-step"] == 0.7
+    assert ij.TYPE_MIN_CONFIDENCE["missing-texture"] == 0.8
+    untrusted = [t for t, v in ij.TYPE_MIN_CONFIDENCE.items() if v is None]
+    assert "missing-markings" in untrusted and "object-in-road" in untrusted
+
+
+def test_findings_use_per_type_thresholds_and_queue_untrusted_types(tmp_path):
+    res = _results(("terrain-step", 0.75), ("terrain-step", 0.65), ("missing-texture", 0.75),
+                   ("missing-texture", 0.85), ("missing-markings", 0.9), ("missing-markings", 0.5),
+                   ("none", 0.99))
+    out = ij.build_findings(_manifest(7), tmp_path, res)
+    assert sorted((f["kind"], f["value"]) for f in out["findings"]) == [("missing-texture", 0.85),
+                                                                        ("terrain-step", 0.75)]
+    assert [(f["kind"], f["value"]) for f in out["review_queue"]] == [("missing-markings", 0.9)]
+    assert out["min_confidence"] == "per-type"
+
+
+def test_command_line_floor_overrides_the_per_type_values(tmp_path):
+    res = _results(("terrain-step", 0.65), ("missing-markings", 0.9), ("object-in-road", 0.6))
+    out = ij.build_findings(_manifest(3), tmp_path, res, 0.6)
+    assert {f["kind"] for f in out["findings"]} == {"terrain-step", "missing-markings", "object-in-road"}
+    assert out["review_queue"] == [] and out["min_confidence"] == 0.6

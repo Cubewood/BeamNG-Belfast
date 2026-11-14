@@ -1,0 +1,21 @@
+# T-306: 20 most confident frames where Qwen differs from the planted truth (100 in all). frame | planted truth | Qwen | confidence | image
+P073 | buried-object | object-in-road | 0.92 | H:\BelfastData\qa\eval\planted\P073.jpg
+P076 | buried-object | object-in-road | 0.90 | H:\BelfastData\qa\eval\planted\P076.jpg
+P077 | buried-object | object-in-road | 0.90 | H:\BelfastData\qa\eval\planted\P077.jpg
+P079 | buried-object | object-in-road | 0.90 | H:\BelfastData\qa\eval\planted\P079.jpg
+P080 | buried-object | object-in-road | 0.90 | H:\BelfastData\qa\eval\planted\P080.jpg
+C012 | none | building-in-road | 0.85 | H:\BelfastData\qa\eval\clean\C012.jpg
+P072 | buried-object | object-in-road | 0.85 | H:\BelfastData\qa\eval\planted\P072.jpg
+P074 | buried-object | object-in-road | 0.85 | H:\BelfastData\qa\eval\planted\P074.jpg
+C017 | none | floating-object | 0.82 | H:\BelfastData\qa\eval\clean\C017.jpg
+C059 | none | floating-object | 0.82 | H:\BelfastData\qa\eval\clean\C059.jpg
+P071 | buried-object | object-in-road | 0.82 | H:\BelfastData\qa\eval\planted\P071.jpg
+P078 | buried-object | building-in-road | 0.82 | H:\BelfastData\qa\eval\planted\P078.jpg
+P086 | missing-texture | wrong-markings | 0.82 | H:\BelfastData\qa\eval\planted\P086.jpg
+C004 | none | missing-markings | 0.80 | H:\BelfastData\qa\eval\clean\C004.jpg
+C005 | none | missing-markings | 0.80 | H:\BelfastData\qa\eval\clean\C005.jpg
+C010 | none | missing-markings | 0.80 | H:\BelfastData\qa\eval\clean\C010.jpg
+C020 | none | floating-object | 0.80 | H:\BelfastData\qa\eval\clean\C020.jpg
+C042 | none | missing-markings | 0.80 | H:\BelfastData\qa\eval\clean\C042.jpg
+C045 | none | missing-markings | 0.80 | H:\BelfastData\qa\eval\clean\C045.jpg
+C072 | none | missing-markings | 0.80 | H:\BelfastData\qa\eval\clean\C072.jpg

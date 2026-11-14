@@ -42,7 +42,23 @@ FINDINGS_NAME = "findings_image_judge.json"
 SOURCE = "image_judge"
 
 # Provisional until T-306 measures precision per defect type on the evaluation set.
-MIN_CONFIDENCE = 0.7           # findings below this are kept in the results file only
+MIN_CONFIDENCE = 0.7           # fallback for a type missing from TYPE_MIN_CONFIDENCE
+# T-306: per defect type, the lowest confidence at which precision on the evaluation set was at least 0.90
+# (docs/spikes/vlm-eval.md). None: no confidence reached 0.90 (or too few predictions), so the type never goes to
+# the digest; those frames go to the review queue for Sonnet. Measured run: docs/spikes/vlm-eval.md.
+TYPE_MIN_CONFIDENCE: dict = {
+    "terrain-step": 0.7,        # 6 predictions at >= 0.7, all planted terrain steps
+    "missing-texture": 0.8,     # 6 predictions at >= 0.8, all planted missing textures
+    "missing-markings": None,   # 0.14 precision at 0.5 (41 of 63 predictions on clean frames)
+    "wrong-markings": None,
+    "building-in-road": None,
+    "object-in-road": None,
+    "floating-object": None,
+    "buried-object": None,      # never predicted: read as object-in-road
+    "wrong-side-sign": None,
+    "road-geometry": None,
+    "other": None,
+}
 HIGH_CONFIDENCE = 0.85         # severity high at or above; medium below
 MAX_CONSECUTIVE_ERRORS = 5     # the server is probably gone
 VRAM_SLACK_MIB = 300
@@ -224,14 +240,33 @@ def severity_for(confidence: float) -> str:
     return "high" if confidence >= HIGH_CONFIDENCE else "medium"
 
 
-def build_findings(manifest: dict, sweep_dir: Path, results: dict, min_confidence: float) -> dict:
-    """Findings file in the format of docs/digest.md: one per defect frame at or above min_confidence."""
+def threshold_for(defect_type: str, min_confidence: float | None = None) -> float | None:
+    """Confidence needed for a defect type to become a finding. A number given on the command line wins for every
+    type; otherwise the measured per-type value (None: the type is not trusted and never becomes a finding)."""
+    if min_confidence is not None:
+        return min_confidence
+    return TYPE_MIN_CONFIDENCE.get(defect_type, MIN_CONFIDENCE)
+
+
+def build_findings(manifest: dict, sweep_dir: Path, results: dict, min_confidence: float | None = None) -> dict:
+    """Findings file in the format of docs/digest.md: one per defect frame at or above its confidence threshold
+    (`min_confidence` for all types, or the per-type TYPE_MIN_CONFIDENCE when None). Untrusted types go to
+    `review_queue` (same fields) instead, at MIN_CONFIDENCE and above, for a stronger model to look at."""
     by_id = {s["id"]: s for s in manifest.get("shots", [])}
     findings = []
+    review = []
     for sid, rec in results["frames"].items():
         r = rec.get("result")
         shot = by_id.get(sid)
-        if not r or not shot or r["defect_type"] == "none" or r["confidence"] < min_confidence:
+        if not r or not shot or r["defect_type"] == "none":
+            continue
+        need = threshold_for(r["defect_type"], min_confidence)
+        target = findings
+        if need is None:
+            if r["confidence"] < MIN_CONFIDENCE:
+                continue
+            target = review
+        elif r["confidence"] < need:
             continue
         j = shot.get("junction") or {}
         f = {"kind": r["defect_type"], "where": f"{shot.get('junction_id', sid)} {shot.get('distance_m', 0):g}m",
@@ -240,13 +275,15 @@ def build_findings(manifest: dict, sweep_dir: Path, results: dict, min_confidenc
              "image": str(sweep_dir / shot["image"])}
         if j.get("x") is not None and j.get("y") is not None:
             f["x"], f["y"] = j["x"], j["y"]
-        findings.append(f)
-    findings.sort(key=lambda f: (-f["value"], f["where"]))
+        target.append(f)
+    for lst in (findings, review):
+        lst.sort(key=lambda f: (-f["value"], f["where"]))
     return {"source": SOURCE, "run": manifest.get("started") or results.get("started"),
-            "sweep": str(sweep_dir), "judged_at": results.get("updated"), "min_confidence": min_confidence,
+            "sweep": str(sweep_dir), "judged_at": results.get("updated"),
+            "min_confidence": min_confidence if min_confidence is not None else "per-type",
             "frames_total": len(manifest.get("shots", [])),
             "frames_judged": sum(1 for r in results["frames"].values() if "result" in r),
-            "findings": findings}
+            "findings": findings, "review_queue": review}
 
 
 def counts_by_defect(results: dict) -> dict:
@@ -329,7 +366,7 @@ def run(args, log=print) -> int:
     findings = build_findings(manifest, sweep_dir, results, args.min_confidence)
     write_json(findings_path, findings)
     log(f"results  {results_path}\nfindings {findings_path} ({len(findings['findings'])} at confidence >= "
-        f"{args.min_confidence})\nby defect type: {json.dumps(results['summary']['by_defect_type'])}")
+        f"{findings['min_confidence']}, {len(findings['review_queue'])} in the review queue)\nby defect type: {json.dumps(results['summary']['by_defect_type'])}")
     complete = results["summary"]["judged"] == len(shots)
     if not complete:
         log(f"INCOMPLETE: {len(shots) - results['summary']['judged']} frames without a valid result")
@@ -341,8 +378,8 @@ def main(argv=None) -> int:
     p.add_argument("--manifest", help="sweep folder or manifest.json (default: newest under the sweep root)")
     p.add_argument("--out-dir", help="where results and findings go (default: the sweep folder)")
     p.add_argument("--limit", type=int, help="judge at most N pending frames this run (0: just rewrite findings)")
-    p.add_argument("--min-confidence", type=float, default=MIN_CONFIDENCE,
-                   help=f"findings below this stay in the results only (default {MIN_CONFIDENCE}, provisional)")
+    p.add_argument("--min-confidence", type=float, default=None,
+                   help="one confidence floor for every type (default: the measured per-type TYPE_MIN_CONFIDENCE)")
     p.add_argument("--restart", action="store_true", help="ignore and replace existing results")
     p.add_argument("--reasoning", choices=vlm.REASONING_LEVELS, default="low")
     p.add_argument("--max-side", type=int, default=vlm.MAX_SIDE)
