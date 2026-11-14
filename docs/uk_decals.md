@@ -21,6 +21,8 @@ Per material there is one opacity map (`*_o.data.png`, the pattern). Colour, nor
 
 ## How a DecalRoad uses them (for T-403)
 
+T-403 uses them in MapNG patch 0004 (`services/ukRoadMarkings.js`, `docs/mapng_patches.md`); `tools/mapng_export.py export` adds this folder to a level that uses them.
+
 - Image columns run across the road, image rows run along it. The texture is stretched once across the DecalRoad `width` and tiled every `textureLength` metres. Stock `m_line_white_discontinue` is 128 x 4096, tall, and MapNG sets `textureLength: 6.4` for it (`exportBeamNGLevel.js:2952`, `LINE_LAYER_BASE`).
 - So T-403 must set `textureLength` per material (column "repeat" below), where MapNG uses 6.4 for everything.
 - Line materials are **scalable**: the paint fills the middle 75% of the texture width, the rest is clear margin. DecalRoad width = painted width / 0.75. Painted 100 mm gives width 0.1333 m, 150 mm gives 0.2 m, 400 mm (stop line) gives 0.5333 m. One material serves every width in the YAML, so no 100/150/200 variants exist. Currently MapNG passes `width: 0.15` for lines; it would pass `0.2` for a 150 mm line.

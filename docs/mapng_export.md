@@ -85,6 +85,10 @@ Area `hydebank_sample`: centre 54.553 N, -5.925 E (from the task brief), 512 m s
 
 `export NAME --dem gpxz` reads `<area>/gpxz.f32` (MapNG fine-DEM path, no synthetic relief) instead of `t30.f32`; the file is written by `pipeline/elevation.py` (docs/elevation.md). The wrapper checks its size and that `meta.json` has `gpxzSmooth` false.
 
+## UK road markings (T-403)
+
+When the zip's DecalRoads use `uk_*_cubewood` materials (MapNG patch 0004 paints them on GB roads), `export` draws them with `pipeline/uk_decals.py --level <level>` (a child `uv run` with numpy, pillow, pyyaml; build folder `<out>/uk_markings_build`) and adds `levels/<level>/art/uk_markings_cubewood/` to the zip. A used material or texture that is missing exits 1. `export.json` gets `uk_markings` (DecalRoads per material). Details: `docs/mapng_patches.md`, patch 0004.
+
 ## Speed limits (T-408)
 
 `fetch`, `pinned-osm` and `export` run `pipeline/speed_limits.py` on the area's `osm.json` first, so every road way
