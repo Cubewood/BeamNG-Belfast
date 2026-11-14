@@ -46,7 +46,7 @@ git add patches/mapng                              # in the repo root, by name
 1. Move the submodule to the new upstream commit and set `PINNED_COMMIT` in `tools/mapng_export.py`.
 2. `export` now exits 3 ("the pin changed"). `apply --reset` stops at the first patch that no longer applies and leaves the submodule clean at the new pin.
 3. Rebase by hand: `git checkout -B belfast <new pin>`, `git am --3way patches/mapng/<name>` for each, fix conflicts, then `save` (this writes the new `BASE`).
-4. Run MapNG's tests (806 of 812 pass on Windows, `docs/mapng_export.md`; the six failures are environment) and the new tests of each patch.
+4. Run MapNG's tests (806 of 812 pass on Windows at the bare pin, 822 of 828 with patches 0001 to 0004, `docs/mapng_export.md`; the six failures are environment) and the new tests of each patch.
 
 Offering generic patches upstream (the building rule, the junction step, mph signs) needs the user's GitHub account and stays a follow-up.
 
@@ -75,7 +75,7 @@ File `services/beamngBuildings.js`, `planBuilding`. Why OSM 1260691543 (a house)
 
 Test (`tests/beamngBuildings.test.mjs`): a house with the tag, even one tagged `roof:shape=gabled`, plans a flat roof.
 
-## Result on the Slice (re-export of `belfast_slice`, same OSM, in `H:\BelfastData\mapng\t412\`)
+## Patches 0001 to 0003: result on the Slice (re-export of `belfast_slice`, same OSM, in `H:\BelfastData\mapng\t412\`)
 
 | | Before (`mapng\out\belfast_slice.zip`) | After patch 0001 | After patches 0001 to 0003 |
 |---|---|---|---|
@@ -83,14 +83,60 @@ Test (`tests/beamngBuildings.test.mjs`): a house with the tag, even one tagged `
 | MapNG report: OSM buildings kept and listed | 0 | 3 | 1 |
 | T-301 `building-in-lane` findings | 8 (1 high, 5 medium, 2 low) | 5 (0 high, 5 medium) | 1 (0 high, 1 medium) |
 
-### Buildings that still stay in lanes
+### Buildings that still stay in lanes (patches 0001 to 0003)
 
 One finding remains, by design. OSM 1259387657 (`building=construction`, about 76 x 59 m) at (76, -116): 309 m2, up to 0.88 m deep, on a service road (not in the navigation graph). Plain `highway=service` ways 404213828 and 860893189 run 28.5 m through the footprint (15% of it, 534 m2 by MapNG's lanes). No `tunnel=building_passage` tag. MapNG keeps it as mapped and lists it. It is an OSM data question (a service road mapped through a construction site), not a cut-back case, and no override was written. Any override needs evidence (OSNI or Mapillary, never Google).
 
 The other cases of the first run (148546058 Tesco Extra, 1260691543 house, 1258799627) are cut back now.
 
-## Not verified
+### Patches 0001 to 0003: not verified
 
 - No game run. The crash at (-211, -93) is expected to be gone because the walls are cut back, but only the drive suite rerun (T-413 Done-when) confirms it. Cut-back houses and the Tesco footprint now have flat roofs and notched outlines; nobody has looked at them in the game.
 - The `building-in-lane` check reads the collision mesh of the tiles, as the car would; it was run on the re-exported zip only, with the OSM extract of the original export (`areas/belfast_slice/osm.json`, not the pinned cut).
 - Upstream tests: 817, 811 pass, the same six environment failures as the baseline (`docs/mapng_export.md`).
+
+## Patch 0004: UK road markings (T-403, gap 7)
+
+One table and two hooks in a new file, `services/ukRoadMarkings.js` (239 lines); a small diff in `services/exportBeamNGLevel.js` (19 lines added, 9 removed); test `tests/ukRoadMarkings.test.mjs` (11 tests, one per pattern plus the non-UK and roundabout cases). Switch: `isUkRoadRules(roadRules)`, `countryCode === 'GB'` (`ukRoadMarkings.js:18`). `getMarkingStyle` is not touched (still `white` for GB), so signs (`roadSigns.js` `SIGN_SETS[style]`), traffic-calming and curve signs, crossings and parking paint are unchanged; T-409 can key a UK sign set on the same function.
+
+| Hook (patched `exportBeamNGLevel.js`) | What |
+|---|---|
+| `:3145` `ukLineLayers` | restyles `buildLineMarkingLayers`' white lines; adds warning stretches |
+| `:3194` `ukLineNodes`, `:3209` `levelName` | cuts a layer to its stretch after the junction trim; reverses a mixed double white; warning stretches are not named `cl` (names stay unique) |
+| `:5819`, `:5994` | `ukMarkings` into the road options |
+| `:6208` | `pushLine` takes a material and `textureLength` |
+| `:6387`, `:6403` `ukJunctionLines` | Stop and Give Way lines at the stop-bar approaches, plus MapNG's give-way approaches (`signalApproaches.js:434`, until now used for signs only) |
+
+`UK_MARKINGS` (`ukRoadMarkings.js:25`) names all 19 `uk_*_cubewood` materials with their `textureLength` and fixed widths; `ukMarking(key, paintMm)` gives `{material, textureLength, width}` (width = paint / 0.75 for line patterns). T-404 and T-410 use the same call for the patterns not placed here. `tests/mapng/test_uk_markings_export.py` checks the table in the patch file against `rules/uk_decals/manifest.json`.
+
+**Materials in the level.** MapNG writes only the names. `tools/mapng_export.py export` (`add_uk_markings`) finds `uk_*_cubewood` on the zip's DecalRoads, runs `pipeline/uk_decals.py --level <level>` (its own uv env: numpy, pillow, pyyaml) and adds the 24 files to `levels/<level>/art/uk_markings_cubewood/`. It exits 1 if a used material or a texture is missing; `export.json` records `uk_markings`.
+
+### Patterns covered
+
+| Pattern | Where | Material (`textureLength` m, DecalRoad width m) |
+|---|---|---|
+| Centre 1008 / 1008.1 | MapNG's centre line (two-way, 5.5 m or wider); small module up to 40 mph, large above | `uk_centre_1008` (6) / `uk_centre_1008_1` (9); 0.1333, or 0.2 (150 mm) on two-way roads with 3+ lanes or 10 m+ driving width, or at 70 mph |
+| Lane 1005 / 1005.1 | MapNG's lane separators | `uk_lane_1005` (6) / `uk_lane_1005_1` (9); 0.1333, 0.2 at 70 mph |
+| Warning 1004 / 1004.1 | last 5 marks (30 mph), 7 (over 30), 7 or 10 on 4+ lane two-way roads, of a centre line that MapNG's junction trim ends (`startTrim/endTrim.center > 0`), and of the lane lines approaching that end. A road too short for both ends plus one module is warning line throughout | `uk_warning_1004` (6) / `uk_warning_1004_1` (9); width of the line it replaces |
+| Edge 1012.1 | MapNG's edge lines (major roads, not urban streets with sidewalks) | `uk_solid_white` (2); 0.1333, 0.2 at 70 mph |
+| Double white 1013.1 | `overtaking=no`: both continuous; `overtaking:forward` or `:backward=no`: continuous on that traffic's side | `uk_double_white_solid` (2) / `uk_double_white_mixed` (6); 0.6333 |
+| Stop line 1002.1 | MapNG's STOP-sign approaches | `uk_solid_white` (2); 0.5333 (400 mm) |
+| Signal Stop line 1001 | MapNG's signal approaches (junction and midblock) | `uk_solid_white` (2); 0.2667 (200 mm), 0.4 (300 mm) at 40 mph and over |
+| Give Way 1003A | MapNG's give-way approaches (`highway=give_way` or a give-way sign), kerb half from 0.25 m off the centre, a one-way road's full width | `uk_giveway_1003a` (0.9); 0.8 |
+| Triangle 1023A | one per approaching lane (lanes 1.6 m or wider), base 2.4 m behind the line's near edge, nodes in the direction of travel, length = `textureLength` | `uk_giveway_triangle_1023a` (4.2857); 1.4286 |
+
+Left-hand traffic: MapNG puts the forward lanes on the right of node order. For GB the centre and lane line offsets are negated, so on Hospital Road (way 1410878961, `lanes:forward=3`, `lanes:backward=1`) the centre line now sits 2.35 m right of the AI path, with the three forward lanes on its left as the AI's `lanesLeft 3`.
+
+**Not covered** (materials in the table, nothing placed): 1009A and 1010 at mouths and lay-bys, roundabout 1003.1, mini-roundabout 1003.3 and 1003.4 (a give-way at a roundabout or `highway=mini_roundabout` node is left unpainted), zig-zags, zebras (MapNG's Italian decal stays), box junctions, yellow lines, hatching 1040, bus lanes, the STOP legend 1022, warning lines at bends, crests and refuges, give-way lines at junctions with no OSM give-way or stop node, parking bays and crossing lines (stock `m_line_white`). These belong to T-404 and T-410. None of the four `verified: false` YAML rules is placed; two of them have a material in the table and the level (`giveway_mini_roundabout_1003_3`, `zigzag_zebra_1001_4`), two have none (`hatched_1040` diagonals, `crossing_studs_1055_1`).
+
+**Choices without a source:** the triangle gap 2.4 m (TSM 3 range 2.1 to 2.75 m); 300 mm signal lines from a 40 mph limit (TSM 6 says 85th percentile over 35 mph); an unmapped limit is 30 mph (70 on a motorway); warning stretches only at the junction ends MapNG trims; the mixed double white's continuous line is on the image left = left of node order (manifest note, unverified).
+
+### Result on the Slice (`H:\BelfastData\mapng\t403\out\belfast_slice.zip`, area copy, t30, same OSM as T-412)
+
+DecalRoads per UK material, from the zip: `uk_solid_white` 171 (143 edge lines, 27 signal lines at 300 mm, 1 at 200 mm), `uk_lane_1005` 39, `uk_centre_1008_1` 36, `uk_giveway_1003a` 36, `uk_giveway_triangle_1023a` 36, `uk_centre_1008` 26 (10 at 150 mm), `uk_lane_1005_1` 14, `uk_warning_1004` 12, `uk_warning_1004_1` 6. Stock `m_line_white_discontinue` 121 before, 0 after; `m_line_white` 659 before, 488 after (484 parking stalls and 4 crossing lines stay). Everything else is unchanged (asphalt 1176, AI roads 463, gutters 1320). No double white (no overtaking tags) and no STOP sign in the Slice. All 36 triangles run towards their own line, 2.40 m from it; one, at (893, 17), lies 0.46 m from the line of another approach.
+
+`qa/static_checks` on the new zip and on the T-412 zip: 197 against 179 findings, high 134 both. The 18 extra are `lint-textures` (low): MapNG's linter wants square or 2:1 PNGs and ours are 16 x 2048 and the like, as the stock line textures are tall (`docs/uk_decals.md`). `missing-stock-asset` 8 in both (the known sky files); none names a `uk_` file.
+
+### Not verified (no game in this task)
+
+In the game, look at: the dash phase (marks centred in each repeat, half a gap at each end, the joint where a centre line becomes a warning line); which side of the mixed double white is continuous (none in the Slice: needs a tagged road); that the triangle's apex meets the driver (texture row 0 at the first node); z-fighting where give-way lines meet the warning line's end, triangles over the asphalt, and the overlap at (893, 17); and that 0.133 m line widths read as 100 mm.

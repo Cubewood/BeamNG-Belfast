@@ -21,7 +21,9 @@ What the wrapper enforces (docs/spikes/mapng.md section 6; details in docs/mapng
   * MAPNG_AREAS and MAPNG_SWEEP_OUT are set explicitly, and must be under H:\\BelfastData;
   * tools/mapng_preload.mjs serves /country_rules.json (so a UK area comes out left-hand traffic),
     blocks every host not on the allow list, and logs each request;
-  * a finished zip must say roadRules.rightHandDrive == true and region == "europe", else exit 4.
+  * a finished zip must say roadRules.rightHandDrive == true and region == "europe", else exit 4;
+  * when its DecalRoads use our UK marking materials (uk_*_cubewood, painted by the belfast patch 0004),
+    the materials and textures (pipeline/uk_decals.py) are added under levels/<level>/art/uk_markings_cubewood/.
 
 Nothing here installs the zip anywhere or starts the game.
 """
@@ -320,6 +322,81 @@ def fix_stubs(zip_path: Path, root: Path = MAPNG_ROOT) -> dict:
     return {"fixed": fixed, "left": left}
 
 
+# ---------------------------------------------------------------- UK road-marking materials (T-403)
+
+UK_DECALS_SCRIPT = REPO_ROOT / "pipeline" / "uk_decals.py"
+UK_MARKING_FOLDER = "uk_markings_cubewood"
+UK_MATERIAL_RE = re.compile(r"^uk_[a-z0-9_]+_cubewood$")
+
+
+def decal_road_materials(zip_path: Path) -> dict[str, int]:
+    """{material: number of DecalRoads} over every items.level.json of the level zip."""
+    counts: dict[str, int] = {}
+    with zipfile.ZipFile(zip_path) as z:
+        for name in z.namelist():
+            if not name.endswith("items.level.json"):
+                continue
+            for line in z.read(name).decode("utf-8").splitlines():
+                if '"DecalRoad"' not in line:
+                    continue
+                obj = json.loads(line)
+                if obj.get("class") == "DecalRoad":
+                    counts[obj.get("material")] = counts.get(obj.get("material"), 0) + 1
+    return dict(sorted(counts.items(), key=lambda kv: (-kv[1], str(kv[0]))))
+
+
+def build_uk_markings(level: str, build_dir: Path) -> Path:
+    """Draw the UK marking textures and materials for `level` (pipeline/uk_decals.py, in its own uv
+    environment because it needs numpy, pillow and pyyaml). Returns <build_dir>/uk_markings_cubewood."""
+    uv = shutil.which("uv")
+    if not uv:
+        raise GuardError("uv not found on PATH: cannot draw the UK marking textures (pipeline/uk_decals.py)", EXIT_ERROR)
+    if (build_dir / UK_MARKING_FOLDER).exists():
+        shutil.rmtree(build_dir / UK_MARKING_FOLDER)  # nothing left over from an earlier build
+    cmd = [uv, "run", "--no-project", "--python", "3.12", "--with", "pillow", "--with", "numpy", "--with", "pyyaml",
+           "python", str(UK_DECALS_SCRIPT), "--out", str(build_dir), "--level", level, "--no-fragment"]
+    r = subprocess.run(cmd, cwd=str(REPO_ROOT), capture_output=True, text=True)
+    if r.returncode != 0:
+        raise GuardError(f"pipeline/uk_decals.py failed ({r.returncode}): {r.stderr.strip()[-400:]}", EXIT_ERROR)
+    return build_dir / UK_MARKING_FOLDER
+
+
+def add_uk_markings(zip_path: Path, build_dir: Path, builder=build_uk_markings) -> dict | None:
+    """Ship our UK marking materials in the level when its DecalRoads use them (the belfast MapNG patch
+    paints uk_*_cubewood on UK roads; the textures are ours, drawn by pipeline/uk_decals.py).
+
+    Adds levels/<level>/art/uk_markings_cubewood/ (main.materials.json and its PNGs) to the zip in place.
+    Fails (exit 1) when a used material is not in the materials file, or a material's texture is not in
+    the folder. Returns None for a level without UK paint, else {"materials": {name: count}, "files": n}.
+    """
+    used = {m: n for m, n in decal_road_materials(zip_path).items() if isinstance(m, str) and UK_MATERIAL_RE.match(m)}
+    if not used:
+        return None
+    level = read_level_info(zip_path)[0].split("/")[1]
+    folder = builder(level, require_under_data(build_dir, "UK marking build folder"))
+    mats = json.loads((folder / "main.materials.json").read_text(encoding="utf-8"))
+    missing = sorted(set(used) - set(mats))
+    if missing:
+        raise GuardError(f"{zip_path}: DecalRoads use UK materials that pipeline/uk_decals.py does not make: {missing}",
+                         EXIT_ERROR)
+    prefix = f"levels/{level}/art/{UK_MARKING_FOLDER}/"
+    for mat in mats.values():
+        for stage in mat.get("Stages", []):
+            for path in stage.values():
+                if not str(path).startswith("/" + prefix) or not (folder / str(path)[len(prefix) + 1:]).is_file():
+                    raise GuardError(f"material {mat.get('name')}: texture {path} is not in {folder}", EXIT_ERROR)
+    files = sorted(p for p in folder.iterdir() if p.is_file())
+    tmp = zip_path.with_name(zip_path.name + ".tmp")
+    with zipfile.ZipFile(zip_path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as zout:
+        for item in zin.infolist():
+            if not item.filename.startswith(prefix):  # replace any earlier copy
+                zout.writestr(item, zin.read(item.filename))
+        for p in files:
+            zout.write(p, prefix + p.name)
+    os.replace(tmp, zip_path)
+    return {"materials": used, "files": len(files)}
+
+
 # ---------------------------------------------------------------- network log
 
 def read_netlog(path: Path) -> dict[str, dict[str, int]]:
@@ -464,6 +541,9 @@ def cmd_export(args: argparse.Namespace) -> int:
     if not args.no_fix_stubs:
         stubs = fix_stubs(zip_path)
         print(f"stub images fixed: {stubs['fixed']}, left as stubs: {stubs['left']}")
+    uk = add_uk_markings(zip_path, out_dir / "uk_markings_build")
+    if uk:
+        print(f"UK marking materials shipped: {uk['files']} files, DecalRoads per material {json.dumps(uk['materials'])}")
     # the review's go condition: left-hand traffic in the built zip. Fail loudly, never fake it.
     try:
         found = check_zip(zip_path)
@@ -474,7 +554,7 @@ def cmd_export(args: argparse.Namespace) -> int:
         "zip": str(zip_path), "bytes": zip_path.stat().st_size, "mapng_commit": commit,
         "mapng_pin": PINNED_COMMIT, "mapng_patches": patches,
         "driving_side": found, "hosts": hosts, "base": "none", "trees": bool(args.trees), "dem": dem,
-        "stubs": stubs,
+        "stubs": stubs, "uk_markings": uk,
     }
     (out_dir / f"{level}.export.json").write_text(json.dumps(summary, indent=1), encoding="utf-8")
     print(f"driving-side check PASSED: {found}")

@@ -1,0 +1,589 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Belfast Patches <belfast-patches@users.noreply.github.com>
+Date: Sat, 14 Nov 2026 18:01:33 +0000
+Subject: [PATCH] Paint UK road markings on UK roads (centre, lane, warning,
+ edge, Stop and Give Way lines)
+
+A level whose road rules are the United Kingdom's (countryCode GB) gets UK paint
+from one table, services/ukRoadMarkings.js: material, textureLength and width per
+pattern (TSM 3 and 5, TSRGD 2016, TSR (NI) 1997). The materials are named
+uk_*_cubewood; their textures are shipped with the level by the Belfast pipeline.
+
+- Lines (buildLineMarkingLayers, restyled): centre 1008 / 1008.1 and lane 1005 /
+  1005.1 by speed limit (small module up to 40 mph, large above), edge 1012.1,
+  double white 1013.1 from overtaking=no or overtaking:forward|backward=no, and a
+  warning line 1004 / 1004.1 over the last 5 to 10 marks where the centre line
+  stops at a junction. Widths 100 or 150 mm painted; DecalRoad width = paint / 0.75.
+  Left-hand traffic: the centre and lane lines of unequal lane counts are mirrored
+  so the forward lanes are on the left, as the AI lanes are.
+- Junctions (the stop-bar pass): Stop line 1002.1 at STOP signs, 1001 at signals,
+  and a Give Way line 1003A with a triangle 1023A per lane at the give-way
+  approaches the sign code already finds. Give-ways at roundabouts are left alone.
+
+Every other country is unchanged (getMarkingStyle and the sign sets are untouched).
+
+diff --git a/services/exportBeamNGLevel.js b/services/exportBeamNGLevel.js
+index 7c8f384..08719b8 100644
+--- a/services/exportBeamNGLevel.js
++++ b/services/exportBeamNGLevel.js
+@@ -126,6 +126,7 @@ import {
+   getWaterProfile,
+ } from './beamngBiomeCatalog.js';
+ import { resolveRegionalBiome } from './beamngRegion.js';
++import { isUkRoadRules, ukJunctionContext, ukJunctionLines, ukLineLayers, ukLineNodes } from './ukRoadMarkings.js';
+ 
+ const BEAMNG_EXPORT_SERVICE_LOG = '[BeamNG Export Service]';
+ 
+@@ -3137,9 +3138,11 @@ function getLayeredRoadDecals(centerNodes, highway, tags, styleHalfWidth, parent
+     if (racewayKind(tags) === 'drag') layers.push({ name: 'line_center', material: GLOBAL_DECAL_MATERIALS.lineWhite, width: 0.15, offset: laneShift, renderPriority: 2, ...LINE_LAYER_BASE });
+   }
+   if (!isUnpaved && laneMarkingsEnabled) {
+-    layers.push(...buildLineMarkingLayers(highway, tags, drivingHalfWidth, {
++    const lines = buildLineMarkingLayers(highway, tags, drivingHalfWidth, {
+       style: options.markingStyle, urban: options.urban,
+-    })
++    });
++    // (UK roads: UK paint, services/ukRoadMarkings.js)
++    layers.push(...(options.ukMarkings ? ukLineLayers(lines, highway, tags, { drivingHalfWidth, startTrim, endTrim }) : lines)
+       .map((layer) => ({ ...layer, offset: layer.offset + laneShift })));
+   }
+   const decals = [];
+@@ -3188,9 +3191,9 @@ function getLayeredRoadDecals(centerNodes, highway, tags, styleHalfWidth, parent
+         trimEndM = tmp;
+       }
+     }
+-    const trimmedNodes = shouldTrimAtJunction
++    const trimmedNodes = ukLineNodes(shouldTrimAtJunction
+       ? trimNodesByDistance(baseNodes, trimStartM, trimEndM)
+-      : baseNodes;
++      : baseNodes, layer);
+     const layeredNodes = maybeReverseDecalNodes(trimmedNodes, layer);
+     if (layeredNodes.length < 2) continue;
+ 
+@@ -3203,6 +3206,7 @@ function getLayeredRoadDecals(centerNodes, highway, tags, styleHalfWidth, parent
+     else if (layer.name === 'edge_left') levelName = 'Edge Blend - Left';
+     else if (layer.name === 'edge_right') levelName = 'Edge Blend - Right';
+     else if (layer.name === 'ai_path') levelName = 'AI Path';
++    if (layer.levelName) levelName = layer.levelName;
+ 
+     // Fade only at a road's true termini — never at internal chunk joins, or
+     // every ~chunk boundary would show a gap. mirrored layers swap start/end.
+@@ -5812,6 +5816,7 @@ function* decalRoadSteps(terrainData, squareSize, opts = {}) {
+   const giveWayKeys = collectGiveWayNodeKeys(terrainData.osmFeatures);
+   const leftHandTraffic = !!terrainData.roadRules?.leftHandTraffic;
+   const markingStyle = getMarkingStyle(terrainData.roadRules);
++  const ukMarkings = isUkRoadRules(terrainData.roadRules);
+ 
+   const roadSplinesByName = new Map();
+   const segmentCounterByName = new Map();
+@@ -5986,6 +5991,7 @@ function* decalRoadSteps(terrainData, squareSize, opts = {}) {
+           halfAt,
+           laneShift: crossSection.laneShift,
+           markingStyle,
++          ukMarkings,
+           urban: urbanRoad,
+       curbed: isCurbedClass(highway) && (urbanRoad || isCurbedStreet(feature)),
+       edgeSeed: String(feature.id),
+@@ -6192,15 +6198,15 @@ export function generateJunctionMarkingDecals(terrainData, squareSize, { carriag
+   ];
+ 
+   const decals = [];
+-  const pushLine = (baseName, cx, cy, dirX, dirY, fromM, toM, lineWidth) => {
++  const pushLine = (baseName, cx, cy, dirX, dirY, fromM, toM, lineWidth, look = null) => {
+     const nodes = [
+       nodeAt(cx + dirX * fromM, cy + dirY * fromM, lineWidth),
+       nodeAt(cx + dirX * toM, cy + dirY * toM, lineWidth),
+     ];
+     const name = sanitizeBeamNGObjectName(`${baseName}_${decals.length + 1}`);
+     const decal = makeRoadDecal(nodes, name, 'junction_markings', {
+-      material: GLOBAL_DECAL_MATERIALS.lineWhite,
+-      renderPriority: 1, breakAngle: 1, textureLength: 6.4,
++      material: look?.material ?? GLOBAL_DECAL_MATERIALS.lineWhite,
++      renderPriority: 1, breakAngle: 1, textureLength: look?.textureLength ?? 6.4,
+     });
+     if (decal) decals.push(decal);
+   };
+@@ -6377,8 +6383,10 @@ export function generateJunctionMarkingDecals(terrainData, squareSize, { carriag
+   // that approach: the kerb half of a two-way road, all of a one-way.
+   const junctions = collectJunctionApproaches(terrainData);
+   const leftHandTraffic = !!terrainData.roadRules?.leftHandTraffic;
++  // (UK roads: UK Stop lines, and Give Way lines where the give-way signs stand)
++  const uk = junctions && isUkRoadRules(terrainData.roadRules) ? ukJunctionContext(features, junctions) : null;
+   const approaches = junctions
+-    ? [...junctions.intersections.flatMap((i) => i.approaches), ...junctions.stopApproaches]
++    ? [...junctions.intersections.flatMap((i) => i.approaches), ...junctions.stopApproaches, ...(uk ? junctions.yieldApproaches : [])]
+     : [];
+   for (const approach of approaches) {
+     const ll = junctions.projector.unproject(approach.x, approach.y);
+@@ -6391,7 +6399,9 @@ export function generateJunctionMarkingDecals(terrainData, squareSize, { carriag
+     const drawnHalf = carriageways ? parallelHalfWidthAt(carriageways, px, py, dir) : null;
+     const halfW = Math.max(1, (drawnHalf ?? approach.halfWidth) - JUNCTION_MARK_EDGE_INSET_M);
+     const fromM = approach.oneWay ? -halfW : STOP_BAR_CENTRE_GAP_M;
+-    pushLine('jm_stopline', px, py, kerb[0], kerb[1], fromM, halfW, STOP_BAR_THICKNESS_M);
++    if (uk) {
++      for (const l of ukJunctionLines(approach, uk, { px, py, dir, kerb, fromM, halfW })) pushLine(l.name, l.cx, l.cy, l.dir[0], l.dir[1], l.from, l.to, l.width, l);
++    } else pushLine('jm_stopline', px, py, kerb[0], kerb[1], fromM, halfW, STOP_BAR_THICKNESS_M);
+     stopCount++;
+   }
+ 
+diff --git a/services/ukRoadMarkings.js b/services/ukRoadMarkings.js
+new file mode 100644
+index 0000000..3c84052
+--- /dev/null
++++ b/services/ukRoadMarkings.js
+@@ -0,0 +1,239 @@
++// UK road markings for a level whose road rules are the United Kingdom's
++// (countryCode GB). One table of the UK patterns MapNG paints (material,
++// DecalRoad textureLength, width) and the two hooks that use it:
++//   ukLineLayers     restyles buildLineMarkingLayers' lines (centre, lane,
++//                    edge) and adds warning lines on junction approaches;
++//   ukJunctionLines  the Stop, signal Stop and Give Way lines (with the Give
++//                    Way triangle) where the stop-bar pass paints.
++// Dimensions: DfT Traffic Signs Manual chapters 3 and 5 (joint with DfI
++// Northern Ireland), TSRGD 2016 and the Traffic Signs Regulations (Northern
++// Ireland) 1997. The materials and their textures are not made here: they
++// are drawn outside MapNG and shipped in the level's
++// art/uk_markings_cubewood/main.materials.json. Every other country keeps
++// MapNG's own paint (getMarkingStyle), and so do the UK's signs.
++import { parseMaxspeedMps } from './beamngMapNavigation.js';
++import { makeRoadNodeKey } from './roadNetwork.js';
++import { isOneWayRoad } from './roadWidth.js';
++
++export const isUkRoadRules = (roadRules) => roadRules?.countryCode === 'GB';
++
++// A line texture is painted across its middle 75 %: DecalRoad width = painted width / 0.75.
++const LINE_FILL = 0.75;
++
++// textureLength is one repeat of the pattern (mark + gap); a fixed `width` is
++// the DecalRoad width of a pattern that does not scale with its paint.
++export const UK_MARKINGS = Object.freeze({
++  centre_1008: { material: 'uk_centre_1008_cubewood', textureLength: 6 },
++  centre_1008_1: { material: 'uk_centre_1008_1_cubewood', textureLength: 9 },
++  lane_1005: { material: 'uk_lane_1005_cubewood', textureLength: 6 },
++  lane_1005_1: { material: 'uk_lane_1005_1_cubewood', textureLength: 9 },
++  warning_1004: { material: 'uk_warning_1004_cubewood', textureLength: 6 },
++  warning_1004_1: { material: 'uk_warning_1004_1_cubewood', textureLength: 9 },
++  solid_white: { material: 'uk_solid_white_cubewood', textureLength: 2 },
++  double_white_solid_1013_1: { material: 'uk_double_white_solid_1013_1_cubewood', textureLength: 2, width: 0.633333 },
++  double_white_mixed_1013_1: { material: 'uk_double_white_mixed_1013_1_cubewood', textureLength: 6, width: 0.633333 },
++  giveway_1003a: { material: 'uk_giveway_1003a_cubewood', textureLength: 0.9, width: 0.8 },
++  triangle_1023a: { material: 'uk_giveway_triangle_1023a_cubewood', textureLength: 4.285714, width: 1.428571 },
++  // in the level for the junction, roundabout, crossing and kerbside work; not placed here
++  dash_600_300: { material: 'uk_dash_600_300_cubewood', textureLength: 0.9 },
++  dash_1000_1000: { material: 'uk_dash_1000_1000_cubewood', textureLength: 2 },
++  giveway_mini_1003_3: { material: 'uk_giveway_mini_1003_3_cubewood', textureLength: 1 },
++  solid_yellow: { material: 'uk_solid_yellow_cubewood', textureLength: 2 },
++  double_yellow_1018_1: { material: 'uk_double_yellow_1018_1_cubewood', textureLength: 2 },
++  zigzag_1001_4: { material: 'uk_zigzag_1001_4_cubewood', textureLength: 4.3, width: 0.571429 },
++  box_hatch_1043: { material: 'uk_box_hatch_1043_cubewood', textureLength: 2.828427, width: 2.828427 },
++  box_hatch_1043_wide: { material: 'uk_box_hatch_1043_wide_cubewood', textureLength: 3.535534, width: 3.535534 },
++});
++
++const round = (v, d = 6) => Math.round(v * 10 ** d) / 10 ** d;
++
++/** { material, textureLength, width } of a UK pattern; `paintMm` is the painted width of a line pattern. */
++export function ukMarking(key, paintMm = 100) {
++  const m = UK_MARKINGS[key];
++  if (!m) throw new Error(`no UK marking ${key}`);
++  return { material: m.material, textureLength: m.textureLength, width: m.width ?? round(paintMm / 1000 / LINE_FILL) };
++}
++
++/** The way's limit in mph (OSM maxspeed); unmapped: 70 on a motorway, else a restricted road's 30. */
++export function ukSpeedMph(tags = {}, highway = '') {
++  const mps = parseMaxspeedMps(tags);
++  if (mps) return Math.round(mps / 0.44704);
++  return /^motorway/.test(String(highway)) ? 70 : 30;
++}
++
++// The small module (6 m) up to 40 mph, the large one (9 m) above (TSM 5 2.1.2).
++const isLarge = (mph) => mph > 40;
++// warning marks on a junction approach (TSM 5 Table 2-3): 5 at 30 mph, 7 above;
++// 7 and 10 on four- or six-lane single carriageways
++const approachMarks = (mph, multiLane) => (mph <= 30 ? (multiLane ? 7 : 5) : (multiLane ? 10 : 7));
++
++const isNo = (v) => String(v ?? '').trim().toLowerCase() === 'no';
++const isReverseOneWay = (tags) => ['-1', 'reverse'].includes(String(tags.oneway ?? '').trim().toLowerCase());
++
++/**
++ * buildLineMarkingLayers' lines (the 'white' style) in UK paint, before the
++ * lane shift is added. Left-hand traffic: forward lanes ride the positive
++ * (left) side, so the centre and lane lines of a road with unequal lane
++ * counts are mirrored. Where the road's centre line stops at a junction
++ * (startTrim / endTrim .center > 0) its last metres become a warning line,
++ * and so do the lane lines on that approach.
++ *   centre: 1008 / 1008.1; overtaking=no double white 1013.1 (both lines
++ *           continuous), overtaking:forward|backward=no the continuous line
++ *           on that traffic's side (texture: continuous on the image left)
++ *   lane:   1005 / 1005.1      edge: 1012.1 continuous     warning: 1004 / 1004.1
++ * Layers get `ukPiece` (a stretch of the trimmed line) and `ukReverse`
++ * (node order reversed), applied by ukLineNodes.
++ */
++export function ukLineLayers(layers, highway, tags = {}, { drivingHalfWidth = 3.5, startTrim = null, endTrim = null } = {}) {
++  const mph = ukSpeedMph(tags, highway);
++  const large = isLarge(mph);
++  const module = large ? 9 : 6;
++  const centre = layers.find((l) => l.name === 'line_center');
++  const seps = layers.filter((l) => l.name.startsWith('line_sep_'));
++  const oneWay = isOneWayRoad(tags);
++  const lanes = seps.length + (centre ? 2 : 1);
++  // 150 mm on two-way roads of three lanes or more, or 10 m wide or more (TSM 5 Table 2-1, 2-3)
++  const wideRoad = !oneWay && (lanes >= 3 || 2 * drivingHalfWidth >= 10);
++  const fast = mph >= 70;
++  const centreMm = wideRoad || fast ? 150 : 100;
++  const laneMm = fast ? 150 : 100;
++  const approachM = approachMarks(mph, !oneWay && lanes >= 4) * module;
++  const atStart = (startTrim?.center ?? 0) > 0;
++  const atEnd = (endTrim?.center ?? 0) > 0;
++  const centreOffset = centre ? -centre.offset : 0;
++
++  // a line with warning stretches at the junction ends it approaches
++  // (the centre's warning line as wide as the centre line, a lane line's as the lane line: TSM 5 Table 2-3)
++  const withWarnings = (layer, look, warnMm, ws, we, levelName) => {
++    if (!(ws > 0) && !(we > 0)) return [{ ...layer, ...look }];
++    const piece = (part) => ({ part, ws, we, minMain: module });
++    const warn = ukMarking(large ? 'warning_1004_1' : 'warning_1004', warnMm);
++    const out = [{ ...layer, ...look, ukPiece: piece('main') }];
++    if (ws > 0) out.push({ ...layer, ...warn, ukPiece: piece('start'), levelName });
++    if (we > 0) out.push({ ...layer, ...warn, ukPiece: piece('end'), levelName });
++    return out;
++  };
++
++  const out = [];
++  for (const layer of layers) {
++    if (layer.name === 'line_center') {
++      const mirrored = { ...layer, offset: -layer.offset };
++      const fwdNo = isNo(tags.overtaking) || isNo(tags['overtaking:forward']);
++      const backNo = isNo(tags.overtaking) || isNo(tags['overtaking:backward']);
++      if (fwdNo && backNo) out.push({ ...mirrored, ...ukMarking('double_white_solid_1013_1') });
++      else if (fwdNo || backNo) out.push({ ...mirrored, ...ukMarking('double_white_mixed_1013_1'), ...(backNo ? { ukReverse: true } : {}) });
++      else {
++        const look = ukMarking(large ? 'centre_1008_1' : 'centre_1008', centreMm);
++        out.push(...withWarnings(mirrored, look, centreMm, atStart ? approachM : 0, atEnd ? approachM : 0, 'Warning Line'));
++      }
++    } else if (layer.name.startsWith('line_sep_')) {
++      const mirrored = { ...layer, offset: -layer.offset };
++      // the end its lanes' traffic drives towards
++      const towardEnd = oneWay ? !isReverseOneWay(tags) : mirrored.offset > centreOffset;
++      const look = ukMarking(large ? 'lane_1005_1' : 'lane_1005', laneMm);
++      out.push(...withWarnings(mirrored, look, laneMm, !towardEnd && atStart ? approachM : 0, towardEnd && atEnd ? approachM : 0));
++    } else if (layer.name === 'line_left' || layer.name === 'line_right') {
++      out.push({ ...layer, ...ukMarking('solid_white', fast ? 150 : 100) });
++    } else out.push(layer);
++  }
++  return out;
++}
++
++// [x, y, z, w] at distance d along nodes (cum: cumulative lengths)
++const nodeAtDistance = (nodes, cum, d) => {
++  let i = 1;
++  while (i < nodes.length - 1 && cum[i] < d) i++;
++  const span = cum[i] - cum[i - 1];
++  const t = span > 1e-9 ? Math.max(0, Math.min(1, (d - cum[i - 1]) / span)) : 0;
++  return nodes[i - 1].map((v, k) => (k < 3 ? round(v + (nodes[i][k] - v) * t, 3) : v + (nodes[i][k] - v) * t));
++};
++
++/** The stretch [fromM, toM] of a polyline of DecalRoad nodes. */
++export function sliceNodesAlong(nodes, fromM, toM) {
++  if (!Array.isArray(nodes) || nodes.length < 2 || !(toM > fromM)) return [];
++  const cum = [0];
++  for (let i = 1; i < nodes.length; i++) cum.push(cum[i - 1] + Math.hypot(nodes[i][0] - nodes[i - 1][0], nodes[i][1] - nodes[i - 1][1]));
++  const a = Math.max(0, fromM); const b = Math.min(cum[cum.length - 1], toM);
++  if (!(b > a)) return [];
++  const out = [nodeAtDistance(nodes, cum, a)];
++  for (let i = 1; i < nodes.length - 1; i++) if (cum[i] > a && cum[i] < b) out.push(nodes[i]);
++  out.push(nodeAtDistance(nodes, cum, b));
++  return out;
++}
++
++/**
++ * A UK line layer's nodes after the junction trim: its ukPiece stretch
++ * (main, or the warning at the start or end; a line too short for both
++ * warnings and one module between them is one warning line), reversed for
++ * ukReverse. Layers without either come back unchanged.
++ */
++export function ukLineNodes(nodes, layer) {
++  if (!layer?.ukPiece && !layer?.ukReverse) return nodes;
++  let out = nodes;
++  const p = layer.ukPiece;
++  if (p && Array.isArray(nodes) && nodes.length >= 2) {
++    let L = 0;
++    for (let i = 1; i < nodes.length; i++) L += Math.hypot(nodes[i][0] - nodes[i - 1][0], nodes[i][1] - nodes[i - 1][1]);
++    if (L - p.ws - p.we < p.minMain) out = p.part === (p.ws > 0 ? 'start' : 'end') ? nodes : [];
++    else if (p.part === 'start') out = sliceNodesAlong(nodes, 0, p.ws);
++    else if (p.part === 'end') out = sliceNodesAlong(nodes, L - p.we, L);
++    else out = sliceNodesAlong(nodes, p.ws, L - p.we);
++  }
++  return layer.ukReverse && out.length >= 2 ? [...out].reverse() : out;
++}
++
++const isRoundaboutTags = (tags = {}) => ['roundabout', 'circular'].includes(String(tags.junction ?? '').trim().toLowerCase());
++
++/** What ukJunctionLines needs of an export: its junction approaches and mini-roundabout nodes. */
++export function ukJunctionContext(features = [], junctions = null) {
++  const miniRoundabouts = new Set();
++  for (const f of features) {
++    if (f?.geometry?.length === 1 && f.tags?.highway === 'mini_roundabout') miniRoundabouts.add(makeRoadNodeKey(f.geometry[0]));
++  }
++  return { junctions, miniRoundabouts };
++}
++
++// Give Way line 1003A: two rows 200 mm wide, 300 mm apart (700 mm painted).
++const GIVEWAY_PAINT_HALF_M = 0.35;
++// Triangle 1023A: its base 2.1 to 2.75 m from the line (TSM 3 3.2.5), here
++// 2.4 m; the texture leaves (4.2857 - 3.75) / 2 m clear at each end.
++const TRIANGLE_GAP_M = 2.4;
++const TRIANGLE_END_MARGIN_M = (4.285714 - 3.75) / 2;
++const TRIANGLE_MIN_LANE_M = 1.6;
++
++/**
++ * The UK lines at one approach of the stop-bar pass, as straight DecalRoads
++ * [{ name, cx, cy, dir, from, to, material, textureLength, width }] from
++ * (cx, cy) + dir·from to (cx, cy) + dir·to. `at` is the pass's own geometry:
++ * the stop point (px, py), travel direction `dir`, unit `kerb` (across, to
++ * the kerb) and the span fromM..halfW across the approach lanes.
++ *   signals: Stop line 1001, 200 mm (300 mm at 40 mph and over)
++ *   STOP sign: Stop line 1002.1, 400 mm
++ *   give way: Give Way line 1003A and a triangle 1023A in each approaching
++ *             lane, apex first (the DecalRoad runs in the direction of travel)
++ * A give-way at a roundabout or mini-roundabout is left unpainted (its line is 1003.1 or 1003.3).
++ */
++export function ukJunctionLines(approach, context, { px, py, dir, kerb, fromM, halfW }) {
++  const junctions = context?.junctions;
++  const mph = ukSpeedMph(approach.road?.tags || {}, approach.highway);
++  const across = (name, look) => ({ name, cx: px, cy: py, dir: kerb, from: fromM, to: halfW, ...look });
++  if (junctions?.stopApproaches?.includes(approach)) return [across('jm_stopline', ukMarking('solid_white', 400))];
++  if (!junctions?.yieldApproaches?.includes(approach)) return [across('jm_stopline', ukMarking('solid_white', mph >= 40 ? 300 : 200))];
++  const node = junctions.graph?.nodes?.get(approach.junctionKey);
++  if (context.miniRoundabouts?.has(approach.junctionKey) || node?.edges?.some((e) => isRoundaboutTags(e.road?.tags))) return [];
++  const lines = [across('jm_giveway', ukMarking('giveway_1003a'))];
++  const tri = ukMarking('triangle_1023a');
++  const lanes = Math.max(1, approach.lanesIn || 1);
++  const span = halfW - fromM;
++  if (span / lanes >= TRIANGLE_MIN_LANE_M) {
++    const back = GIVEWAY_PAINT_HALF_M + TRIANGLE_GAP_M - TRIANGLE_END_MARGIN_M;
++    for (let k = 0; k < lanes; k++) {
++      const lateral = fromM + ((k + 0.5) * span) / lanes;
++      lines.push({
++        name: 'jm_giveway_triangle', cx: px + kerb[0] * lateral, cy: py + kerb[1] * lateral, dir,
++        from: -(back + tri.textureLength), to: -back, ...tri,
++      });
++    }
++  }
++  return lines;
++}
+diff --git a/tests/ukRoadMarkings.test.mjs b/tests/ukRoadMarkings.test.mjs
+new file mode 100644
+index 0000000..1270634
+--- /dev/null
++++ b/tests/ukRoadMarkings.test.mjs
+@@ -0,0 +1,210 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++
++import { buildLineMarkingLayers, generateDecalRoads, generateJunctionMarkingDecals } from '../services/exportBeamNGLevel.js';
++import {
++  isUkRoadRules, sliceNodesAlong, UK_MARKINGS, ukLineLayers, ukLineNodes, ukMarking, ukSpeedMph,
++} from '../services/ukRoadMarkings.js';
++
++const GB = { countryCode: 'GB', countryName: 'United Kingdom', region: 'Europe', leftHandTraffic: true };
++const IE = { countryCode: 'IE', countryName: 'Ireland', region: 'Europe', leftHandTraffic: true };
++const near = (a, b, eps = 1e-6) => Math.abs(a - b) <= eps;
++const uk = (highway, tags, half = 3.5, ctx = {}) => ukLineLayers(buildLineMarkingLayers(highway, tags, half, { style: 'white' }), highway, tags, { drivingHalfWidth: half, ...ctx });
++const one = (layers, name) => layers.filter((l) => l.name === name);
++const J = 0.005;
++const pathLength = (nodes) => nodes.slice(1).reduce((s, n, i) => s + Math.hypot(n[0] - nodes[i][0], n[1] - nodes[i][1]), 0);
++
++test('UK paint only for UK road rules', () => {
++  assert.equal(isUkRoadRules(GB), true);
++  assert.equal(isUkRoadRules(IE), false);
++  assert.equal(isUkRoadRules(null), false);
++  assert.equal(isUkRoadRules({ countryCode: 'US', region: 'Americas' }), false);
++});
++
++test('pattern table: line widths are painted width / 0.75, composites fixed', () => {
++  assert.deepEqual(ukMarking('centre_1008', 100), { material: 'uk_centre_1008_cubewood', textureLength: 6, width: 0.133333 });
++  assert.equal(ukMarking('centre_1008', 150).width, 0.2);
++  assert.equal(ukMarking('solid_white', 400).width, 0.533333, 'Stop line 1002.1');
++  assert.equal(ukMarking('giveway_1003a', 100).width, 0.8, 'Give Way 1003A has a fixed width');
++  assert.ok(Object.values(UK_MARKINGS).every((m) => /^uk_[a-z0-9_]+_cubewood$/.test(m.material) && m.textureLength > 0));
++  assert.equal(ukSpeedMph({ maxspeed: '30 mph' }), 30);
++  assert.equal(ukSpeedMph({ maxspeed: '50 mph' }), 50);
++  assert.equal(ukSpeedMph({}, 'tertiary'), 30, 'unmapped: restricted road');
++});
++
++test('centre line 1008 up to 40 mph, 1008.1 above (module by speed limit)', () => {
++  for (const [mph, material, length] of [[30, 'uk_centre_1008_cubewood', 6], [40, 'uk_centre_1008_cubewood', 6], [50, 'uk_centre_1008_1_cubewood', 9], [60, 'uk_centre_1008_1_cubewood', 9]]) {
++    const [c] = one(uk('tertiary', { maxspeed: `${mph} mph` }), 'line_center');
++    assert.equal(c.material, material, `${mph} mph`);
++    assert.equal(c.textureLength, length);
++    assert.equal(c.width, 0.133333, '100 mm painted');
++  }
++  const [wide] = one(uk('secondary', { maxspeed: '30 mph', lanes: '4' }, 7), 'line_center');
++  assert.equal(wide.width, 0.2, '150 mm on a four-lane road');
++});
++
++test('lane lines 1005 / 1005.1 and edge lines 1012.1', () => {
++  const small = uk('trunk', { maxspeed: '40 mph', lanes: '4' }, 7);
++  const big = uk('trunk', { maxspeed: '60 mph', lanes: '4' }, 7);
++  for (const [layers, material, length] of [[small, 'uk_lane_1005_cubewood', 6], [big, 'uk_lane_1005_1_cubewood', 9]]) {
++    const seps = layers.filter((l) => l.name.startsWith('line_sep_'));
++    assert.equal(seps.length, 2);
++    assert.ok(seps.every((l) => l.material === material && l.textureLength === length && l.width === 0.133333));
++    const edges = layers.filter((l) => l.name === 'line_left' || l.name === 'line_right');
++    assert.equal(edges.length, 2);
++    assert.ok(edges.every((l) => l.material === 'uk_solid_white_cubewood' && l.textureLength === 2 && l.width === 0.133333));
++  }
++  const motorway = uk('motorway', { maxspeed: '70 mph', oneway: 'yes', lanes: '3' }, 5.5);
++  assert.ok(motorway.filter((l) => l.name.startsWith('line_')).every((l) => l.width === 0.2), '150 mm at 70 mph');
++  assert.ok(!motorway.some((l) => /^m_line/.test(l.material)), 'no stock line left');
++});
++
++test('left-hand traffic: the centre line of unequal lanes sits beside the forward lanes on the left', () => {
++  const tags = { maxspeed: '30 mph', lanes: '4', 'lanes:forward': '3', 'lanes:backward': '1' };
++  const white = buildLineMarkingLayers('secondary', tags, 7, { style: 'white' });
++  const layers = uk('secondary', tags, 7);
++  const [c] = one(layers, 'line_center');
++  const E = 7 - 0.3;
++  // three forward lanes on the left (positive) side: the divider is a lane width right of the axis
++  assert.ok(near(c.offset, -E / 2), `centre at ${c.offset}`);
++  assert.ok(near(one(white, 'line_center')[0].offset, E / 2), 'MapNG places it for right-hand traffic');
++  const seps = layers.filter((l) => l.name.startsWith('line_sep_')).map((l) => l.offset).sort((a, b) => a - b);
++  assert.ok(seps.length === 2 && seps.every((o) => o > c.offset), 'both lane lines between the forward lanes');
++});
++
++test('double white lines 1013.1 from the overtaking tags', () => {
++  const [both] = one(uk('secondary', { maxspeed: '40 mph', overtaking: 'no' }), 'line_center');
++  assert.equal(both.material, 'uk_double_white_solid_1013_1_cubewood');
++  assert.equal(both.width, 0.633333);
++  const [fwd] = one(uk('secondary', { maxspeed: '40 mph', 'overtaking:forward': 'no' }), 'line_center');
++  assert.equal(fwd.material, 'uk_double_white_mixed_1013_1_cubewood');
++  assert.equal(fwd.textureLength, 6);
++  assert.equal(fwd.ukReverse, undefined, 'continuous line on the forward (left) side: node order');
++  const [back] = one(uk('secondary', { maxspeed: '40 mph', 'overtaking:backward': 'no' }), 'line_center');
++  assert.equal(back.ukReverse, true, 'continuous line on the backward side: nodes reversed');
++  const line = [[0, 0, 0, 0.6], [10, 0, 0, 0.6]];
++  assert.deepEqual(ukLineNodes(line, back), [[10, 0, 0, 0.6], [0, 0, 0, 0.6]]);
++});
++
++test('warning line 1004 / 1004.1 on the approach where the centre line stops at a junction', () => {
++  const end = { center: 4, pos: 4, neg: 4 };
++  const line = Array.from({ length: 101 }, (_, i) => [i * 2, 0, 0, 0.13]);   // 200 m straight
++  for (const [mph, material, length, approachM] of [[30, 'uk_warning_1004_cubewood', 6, 30], [40, 'uk_warning_1004_cubewood', 6, 42], [50, 'uk_warning_1004_1_cubewood', 9, 63]]) {
++    const layers = one(uk('tertiary', { maxspeed: `${mph} mph` }, 3.5, { endTrim: end }), 'line_center');
++    assert.equal(layers.length, 2, 'centre line and its warning stretch');
++    const warn = layers.find((l) => l.material === material);
++    const main = layers.find((l) => l !== warn);
++    assert.ok(warn && warn.textureLength === length && warn.levelName === 'Warning Line');
++    const w = ukLineNodes(line, warn); const m = ukLineNodes(line, main);
++    assert.ok(near(pathLength(w), approachM, 1e-3), `${mph} mph: ${pathLength(w)} m of warning line`);
++    assert.ok(near(w[0][0], 200 - approachM, 1e-3) && near(w[w.length - 1][0], 200, 1e-3), 'at the junction end');
++    assert.ok(near(pathLength(m), 200 - approachM, 1e-3), 'the rest stays a centre line');
++  }
++  // both ends at junctions and the road too short for both and a module: all warning line
++  const both = one(uk('tertiary', { maxspeed: '30 mph' }, 3.5, { startTrim: end, endTrim: end }), 'line_center');
++  assert.equal(both.length, 3);
++  const short = Array.from({ length: 31 }, (_, i) => [i * 2, 0, 0, 0.13]);   // 60 m
++  const kept = both.map((l) => ukLineNodes(short, l)).filter((n) => n.length >= 2);
++  assert.equal(kept.length, 1);
++  assert.ok(near(pathLength(kept[0]), 60, 1e-3));
++  // no junction: no warning
++  assert.equal(one(uk('tertiary', { maxspeed: '30 mph' }), 'line_center').length, 1);
++  // lane lines change only on the approach their traffic drives to (one-way: the end)
++  const oneWay = uk('trunk', { maxspeed: '30 mph', oneway: 'yes', lanes: '2' }, 3.5, { startTrim: end, endTrim: end });
++  const seps = oneWay.filter((l) => l.name.startsWith('line_sep_'));
++  assert.deepEqual(seps.map((l) => l.ukPiece.part).sort(), ['end', 'main']);
++  assert.equal(seps.find((l) => l.ukPiece.part === 'end').material, 'uk_warning_1004_cubewood');
++  assert.equal(sliceNodesAlong(line, 10, 21).length, 7, 'slices keep the nodes between their ends');
++});
++
++// T junction in a 1.1 km box: the secondary `main` runs east-west through J,
++// the tertiary `side` comes up from the south and stops at it.
++function tJunction(roadRules, sideTags = {}, extra = []) {
++  const size = 64;
++  const road = (id, tags, coords) => ({ id, type: 'road', tags: { name: id, ...tags }, geometry: coords.map(([lat, lng]) => ({ lat, lng })) });
++  return {
++    width: size, height: size, minHeight: 0, maxHeight: 50,
++    heightMap: new Float32Array(size * size).fill(10),
++    bounds: { north: 0.01, south: 0, west: 0, east: 0.01 },
++    metersPerPixel: (0.01 * 111320) / size,
++    roadRules,
++    osmFeatures: [
++      road('main', { highway: 'secondary', maxspeed: '40 mph' }, [[J, 0.001], [J, J], [J, 0.009]]),
++      road('side', { highway: 'tertiary', maxspeed: '30 mph', ...sideTags }, [[0.001, J], [J - 0.0002, J], [J, J]]),
++      ...extra,
++    ],
++  };
++}
++const allDecals = (groups) => {
++  const out = [];
++  const walk = (items) => items.forEach((it) => { if (it.class === 'DecalRoad') out.push(it); if (it.__items) walk(it.__items); });
++  walk(groups);
++  return out;
++};
++
++test('a UK export paints its lines with the UK materials; Ireland keeps MapNG\'s', () => {
++  const td = tJunction(GB);
++  const decals = allDecals(generateDecalRoads(td, td.metersPerPixel));
++  const paint = decals.filter((d) => /^(m_line|uk_)/.test(d.material));
++  assert.ok(paint.length > 0);
++  assert.ok(paint.every((d) => d.material.startsWith('uk_')), `stock lines left: ${paint.filter((d) => !d.material.startsWith('uk_')).map((d) => d.material)}`);
++  const mats = new Set(paint.map((d) => d.material));
++  assert.ok(mats.has('uk_centre_1008_cubewood') && mats.has('uk_warning_1004_cubewood') && mats.has('uk_solid_white_cubewood'), [...mats].join(' '));
++  for (const d of paint) assert.equal(d.textureLength, UK_MARKINGS[Object.keys(UK_MARKINGS).find((k) => UK_MARKINGS[k].material === d.material)].textureLength);
++  // the side road's warning line ends at the junction: its north end is the one nearest J (the world origin)
++  const sideWarn = paint.filter((d) => d.material === 'uk_warning_1004_cubewood' && d.nodes.every(([x]) => Math.abs(x) < 3));
++  assert.ok(sideWarn.length > 0, 'warning line on the side road');
++  assert.ok(sideWarn.every((d) => d.nodes.every(([, y]) => y < 0 && y > -40)), 'within 30 m and the trim of the junction');
++  const names = decals.map((d) => d.name);
++  assert.equal(new Set(names).size, names.length, 'decal names stay unique');
++
++  const ie = allDecals(generateDecalRoads(tJunction(IE), td.metersPerPixel));
++  const iePaint = ie.filter((d) => /^(m_line|uk_)/.test(d.material));
++  assert.ok(iePaint.length > 0 && iePaint.every((d) => d.material.startsWith('m_line') && d.textureLength === 6.4));
++});
++
++test('UK Give Way: double dashed line 1003A across the approach half, triangle 1023A apex first', () => {
++  const giveWay = { id: 'n1', type: 'poi', geometry: [{ lat: J - 0.0002, lng: J }], tags: { highway: 'give_way' } };
++  const decals = generateJunctionMarkingDecals(tJunction(GB, {}, [giveWay]), (0.01 * 111320) / 64);
++  const line = decals.filter((d) => d.name.startsWith('jm_giveway_') && !d.name.startsWith('jm_giveway_triangle'));
++  assert.equal(line.length, 1);
++  assert.equal(line[0].material, 'uk_giveway_1003a_cubewood');
++  assert.equal(line[0].textureLength, 0.9);
++  assert.ok(line[0].nodes.every((n) => n[3] === 0.8));
++  // northbound on the side road, left-hand traffic: the approach half is the west (negative x) side
++  assert.ok(line[0].nodes.every(([x]) => x < 0.01), 'on the left (kerb) half');
++  const [tri] = decals.filter((d) => d.name.startsWith('jm_giveway_triangle'));
++  assert.ok(tri, 'one triangle for the one approaching lane');
++  assert.equal(tri.material, 'uk_giveway_triangle_1023a_cubewood');
++  assert.ok(near(Math.hypot(tri.nodes[1][0] - tri.nodes[0][0], tri.nodes[1][1] - tri.nodes[0][1]), 4.285714, 2e-3), 'drawn once: length = textureLength');
++  const lineY = line[0].nodes[0][1];
++  assert.ok(tri.nodes[0][1] < tri.nodes[1][1] && tri.nodes[1][1] < lineY, 'runs north, towards the line: the driver meets the apex first');
++  // (the painted base is the texture's end margin, 0.268 m, short of the end node)
++  const gap = lineY - 0.35 - (tri.nodes[1][1] - 0.267857);
++  assert.ok(gap >= 2.1 && gap <= 2.75, `triangle base ${gap.toFixed(2)} m from the line`);
++
++  // MapNG paints no give-way line outside the UK
++  assert.equal(generateJunctionMarkingDecals(tJunction(IE, {}, [giveWay]), (0.01 * 111320) / 64).filter((d) => d.name.startsWith('jm_')).length, 0);
++});
++
++test('UK Stop lines: 1002.1 at a STOP sign (400 mm), 1001 at signals (200 mm, 300 mm from 40 mph)', () => {
++  const stop = { id: 'n1', type: 'poi', geometry: [{ lat: J - 0.0002, lng: J }], tags: { highway: 'stop' } };
++  const [bar] = generateJunctionMarkingDecals(tJunction(GB, {}, [stop]), (0.01 * 111320) / 64).filter((d) => d.name.startsWith('jm_stopline'));
++  assert.equal(bar.material, 'uk_solid_white_cubewood');
++  assert.equal(bar.textureLength, 2);
++  assert.ok(bar.nodes.every((n) => n[3] === 0.533333));
++
++  const signals = { id: 'n2', type: 'poi', geometry: [{ lat: J, lng: J }], tags: { highway: 'traffic_signals' } };
++  const bars = generateJunctionMarkingDecals(tJunction(GB, {}, [signals]), (0.01 * 111320) / 64).filter((d) => d.name.startsWith('jm_stopline'));
++  assert.ok(bars.length >= 3, `${bars.length} signal stop lines`);
++  assert.ok(bars.every((d) => d.material === 'uk_solid_white_cubewood'));
++  const widths = new Set(bars.map((d) => d.nodes[0][3]));
++  assert.ok(widths.has(0.266667) && widths.has(0.4), `200 mm on the 30 mph side road, 300 mm on the 40 mph main road (${[...widths]})`);
++});
++
++test('a UK give-way at a roundabout or mini-roundabout is left for the roundabout markings', () => {
++  const giveWay = { id: 'n1', type: 'poi', geometry: [{ lat: J - 0.0002, lng: J }], tags: { highway: 'give_way' } };
++  const mini = { id: 'n3', type: 'poi', geometry: [{ lat: J, lng: J }], tags: { highway: 'mini_roundabout' } };
++  const decals = generateJunctionMarkingDecals(tJunction(GB, {}, [giveWay, mini]), (0.01 * 111320) / 64);
++  assert.equal(decals.filter((d) => d.name.startsWith('jm_giveway')).length, 0);
++});
