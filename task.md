@@ -265,7 +265,7 @@ Outcome: every night, a build is tested without you or Claude, and you get a sho
 | T-308 | done | Flag-this-spot key: a dev-only extension that logs position, heading, speed and a screenshot when you press a bound key or wheel button in VR | sonnet | medium | game | T-006 | A test flag produces a complete record |
 | T-309 | todo | `qa/nightly.ps1`: build, G0 to G4, digest, clean shutdown. Register it in Windows Task Scheduler for 01:00 | sonnet | high | game | T-301, T-304, T-307 | Three unattended nights with nothing left running |
 | T-310 | todo | Regression gate: compare each night with the last accepted metrics and block release candidates that get worse | sonnet | medium | any | T-309 | A planted regression is blocked |
-| T-311 | doing | Drive suite accuracy (from T-106, `docs/decisions/001-generator.md` gaps 3 and 4): slow to a learner's speed over mapped traffic calming (or exempt it from the bump limit), and judge lane side against the lane the car is in, not the way centreline, on roads with unequal lanes such as Hospital Road `lanes=4` | sonnet | medium | game | T-302 | A rerun logs no bump event at mapped traffic calming, and no wrong-side samples that the lane layout explains |
+| T-311 | done | Drive suite accuracy (from T-106, `docs/decisions/001-generator.md` gaps 3 and 4): slow to a learner's speed over mapped traffic calming (or exempt it from the bump limit), and judge lane side against the lane the car is in, not the way centreline, on roads with unequal lanes such as Hospital Road `lanes=4` | sonnet | medium | game | T-302 | A rerun logs no bump event at mapped traffic calming, and no wrong-side samples that the lane layout explains |
 
 ### M4: UK road correctness
 
