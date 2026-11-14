@@ -301,9 +301,9 @@ def write_textures(specs: list[Spec], folder: Path) -> None:
     for spec in specs:
         save_png(render(spec), folder / spec.opacity_file, "L")
     for colour, rgb in COLOURS.items():
-        save_png(np.full((8, 8, 3), rgb, np.uint8), folder / SHARED[colour], "RGB")
-    save_png(np.dstack([np.full((8, 8), v, np.uint8) for v in (128, 128, 255)]), folder / SHARED["normal"], "RGB")
-    save_png(np.full((8, 8), ROUGHNESS, np.uint8), folder / SHARED["rough"], "L")
+        save_png(np.full((16, 16, 3), rgb, np.uint8), folder / SHARED[colour], "RGB")
+    save_png(np.dstack([np.full((16, 16), v, np.uint8) for v in (128, 128, 255)]), folder / SHARED["normal"], "RGB")
+    save_png(np.full((16, 16), ROUGHNESS, np.uint8), folder / SHARED["rough"], "L")
 
 
 # ----------------------------------------------------------------------------------------------------- materials
