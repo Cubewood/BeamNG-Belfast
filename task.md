@@ -287,6 +287,20 @@ Outcome: roads read like Belfast roads, and the Slice passes G0 to G4.
 | T-410 | todo | Bus lanes, cycle lanes, yellow boxes and kerbside lines from OSM tags (note: T-106: none are tagged in the Slice; lowest priority until a larger area is built) | sonnet | medium | any | T-403 | Static checks match the tagged lengths |
 | T-411 | todo | Fix the Slice until it passes G0 to G4 | sonnet | high | game | T-404, T-406, T-407, T-408, T-409, T-309, T-311, T-413 | Three consecutive nightly passes |
 
+### M4b: Belfast character
+
+Outcome: the map feels like Belfast, not any British town. Roads come first, so this starts after the Slice passes G0 to G4 (T-411), apart from the licence work. Survey: `docs/asset-survey.md`. Third-party assets live in `H:\BelfastData\assets\`; git holds only the manifest and credits.
+
+| ID | Status | Task | Model | Effort | Where | Needs | Done when |
+|---|---|---|---|---|---|---|---|
+| T-414 | todo | Asset licence register: check each candidate in `docs/asset-survey.md` on its own page (Kenney, Quaternius, KayKit, Poly Haven, ambientCG, Commons flags, BlendSwap signs), and first look in the game's own `content` for stock items we can reuse (bollards, lamp posts, fences, flags). Write `data/assets/manifest.json` (source URL, author, licence, hash) and CREDITS lines | sonnet | medium | any | T-208 | Every asset in the manifest is CC0 or CC-BY with a credit line, none is NC or ND, and no asset file is tracked in git |
+| T-415 | todo | Decide content policy: real murals or our own originals, whether any political or paramilitary imagery appears (recommended: none), and flag density by zone | you | - | you | T-414 | Decision recorded in section 4 |
+| T-416 | todo | Flags: draw Union Flag, Ulster Banner and Irish tricolour textures, a flag and bunting prop with a cloth-like material, and a zone file (`data/overrides/` style, evidence per zone) giving east Belfast Union Flags and Ulster Banners, west Belfast tricolours, and sparse flags elsewhere. Place on lamp posts, house fronts and bunting lines | sonnet | high | game | T-411, T-414, T-415 | Props load with a clean console, density per zone matches the zone file, and flags are readable at 30 m |
+| T-417 | todo | Street furniture beyond signs: pillar box, bollards, lamp posts, bus shelters and railings, from CC0 or our own simple meshes, placed from OSM nodes where tagged | sonnet | high | game | T-409, T-414 | Each prop loads with a clean console and sits on the pavement, not in the lane |
+| T-418 | todo | House look: red-brick terraces, pebbledash and render semis, and Belfast roof and chimney shapes, with CC0 brick and render textures on MapNG's building generation. Keep it cheap, since buildings only need to look like a city | sonnet | high | game | T-412, T-414, T-702 | Three street types look right in a frame set, and building draw cost stays within the T-701 budget |
+| T-419 | todo | Murals: original gable-end paintings in the Belfast style (shipyard and Titanic, Cave Hill, Giant's Causeway and similar), as decal materials on chosen gable walls in the right districts. Follow the T-415 policy | sonnet | medium | game | T-415, T-418 | Murals show on tagged gable ends, no real artist's work copied, and licences recorded |
+| T-420 | todo | Landmarks that fall inside the built area, as low-poly stand-ins: Samson and Goliath cranes, Titanic Belfast, City Hall, Harland and Wolff and others. Not needed for the Slice, which only covers Hydebank | sonnet | high | game | T-704, T-414 | Each landmark is recognisable from the road at distance and stays within budget |
+
 ### M5: Street truth
 
 Outcome: differences from the real street get found and fixed with evidence.

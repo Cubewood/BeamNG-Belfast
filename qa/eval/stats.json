@@ -1,0 +1,38 @@
+{
+ "frames": 172,
+ "planted": 97,
+ "clean": 75,
+ "planted_by_type": {
+  "building-in-road": 7,
+  "buried-object": 10,
+  "floating-object": 10,
+  "missing-markings": 10,
+  "missing-texture": 10,
+  "object-in-road": 12,
+  "road-geometry": 10,
+  "terrain-step": 10,
+  "wrong-markings": 10,
+  "wrong-side-sign": 8
+ },
+ "visual_label_by_type_planted": {
+  "building-in-road": 7,
+  "buried-object": 8,
+  "floating-object": 10,
+  "missing-markings": 10,
+  "missing-texture": 10,
+  "object-in-road": 14,
+  "road-geometry": 10,
+  "terrain-step": 10,
+  "wrong-markings": 10,
+  "wrong-side-sign": 8
+ },
+ "visual_label_by_type_clean": {
+  "building-in-road": 2,
+  "missing-markings": 9,
+  "none": 63,
+  "terrain-step": 1
+ },
+ "planted_visual_agrees": 95,
+ "spot_check": 79,
+ "dropped_planted": 11
+}

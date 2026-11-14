@@ -1,0 +1,2462 @@
+{
+ "seed": 305,
+ "sweep": "H:\\BelfastData\\qa\\sweep\\2026-11-13_220428",
+ "frames": [
+  {
+   "frame": "P001",
+   "source_frame": "milltown-road-out-J02-10m",
+   "kind": "missing-markings",
+   "variant": "hide_all_markings",
+   "params": {},
+   "survey": {
+    "asph": 4,
+    "dash": 2,
+    "solid": 8,
+    "vis_dash": 0,
+    "vis_solid": 13,
+    "vis_zebra": 0,
+    "vis_marks": 13,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P002",
+   "source_frame": "milltown-road-out-J06-30m",
+   "kind": "missing-markings",
+   "variant": "hide_all_markings",
+   "params": {},
+   "survey": {
+    "asph": 12,
+    "dash": 11,
+    "solid": 22,
+    "zebra": 2,
+    "vis_dash": 20,
+    "vis_solid": 33,
+    "vis_zebra": 2,
+    "vis_marks": 53,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P003",
+   "source_frame": "milltown-road-back-J01-10m",
+   "kind": "missing-markings",
+   "variant": "hide_all_markings",
+   "params": {},
+   "survey": {
+    "asph": 12,
+    "dash": 9,
+    "solid": 23,
+    "zebra": 2,
+    "vis_dash": 6,
+    "vis_solid": 19,
+    "vis_zebra": 6,
+    "vis_marks": 25,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P004",
+   "source_frame": "hospital-road-ne-out-J02-10m",
+   "kind": "missing-markings",
+   "variant": "hide_all_markings",
+   "params": {},
+   "survey": {
+    "asph": 4,
+    "dash": 2,
+    "solid": 8,
+    "vis_dash": 0,
+    "vis_solid": 14,
+    "vis_zebra": 0,
+    "vis_marks": 14,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P005",
+   "source_frame": "milltown-road-out-J03-30m",
+   "kind": "missing-markings",
+   "variant": "hide_all_markings",
+   "params": {},
+   "survey": {
+    "asph": 7,
+    "solid": 9,
+    "dash": 1,
+    "vis_dash": 0,
+    "vis_solid": 28,
+    "vis_zebra": 0,
+    "vis_marks": 28,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P006",
+   "source_frame": "newtownbreda-roundabout-J05-10m",
+   "kind": "missing-markings",
+   "variant": "hide_dashed",
+   "params": {},
+   "survey": {
+    "asph": 29,
+    "dash": 5,
+    "solid": 19,
+    "zebra": 2,
+    "vis_dash": 14,
+    "vis_solid": 1,
+    "vis_zebra": 3,
+    "vis_marks": 15,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P007",
+   "source_frame": "newtownbreda-roundabout-J07-30m",
+   "kind": "missing-markings",
+   "variant": "hide_dashed",
+   "params": {},
+   "survey": {
+    "asph": 11,
+    "dash": 7,
+    "zebra": 2,
+    "vis_dash": 30,
+    "vis_solid": 0,
+    "vis_zebra": 2,
+    "vis_marks": 30,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P008",
+   "source_frame": "milltown-road-back-J02-10m",
+   "kind": "missing-markings",
+   "variant": "hide_dashed",
+   "params": {},
+   "survey": {
+    "asph": 13,
+    "dash": 9,
+    "solid": 25,
+    "zebra": 2,
+    "vis_dash": 10,
+    "vis_solid": 21,
+    "vis_zebra": 0,
+    "vis_marks": 31,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P009",
+   "source_frame": "milltown-road-back-J03-30m",
+   "kind": "missing-markings",
+   "variant": "hide_solid",
+   "params": {},
+   "survey": {
+    "asph": 7,
+    "dash": 5,
+    "solid": 11,
+    "zebra": 1,
+    "vis_dash": 4,
+    "vis_solid": 11,
+    "vis_zebra": 0,
+    "vis_marks": 15,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P010",
+   "source_frame": "milltown-road-back-J04-30m",
+   "kind": "missing-markings",
+   "variant": "hide_solid",
+   "params": {},
+   "survey": {
+    "asph": 26,
+    "dash": 6,
+    "solid": 17,
+    "zebra": 2,
+    "vis_dash": 0,
+    "vis_solid": 8,
+    "vis_zebra": 3,
+    "vis_marks": 8,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P011",
+   "source_frame": "hospital-road-ne-back-J05-30m",
+   "kind": "missing-markings",
+   "variant": "hide_solid",
+   "params": {},
+   "survey": {
+    "asph": 16,
+    "solid": 16,
+    "dash": 2,
+    "vis_dash": 0,
+    "vis_solid": 16,
+    "vis_zebra": 0,
+    "vis_marks": 16,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P012",
+   "source_frame": "milltown-road-back-J03-10m",
+   "kind": "missing-markings",
+   "variant": "hide_zebra",
+   "params": {},
+   "survey": {
+    "asph": 20,
+    "dash": 6,
+    "solid": 13,
+    "zebra": 2,
+    "vis_dash": 0,
+    "vis_solid": 4,
+    "vis_zebra": 3,
+    "vis_marks": 4,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P013",
+   "source_frame": "haddo-woods-loop-J02-30m",
+   "kind": "missing-markings",
+   "variant": "hide_zebra",
+   "params": {},
+   "survey": {
+    "asph": 14,
+    "dash": 3,
+    "solid": 6,
+    "zebra": 2,
+    "vis_dash": 0,
+    "vis_solid": 0,
+    "vis_zebra": 4,
+    "vis_marks": 0,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P014",
+   "source_frame": "haddo-woods-loop-J04-10m",
+   "kind": "missing-markings",
+   "variant": "hide_zebra",
+   "params": {},
+   "survey": {
+    "asph": 7,
+    "zebra": 2,
+    "vis_dash": 0,
+    "vis_solid": 0,
+    "vis_zebra": 4,
+    "vis_marks": 0,
+    "view": 0
+   }
+  },
+  {
+   "frame": "P015",
+   "source_frame": "milltown-road-out-J05-30m",
+   "kind": "wrong-markings",
+   "variant": "yellow_fat_lines",
+   "params": {
+    "factor": 9.0
+   },
+   "survey": {
+    "asph": 5,
+    "dash": 6,
+    "solid": 6,
+    "vis_dash": 32,
+    "vis_solid": 21,
+    "vis_zebra": 0,
+    "vis_marks": 53,
+    "view": 1
+   },
+   "retake_of": {
+    "kind": "wrong-markings",
+    "variant": "yellow_lines",
+    "source_frame": "milltown-road-out-J03-10m",
+    "params": {}
+   }
+  },
+  {
+   "frame": "P016",
+   "source_frame": "hospital-road-ne-back-J06-10m",
+   "kind": "wrong-markings",
+   "variant": "yellow_lines",
+   "params": {},
+   "survey": {
+    "asph": 10,
+    "dash": 3,
+    "solid": 6,
+    "vis_dash": 10,
+    "vis_solid": 19,
+    "vis_zebra": 0,
+    "vis_marks": 29,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P017",
+   "source_frame": "newtownbreda-roundabout-J04-30m",
+   "kind": "wrong-markings",
+   "variant": "yellow_lines",
+   "params": {},
+   "survey": {
+    "asph": 29,
+    "solid": 18,
+    "dash": 4,
+    "zebra": 1,
+    "vis_dash": 2,
+    "vis_solid": 27,
+    "vis_zebra": 0,
+    "vis_marks": 29,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P018",
+   "source_frame": "hospital-road-ne-out-J01-10m",
+   "kind": "wrong-markings",
+   "variant": "fat_lines",
+   "params": {
+    "factor": 7.0
+   },
+   "survey": {
+    "asph": 10,
+    "dash": 3,
+    "solid": 6,
+    "vis_dash": 10,
+    "vis_solid": 19,
+    "vis_zebra": 0,
+    "vis_marks": 29,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P019",
+   "source_frame": "milltown-road-back-J01-30m",
+   "kind": "wrong-markings",
+   "variant": "yellow_fat_lines",
+   "params": {
+    "factor": 9.0
+   },
+   "survey": {
+    "asph": 11,
+    "dash": 7,
+    "solid": 18,
+    "zebra": 2,
+    "vis_dash": 13,
+    "vis_solid": 27,
+    "vis_zebra": 0,
+    "vis_marks": 40,
+    "view": 1
+   },
+   "retake_of": {
+    "kind": "wrong-markings",
+    "variant": "fat_lines",
+    "source_frame": "hospital-road-ne-out-J05-10m",
+    "params": {
+     "factor": 7.0
+    }
+   }
+  },
+  {
+   "frame": "P020",
+   "source_frame": "milltown-road-out-J04-30m",
+   "kind": "wrong-markings",
+   "variant": "yellow_fat_lines",
+   "params": {
+    "factor": 9.0
+   },
+   "survey": {
+    "asph": 28,
+    "dash": 6,
+    "solid": 18,
+    "zebra": 1,
+    "vis_dash": 3,
+    "vis_solid": 33,
+    "vis_zebra": 2,
+    "vis_marks": 36,
+    "view": 1
+   },
+   "retake_of": {
+    "kind": "wrong-markings",
+    "variant": "fat_lines",
+    "source_frame": "newtownbreda-roundabout-J08-10m",
+    "params": {
+     "factor": 7.0
+    }
+   }
+  },
+  {
+   "frame": "P021",
+   "source_frame": "milltown-road-out-J06-10m",
+   "kind": "wrong-markings",
+   "variant": "yellow_fat_lines",
+   "params": {
+    "factor": 9.0
+   },
+   "survey": {
+    "asph": 13,
+    "dash": 8,
+    "solid": 22,
+    "zebra": 2,
+    "vis_dash": 18,
+    "vis_solid": 18,
+    "vis_zebra": 0,
+    "vis_marks": 36,
+    "view": 1
+   },
+   "retake_of": {
+    "kind": "wrong-markings",
+    "variant": "fat_lines",
+    "source_frame": "newtownbreda-roundabout-J10-10m",
+    "params": {
+     "factor": 7.0
+    }
+   }
+  },
+  {
+   "frame": "P022",
+   "source_frame": "hospital-road-ne-back-J06-30m",
+   "kind": "wrong-markings",
+   "variant": "yellow_fat_lines",
+   "params": {
+    "factor": 7.0
+   },
+   "survey": {
+    "asph": 10,
+    "dash": 4,
+    "solid": 8,
+    "vis_dash": 10,
+    "vis_solid": 20,
+    "vis_zebra": 0,
+    "vis_marks": 30,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P023",
+   "source_frame": "hospital-road-ne-back-J01-30m",
+   "kind": "wrong-markings",
+   "variant": "yellow_fat_lines",
+   "params": {
+    "factor": 7.0
+   },
+   "survey": {
+    "asph": 11,
+    "dash": 6,
+    "zebra": 2,
+    "solid": 8,
+    "vis_dash": 30,
+    "vis_solid": 0,
+    "vis_zebra": 0,
+    "vis_marks": 30,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P024",
+   "source_frame": "hospital-road-ne-back-J04-10m",
+   "kind": "wrong-markings",
+   "variant": "shift_markings",
+   "params": {
+    "shift_m": -3.344860507100395
+   },
+   "survey": {
+    "asph": 28,
+    "solid": 21,
+    "dash": 4,
+    "zebra": 2,
+    "vis_dash": 0,
+    "vis_solid": 22,
+    "vis_zebra": 0,
+    "vis_marks": 22,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P025",
+   "source_frame": "hospital-road-ne-out-J06-10m",
+   "kind": "wrong-markings",
+   "variant": "shift_markings",
+   "params": {
+    "shift_m": 3.378737562880585
+   },
+   "survey": {
+    "asph": 9,
+    "dash": 6,
+    "solid": 1,
+    "zebra": 2,
+    "vis_dash": 27,
+    "vis_solid": 0,
+    "vis_zebra": 0,
+    "vis_marks": 27,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P026",
+   "source_frame": "milltown-road-back-J01-30m",
+   "kind": "wrong-markings",
+   "variant": "shift_markings",
+   "params": {
+    "shift_m": 3.3117524884934113
+   },
+   "survey": {
+    "asph": 11,
+    "dash": 7,
+    "solid": 18,
+    "zebra": 2,
+    "vis_dash": 13,
+    "vis_solid": 27,
+    "vis_zebra": 0,
+    "vis_marks": 40,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P027",
+   "source_frame": "milltown-road-back-J06-10m",
+   "kind": "wrong-markings",
+   "variant": "checkered",
+   "params": {},
+   "survey": {
+    "asph": 28,
+    "solid": 21,
+    "dash": 4,
+    "zebra": 2,
+    "vis_dash": 0,
+    "vis_solid": 22,
+    "vis_zebra": 0,
+    "vis_marks": 22,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P028",
+   "source_frame": "hospital-road-ne-back-J05-10m",
+   "kind": "wrong-markings",
+   "variant": "checkered",
+   "params": {},
+   "survey": {
+    "asph": 7,
+    "solid": 9,
+    "dash": 1,
+    "vis_dash": 10,
+    "vis_solid": 20,
+    "vis_zebra": 0,
+    "vis_marks": 30,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P029",
+   "source_frame": "hospital-road-ne-back-J02-30m",
+   "kind": "building-in-road",
+   "variant": "block",
+   "params": {
+    "shape": "brick",
+    "scale": [
+     4,
+     3,
+     2.5
+    ],
+    "s": 13.864478968856375,
+    "d": 0.3906034543118899
+   },
+   "survey": {
+    "asph": 11,
+    "dash": 7,
+    "zebra": 2,
+    "vis_dash": 2,
+    "vis_solid": 0,
+    "vis_zebra": 0,
+    "vis_marks": 2,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P030",
+   "source_frame": "newtownbreda-roundabout-J12-10m",
+   "kind": "building-in-road",
+   "variant": "block",
+   "params": {
+    "shape": "brick",
+    "scale": [
+     3,
+     3,
+     2
+    ],
+    "s": 11.673431103966532,
+    "d": -0.047387855447574956
+   },
+   "survey": {
+    "asph": 17,
+    "dash": 9,
+    "solid": 13,
+    "vis_dash": 4,
+    "vis_solid": 2,
+    "vis_zebra": 0,
+    "vis_marks": 6,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P031",
+   "source_frame": "haddo-woods-loop-J03-10m",
+   "kind": "building-in-road",
+   "variant": "block",
+   "params": {
+    "shape": "brick",
+    "scale": [
+     5,
+     2.5,
+     3
+    ],
+    "s": 12.218125751401226,
+    "d": -0.49301877378191894
+   },
+   "survey": {
+    "asph": 12,
+    "zebra": 2,
+    "vis_dash": 0,
+    "vis_solid": 0,
+    "vis_zebra": 0,
+    "vis_marks": 0,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P032",
+   "source_frame": "lady-ishbel-loop-reverse-J04-30m",
+   "kind": "building-in-road",
+   "variant": "block",
+   "params": {
+    "shape": "concwall",
+    "scale": [
+     3,
+     3,
+     2
+    ],
+    "s": 11.736005897030736,
+    "d": -0.7048433071119228
+   },
+   "survey": {
+    "asph": 14,
+    "dash": 3,
+    "solid": 6,
+    "zebra": 2,
+    "vis_dash": 1,
+    "vis_solid": 5,
+    "vis_zebra": 0,
+    "vis_marks": 6,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P033",
+   "source_frame": "haddo-woods-loop-J02-10m",
+   "kind": "building-in-road",
+   "variant": "block",
+   "params": {
+    "shape": "concwall",
+    "scale": [
+     4,
+     4,
+     2.5
+    ],
+    "s": 13.759025296055665,
+    "d": -0.0669167879315069
+   },
+   "survey": {
+    "solid": 2,
+    "asph": 16,
+    "zebra": 2,
+    "vis_dash": 0,
+    "vis_solid": 0,
+    "vis_zebra": 4,
+    "vis_marks": 0,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P034",
+   "source_frame": "hospital-road-ne-back-J02-10m",
+   "kind": "building-in-road",
+   "variant": "block",
+   "params": {
+    "shape": "stonewall",
+    "scale": [
+     3,
+     3,
+     3
+    ],
+    "s": 13.43861551563138,
+    "d": -0.4499378054119479
+   },
+   "survey": {
+    "asph": 10,
+    "dash": 6,
+    "solid": 1,
+    "zebra": 2,
+    "vis_dash": 4,
+    "vis_solid": 0,
+    "vis_zebra": 0,
+    "vis_marks": 4,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P035",
+   "source_frame": "newtownbreda-roundabout-J06-30m",
+   "kind": "building-in-road",
+   "variant": "block",
+   "params": {
+    "shape": "stonewall",
+    "scale": [
+     4,
+     3,
+     4
+    ],
+    "s": 13.922131148697623,
+    "d": -0.41963655630186614
+   },
+   "survey": {
+    "asph": 7,
+    "dash": 5,
+    "solid": 1,
+    "vis_dash": 2,
+    "vis_solid": 0,
+    "vis_zebra": 0,
+    "vis_marks": 2,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P036",
+   "source_frame": "hospital-road-ne-back-J04-30m",
+   "kind": "building-in-road",
+   "variant": "block",
+   "params": {
+    "shape": "brick",
+    "scale": [
+     4,
+     4,
+     3
+    ],
+    "s": 11.05828205191062,
+    "d": 0.7453454033237905
+   },
+   "survey": {
+    "asph": 28,
+    "solid": 19,
+    "dash": 4,
+    "zebra": 2,
+    "vis_dash": 0,
+    "vis_solid": 8,
+    "vis_zebra": 0,
+    "vis_marks": 8,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P037",
+   "source_frame": "milltown-road-out-J05-10m",
+   "kind": "object-in-road",
+   "variant": "prop_in_lane",
+   "params": {
+    "shape": "lamp",
+    "s": 10.128740154784374,
+    "d": 0.3628417991785666
+   },
+   "survey": {
+    "asph": 7,
+    "dash": 6,
+    "solid": 8,
+    "vis_dash": 9,
+    "vis_solid": 21,
+    "vis_zebra": 0,
+    "vis_marks": 30,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P038",
+   "source_frame": "milltown-road-out-J06-10m",
+   "kind": "object-in-road",
+   "variant": "prop_in_lane",
+   "params": {
+    "shape": "lamp",
+    "s": 11.06845224430106,
+    "d": -0.009369120341587878
+   },
+   "survey": {
+    "asph": 13,
+    "dash": 8,
+    "solid": 22,
+    "zebra": 2,
+    "vis_dash": 18,
+    "vis_solid": 18,
+    "vis_zebra": 0,
+    "vis_marks": 36,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P039",
+   "source_frame": "milltown-road-back-J08-10m",
+   "kind": "object-in-road",
+   "variant": "prop_in_lane",
+   "params": {
+    "shape": "lamp2",
+    "s": 10.561126543328047,
+    "d": 0.4948565904016652
+   },
+   "survey": {
+    "asph": 10,
+    "dash": 3,
+    "solid": 6,
+    "vis_dash": 10,
+    "vis_solid": 19,
+    "vis_zebra": 0,
+    "vis_marks": 29,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P040",
+   "source_frame": "newtownbreda-roundabout-J02-30m",
+   "kind": "object-in-road",
+   "variant": "prop_in_lane",
+   "params": {
+    "shape": "sign_giveway",
+    "s": 9.917833499561826,
+    "d": -0.34414296156484636
+   },
+   "survey": {
+    "asph": 5,
+    "dash": 3,
+    "solid": 8,
+    "vis_dash": 10,
+    "vis_solid": 22,
+    "vis_zebra": 0,
+    "vis_marks": 32,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P041",
+   "source_frame": "hospital-road-ne-out-J05-30m",
+   "kind": "object-in-road",
+   "variant": "prop_in_lane",
+   "params": {
+    "shape": "sign_priority",
+    "s": 12.293196807117027,
+    "d": 0.05885188792033402
+   },
+   "survey": {
+    "asph": 28,
+    "dash": 5,
+    "solid": 21,
+    "zebra": 2,
+    "vis_dash": 3,
+    "vis_solid": 5,
+    "vis_zebra": 0,
+    "vis_marks": 8,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P042",
+   "source_frame": "lady-ishbel-loop-J01-30m",
+   "kind": "object-in-road",
+   "variant": "prop_in_lane",
+   "params": {
+    "shape": "sign_oneway",
+    "s": 11.958717093847241,
+    "d": 0.12512741757430978
+   },
+   "survey": {
+    "asph": 8,
+    "dash": 3,
+    "solid": 6,
+    "vis_dash": 9,
+    "vis_solid": 20,
+    "vis_zebra": 0,
+    "vis_marks": 29,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P043",
+   "source_frame": "milltown-road-back-J04-10m",
+   "kind": "object-in-road",
+   "variant": "prop_in_lane",
+   "params": {
+    "shape": "woodfence",
+    "s": 10.414915698238564,
+    "d": -0.17436127741254115
+   },
+   "survey": {
+    "asph": 29,
+    "dash": 6,
+    "solid": 19,
+    "zebra": 2,
+    "vis_dash": 4,
+    "vis_solid": 0,
+    "vis_zebra": 0,
+    "vis_marks": 4,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P044",
+   "source_frame": "lady-ishbel-loop-reverse-J02-30m",
+   "kind": "object-in-road",
+   "variant": "prop_in_lane",
+   "params": {
+    "shape": "woodfence",
+    "s": 13.440491833243026,
+    "d": -0.21027906158229437
+   },
+   "survey": {
+    "asph": 9,
+    "zebra": 2,
+    "vis_dash": 0,
+    "vis_solid": 0,
+    "vis_zebra": 0,
+    "vis_marks": 0,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P045",
+   "source_frame": "haddo-woods-loop-J01-30m",
+   "kind": "object-in-road",
+   "variant": "prop_in_lane",
+   "params": {
+    "shape": "gate",
+    "s": 9.504678050283852,
+    "d": 0.0070767817622462426
+   },
+   "survey": {
+    "asph": 8,
+    "dash": 3,
+    "solid": 6,
+    "vis_dash": 9,
+    "vis_solid": 20,
+    "vis_zebra": 0,
+    "vis_marks": 29,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P046",
+   "source_frame": "hospital-road-ne-back-J01-10m",
+   "kind": "object-in-road",
+   "variant": "prop_in_lane",
+   "params": {
+    "shape": "gate",
+    "s": 11.216020826059072,
+    "d": 0.2339258324969028
+   },
+   "survey": {
+    "asph": 11,
+    "dash": 7,
+    "zebra": 2,
+    "vis_dash": 2,
+    "vis_solid": 0,
+    "vis_zebra": 0,
+    "vis_marks": 2,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P047",
+   "source_frame": "hospital-road-ne-back-J03-10m",
+   "kind": "object-in-road",
+   "variant": "prop_in_lane",
+   "params": {
+    "shape": "bench",
+    "s": 9.508904831740248,
+    "d": -0.38127621320285443
+   },
+   "survey": {
+    "asph": 28,
+    "solid": 19,
+    "dash": 4,
+    "zebra": 2,
+    "vis_dash": 0,
+    "vis_solid": 7,
+    "vis_zebra": 0,
+    "vis_marks": 7,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P048",
+   "source_frame": "newtownbreda-roundabout-J06-10m",
+   "kind": "object-in-road",
+   "variant": "prop_in_lane",
+   "params": {
+    "shape": "bench",
+    "s": 11.134302363960298,
+    "d": 0.15989170825180932
+   },
+   "survey": {
+    "asph": 9,
+    "dash": 6,
+    "solid": 1,
+    "zebra": 2,
+    "vis_dash": 27,
+    "vis_solid": 0,
+    "vis_zebra": 0,
+    "vis_marks": 27,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P049",
+   "source_frame": "milltown-road-out-J01-30m",
+   "kind": "terrain-step",
+   "variant": "ridge",
+   "params": {
+    "dz": 0.8448911708761755,
+    "s0": 8.412486898064575
+   },
+   "survey": {
+    "asph": 9,
+    "dash": 2,
+    "solid": 4,
+    "vis_dash": 10,
+    "vis_solid": 19,
+    "vis_zebra": 0,
+    "vis_marks": 29,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P050",
+   "source_frame": "hospital-road-south-out-J01-10m",
+   "kind": "terrain-step",
+   "variant": "ridge",
+   "params": {
+    "dz": 0.8226839280310667,
+    "s0": 8.252744942409313
+   },
+   "survey": {
+    "asph": 8,
+    "dash": 3,
+    "solid": 6,
+    "vis_dash": 10,
+    "vis_solid": 20,
+    "vis_zebra": 0,
+    "vis_marks": 30,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P051",
+   "source_frame": "milltown-road-back-J05-30m",
+   "kind": "terrain-step",
+   "variant": "ridge",
+   "params": {
+    "dz": 0.8662070594865463,
+    "s0": 9.9439843385777
+   },
+   "survey": {
+    "asph": 28,
+    "dash": 6,
+    "solid": 19,
+    "zebra": 2,
+    "vis_dash": 6,
+    "vis_solid": 3,
+    "vis_zebra": 2,
+    "vis_marks": 9,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P052",
+   "source_frame": "newtownbreda-roundabout-J01-30m",
+   "kind": "terrain-step",
+   "variant": "ridge",
+   "params": {
+    "dz": 0.7358036094334359,
+    "s0": 8.1656570458369
+   },
+   "survey": {
+    "asph": 9,
+    "dash": 2,
+    "solid": 4,
+    "vis_dash": 10,
+    "vis_solid": 19,
+    "vis_zebra": 0,
+    "vis_marks": 29,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P053",
+   "source_frame": "milltown-road-out-J02-30m",
+   "kind": "terrain-step",
+   "variant": "ridge",
+   "params": {
+    "dz": 0.9276456785134145,
+    "s0": 9.279132930691574
+   },
+   "survey": {
+    "asph": 5,
+    "dash": 3,
+    "solid": 8,
+    "vis_dash": 10,
+    "vis_solid": 22,
+    "vis_zebra": 0,
+    "vis_marks": 32,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P054",
+   "source_frame": "milltown-road-back-J07-30m",
+   "kind": "terrain-step",
+   "variant": "trench",
+   "params": {
+    "dz": -1.028491187987579,
+    "s0": 8.327508113409433
+   },
+   "survey": {
+    "asph": 16,
+    "solid": 16,
+    "dash": 2,
+    "vis_dash": 0,
+    "vis_solid": 16,
+    "vis_zebra": 0,
+    "vis_marks": 16,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P055",
+   "source_frame": "newtownbreda-roundabout-J10-30m",
+   "kind": "terrain-step",
+   "variant": "trench",
+   "params": {
+    "dz": -0.9413739711011498,
+    "s0": 9.70162315533838
+   },
+   "survey": {
+    "asph": 15,
+    "dash": 3,
+    "solid": 4,
+    "vis_dash": 9,
+    "vis_solid": 0,
+    "vis_zebra": 0,
+    "vis_marks": 9,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P056",
+   "source_frame": "lady-ishbel-loop-J03-30m",
+   "kind": "terrain-step",
+   "variant": "trench",
+   "params": {
+    "dz": -1.0018478641142163,
+    "s0": 8.907596646767587
+   },
+   "survey": {
+    "asph": 13,
+    "zebra": 2,
+    "vis_dash": 0,
+    "vis_solid": 0,
+    "vis_zebra": 0,
+    "vis_marks": 0,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P057",
+   "source_frame": "hospital-road-ne-out-J03-10m",
+   "kind": "terrain-step",
+   "variant": "trench",
+   "params": {
+    "dz": -1.0413848251351039,
+    "s0": 8.06991433425831
+   },
+   "survey": {
+    "asph": 14,
+    "solid": 16,
+    "dash": 3,
+    "vis_dash": 0,
+    "vis_solid": 33,
+    "vis_zebra": 0,
+    "vis_marks": 33,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P058",
+   "source_frame": "hospital-road-ne-out-J01-30m",
+   "kind": "terrain-step",
+   "variant": "trench",
+   "params": {
+    "dz": -0.9554331357668008,
+    "s0": 9.382389243229545
+   },
+   "survey": {
+    "asph": 9,
+    "dash": 2,
+    "solid": 4,
+    "vis_dash": 10,
+    "vis_solid": 19,
+    "vis_zebra": 0,
+    "vis_marks": 29,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P059",
+   "source_frame": "hospital-road-ne-out-J04-10m",
+   "kind": "floating-object",
+   "variant": "lifted",
+   "params": {
+    "shape": "bench",
+    "dz": 2.0,
+    "s": 10.796234896909407,
+    "d": 4.5
+   },
+   "survey": {
+    "asph": 28,
+    "dash": 5,
+    "solid": 21,
+    "zebra": 2,
+    "vis_dash": 3,
+    "vis_solid": 5,
+    "vis_zebra": 0,
+    "vis_marks": 8,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P060",
+   "source_frame": "newtownbreda-roundabout-J01-10m",
+   "kind": "floating-object",
+   "variant": "lifted",
+   "params": {
+    "shape": "bench",
+    "dz": 2.6,
+    "s": 8.84006046236759,
+    "d": 3.5
+   },
+   "survey": {
+    "asph": 10,
+    "dash": 3,
+    "solid": 6,
+    "vis_dash": 10,
+    "vis_solid": 19,
+    "vis_zebra": 0,
+    "vis_marks": 29,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P061",
+   "source_frame": "hospital-road-ne-out-J06-30m",
+   "kind": "floating-object",
+   "variant": "lifted",
+   "params": {
+    "shape": "bench",
+    "dz": 1.8,
+    "s": 9.688525070269705,
+    "d": 3.0
+   },
+   "survey": {
+    "asph": 7,
+    "dash": 5,
+    "solid": 1,
+    "vis_dash": 2,
+    "vis_solid": 0,
+    "vis_zebra": 0,
+    "vis_marks": 2,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P062",
+   "source_frame": "hospital-road-south-out-J01-30m",
+   "kind": "floating-object",
+   "variant": "lifted",
+   "params": {
+    "shape": "brick",
+    "dz": 2.2,
+    "s": 10.764643689864403,
+    "d": 3.0
+   },
+   "survey": {
+    "asph": 8,
+    "dash": 3,
+    "solid": 6,
+    "vis_dash": 9,
+    "vis_solid": 20,
+    "vis_zebra": 0,
+    "vis_marks": 29,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P063",
+   "source_frame": "newtownbreda-roundabout-J04-10m",
+   "kind": "floating-object",
+   "variant": "lifted",
+   "params": {
+    "shape": "brick",
+    "dz": 2.8,
+    "s": 9.447020400665764,
+    "d": 3.0
+   },
+   "survey": {
+    "asph": 28,
+    "dash": 5,
+    "solid": 21,
+    "zebra": 2,
+    "vis_dash": 3,
+    "vis_solid": 5,
+    "vis_zebra": 0,
+    "vis_marks": 8,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P064",
+   "source_frame": "hospital-road-south-back-J01-10m",
+   "kind": "floating-object",
+   "variant": "lifted",
+   "params": {
+    "shape": "stonewall",
+    "dz": 2.0,
+    "s": 8.443782218182013,
+    "d": 4.5
+   },
+   "survey": {
+    "asph": 7,
+    "dash": 3,
+    "solid": 6,
+    "vis_dash": 9,
+    "vis_solid": 20,
+    "vis_zebra": 0,
+    "vis_marks": 29,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P065",
+   "source_frame": "newtownbreda-roundabout-J02-10m",
+   "kind": "floating-object",
+   "variant": "lifted",
+   "params": {
+    "shape": "stonewall",
+    "dz": 2.6,
+    "s": 10.919068121709063,
+    "d": 3.0
+   },
+   "survey": {
+    "asph": 4,
+    "dash": 2,
+    "solid": 8,
+    "vis_dash": 0,
+    "vis_solid": 13,
+    "vis_zebra": 0,
+    "vis_marks": 13,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P066",
+   "source_frame": "lady-ishbel-loop-J02-30m",
+   "kind": "floating-object",
+   "variant": "lifted",
+   "params": {
+    "shape": "sign_giveway",
+    "dz": 2.2,
+    "s": 10.720013812918673,
+    "d": 4.0
+   },
+   "survey": {
+    "asph": 14,
+    "dash": 3,
+    "solid": 6,
+    "zebra": 2,
+    "vis_dash": 0,
+    "vis_solid": 0,
+    "vis_zebra": 4,
+    "vis_marks": 0,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P067",
+   "source_frame": "hospital-road-ne-out-J03-30m",
+   "kind": "floating-object",
+   "variant": "lifted",
+   "params": {
+    "shape": "sign_oneway",
+    "dz": 2.4,
+    "s": 9.500703366272962,
+    "d": 3.5
+   },
+   "survey": {
+    "asph": 7,
+    "solid": 9,
+    "dash": 1,
+    "vis_dash": 0,
+    "vis_solid": 28,
+    "vis_zebra": 0,
+    "vis_marks": 28,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P068",
+   "source_frame": "hospital-road-south-back-J01-30m",
+   "kind": "floating-object",
+   "variant": "lifted",
+   "params": {
+    "shape": "lamp",
+    "dz": 3.5,
+    "s": 8.709308250078971,
+    "d": -2.5
+   },
+   "survey": {
+    "asph": 10,
+    "dash": 3,
+    "solid": 6,
+    "vis_dash": 10,
+    "vis_solid": 20,
+    "vis_zebra": 0,
+    "vis_marks": 30,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P069",
+   "source_frame": "newtownbreda-roundabout-J09-30m",
+   "kind": "floating-object",
+   "variant": "lifted",
+   "params": {
+    "shape": "lamp",
+    "dz": 4.0,
+    "s": 10.301121387535689,
+    "d": 4.0
+   },
+   "survey": {
+    "asph": 9,
+    "dash": 2,
+    "zebra": 2,
+    "vis_dash": 9,
+    "vis_solid": 0,
+    "vis_zebra": 0,
+    "vis_marks": 9,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P070",
+   "source_frame": "lady-ishbel-loop-reverse-J01-30m",
+   "kind": "floating-object",
+   "variant": "lifted",
+   "params": {
+    "shape": "concwall",
+    "dz": 2.4,
+    "s": 10.296209085424445,
+    "d": 3.5
+   },
+   "survey": {
+    "asph": 9,
+    "dash": 2,
+    "solid": 4,
+    "vis_dash": 10,
+    "vis_solid": 19,
+    "vis_zebra": 0,
+    "vis_marks": 29,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P071",
+   "source_frame": "haddo-woods-loop-J01-30m",
+   "kind": "buried-object",
+   "variant": "sunk_half",
+   "params": {
+    "shape": "bench",
+    "scale": 2.5,
+    "dz": -1.4,
+    "s": 9.003198369457824,
+    "d": 1.5
+   },
+   "survey": {
+    "asph": 8,
+    "dash": 3,
+    "solid": 6,
+    "vis_dash": 9,
+    "vis_solid": 20,
+    "vis_zebra": 0,
+    "vis_marks": 29,
+    "view": 1
+   },
+   "retake_of": {
+    "kind": "buried-object",
+    "variant": "sunk",
+    "source_frame": "newtownbreda-roundabout-J03-30m",
+    "params": {
+     "shape": "lamp",
+     "dz": -3.5,
+     "s": 8.672877426738937,
+     "d": 3.5
+    }
+   }
+  },
+  {
+   "frame": "P072",
+   "source_frame": "haddo-woods-loop-J02-10m",
+   "kind": "buried-object",
+   "variant": "sunk_half",
+   "params": {
+    "shape": "bench",
+    "scale": 2.5,
+    "dz": -1.4,
+    "s": 9.852385351067237,
+    "d": 3.0
+   },
+   "survey": {
+    "solid": 2,
+    "asph": 16,
+    "zebra": 2,
+    "vis_dash": 0,
+    "vis_solid": 0,
+    "vis_zebra": 4,
+    "vis_marks": 0,
+    "view": 1
+   },
+   "retake_of": {
+    "kind": "buried-object",
+    "variant": "sunk",
+    "source_frame": "milltown-road-back-J07-10m",
+    "params": {
+     "shape": "lamp",
+     "dz": -4.0,
+     "s": 10.012544741052588,
+     "d": 3.0
+    }
+   }
+  },
+  {
+   "frame": "P073",
+   "source_frame": "haddo-woods-loop-J05-30m",
+   "kind": "buried-object",
+   "variant": "sunk_half",
+   "params": {
+    "shape": "bench",
+    "scale": 2.5,
+    "dz": -1.4,
+    "s": 9.791071155777804,
+    "d": 0.0
+   },
+   "survey": {
+    "asph": 10,
+    "zebra": 2,
+    "vis_dash": 0,
+    "vis_solid": 0,
+    "vis_zebra": 0,
+    "vis_marks": 0,
+    "view": 1
+   },
+   "retake_of": {
+    "kind": "buried-object",
+    "variant": "sunk",
+    "source_frame": "newtownbreda-roundabout-J12-30m",
+    "params": {
+     "shape": "sign_giveway",
+     "dz": -1.3,
+     "s": 10.296560464163392,
+     "d": 0.0
+    }
+   }
+  },
+  {
+   "frame": "P074",
+   "source_frame": "hospital-road-ne-back-J01-10m",
+   "kind": "buried-object",
+   "variant": "sunk_half",
+   "params": {
+    "shape": "bench",
+    "scale": 2.5,
+    "dz": -1.4,
+    "s": 9.735584781812216,
+    "d": 1.5
+   },
+   "survey": {
+    "asph": 11,
+    "dash": 7,
+    "zebra": 2,
+    "vis_dash": 2,
+    "vis_solid": 0,
+    "vis_zebra": 0,
+    "vis_marks": 2,
+    "view": 1
+   },
+   "retake_of": {
+    "kind": "buried-object",
+    "variant": "sunk",
+    "source_frame": "newtownbreda-roundabout-J08-30m",
+    "params": {
+     "shape": "sign_oneway",
+     "dz": -1.4,
+     "s": 8.225513927512154,
+     "d": 0.0
+    }
+   }
+  },
+  {
+   "frame": "P075",
+   "source_frame": "hospital-road-ne-out-J02-30m",
+   "kind": "buried-object",
+   "variant": "sunk",
+   "params": {
+    "shape": "bench",
+    "dz": -0.4,
+    "s": 10.264457429193492,
+    "d": 0.0
+   },
+   "survey": {
+    "asph": 5,
+    "dash": 3,
+    "solid": 8,
+    "vis_dash": 10,
+    "vis_solid": 22,
+    "vis_zebra": 0,
+    "vis_marks": 32,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P076",
+   "source_frame": "hospital-road-ne-back-J01-30m",
+   "kind": "buried-object",
+   "variant": "sunk_half",
+   "params": {
+    "shape": "bench",
+    "scale": 2.5,
+    "dz": -1.4,
+    "s": 9.246910181190643,
+    "d": 0.0
+   },
+   "survey": {
+    "asph": 11,
+    "dash": 6,
+    "zebra": 2,
+    "solid": 8,
+    "vis_dash": 30,
+    "vis_solid": 0,
+    "vis_zebra": 0,
+    "vis_marks": 30,
+    "view": 1
+   },
+   "retake_of": {
+    "kind": "buried-object",
+    "variant": "sunk",
+    "source_frame": "newtownbreda-roundabout-J11-10m",
+    "params": {
+     "shape": "bench",
+     "dz": -0.45,
+     "s": 9.090110176088782,
+     "d": 4.0
+    }
+   }
+  },
+  {
+   "frame": "P077",
+   "source_frame": "hospital-road-ne-back-J02-10m",
+   "kind": "buried-object",
+   "variant": "sunk_half",
+   "params": {
+    "shape": "bench",
+    "scale": 2.5,
+    "dz": -1.4,
+    "s": 9.237786239512518,
+    "d": 0.0
+   },
+   "survey": {
+    "asph": 10,
+    "dash": 6,
+    "solid": 1,
+    "zebra": 2,
+    "vis_dash": 4,
+    "vis_solid": 0,
+    "vis_zebra": 0,
+    "vis_marks": 4,
+    "view": 1
+   },
+   "retake_of": {
+    "kind": "buried-object",
+    "variant": "sunk",
+    "source_frame": "haddo-woods-loop-J05-30m",
+    "params": {
+     "shape": "brick",
+     "dz": -1.9,
+     "s": 10.88881074097615,
+     "d": 0.0
+    }
+   }
+  },
+  {
+   "frame": "P078",
+   "source_frame": "newtownbreda-roundabout-J03-10m",
+   "kind": "buried-object",
+   "variant": "sunk",
+   "params": {
+    "shape": "brick",
+    "dz": -2.0,
+    "s": 9.202648381936186,
+    "d": -2.5
+   },
+   "survey": {
+    "asph": 14,
+    "solid": 16,
+    "dash": 3,
+    "vis_dash": 0,
+    "vis_solid": 33,
+    "vis_zebra": 0,
+    "vis_marks": 33,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P079",
+   "source_frame": "hospital-road-ne-back-J03-10m",
+   "kind": "buried-object",
+   "variant": "sunk_half",
+   "params": {
+    "shape": "bench",
+    "scale": 2.5,
+    "dz": -1.4,
+    "s": 8.726652881833772,
+    "d": -1.5
+   },
+   "survey": {
+    "asph": 28,
+    "solid": 19,
+    "dash": 4,
+    "zebra": 2,
+    "vis_dash": 0,
+    "vis_solid": 7,
+    "vis_zebra": 0,
+    "vis_marks": 7,
+    "view": 1
+   },
+   "retake_of": {
+    "kind": "buried-object",
+    "variant": "sunk",
+    "source_frame": "milltown-road-back-J02-30m",
+    "params": {
+     "shape": "stonewall",
+     "dz": -1.7,
+     "s": 9.798856115042897,
+     "d": -2.5
+    }
+   }
+  },
+  {
+   "frame": "P080",
+   "source_frame": "hospital-road-ne-back-J03-30m",
+   "kind": "buried-object",
+   "variant": "sunk_half",
+   "params": {
+    "shape": "bench",
+    "scale": 2.5,
+    "dz": -1.4,
+    "s": 9.20329836311506,
+    "d": -1.5
+   },
+   "survey": {
+    "asph": 24,
+    "dash": 2,
+    "solid": 12,
+    "zebra": 2,
+    "vis_dash": 10,
+    "vis_solid": 3,
+    "vis_zebra": 0,
+    "vis_marks": 13,
+    "view": 1
+   },
+   "retake_of": {
+    "kind": "buried-object",
+    "variant": "sunk",
+    "source_frame": "milltown-road-out-J05-30m",
+    "params": {
+     "shape": "stonewall",
+     "dz": -1.9,
+     "s": 8.954111757217369,
+     "d": 3.5
+    }
+   }
+  },
+  {
+   "frame": "P081",
+   "source_frame": "milltown-road-out-J04-30m",
+   "kind": "missing-texture",
+   "variant": "road_surface",
+   "params": {},
+   "survey": {
+    "asph": 28,
+    "dash": 6,
+    "solid": 18,
+    "zebra": 1,
+    "vis_dash": 3,
+    "vis_solid": 33,
+    "vis_zebra": 2,
+    "vis_marks": 36,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P082",
+   "source_frame": "newtownbreda-roundabout-J11-30m",
+   "kind": "missing-texture",
+   "variant": "road_surface",
+   "params": {},
+   "survey": {
+    "asph": 12,
+    "dash": 7,
+    "solid": 6,
+    "vis_dash": 10,
+    "vis_solid": 0,
+    "vis_zebra": 0,
+    "vis_marks": 10,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P083",
+   "source_frame": "newtownbreda-roundabout-J09-10m",
+   "kind": "missing-texture",
+   "variant": "road_surface",
+   "params": {},
+   "survey": {
+    "asph": 11,
+    "dash": 3,
+    "zebra": 2,
+    "vis_dash": 9,
+    "vis_solid": 0,
+    "vis_zebra": 0,
+    "vis_marks": 9,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P084",
+   "source_frame": "hospital-road-ne-back-J03-30m",
+   "kind": "missing-texture",
+   "variant": "road_surface",
+   "params": {},
+   "survey": {
+    "asph": 24,
+    "dash": 2,
+    "solid": 12,
+    "zebra": 2,
+    "vis_dash": 10,
+    "vis_solid": 3,
+    "vis_zebra": 0,
+    "vis_marks": 13,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P085",
+   "source_frame": "haddo-woods-loop-J01-10m",
+   "kind": "missing-texture",
+   "variant": "markings",
+   "params": {},
+   "survey": {
+    "asph": 8,
+    "dash": 3,
+    "solid": 6,
+    "vis_dash": 10,
+    "vis_solid": 20,
+    "vis_zebra": 0,
+    "vis_marks": 30,
+    "view": 0
+   }
+  },
+  {
+   "frame": "P086",
+   "source_frame": "lady-ishbel-loop-reverse-J01-10m",
+   "kind": "missing-texture",
+   "variant": "markings",
+   "params": {},
+   "survey": {
+    "asph": 10,
+    "dash": 3,
+    "solid": 6,
+    "vis_dash": 10,
+    "vis_solid": 19,
+    "vis_zebra": 0,
+    "vis_marks": 29,
+    "view": 0
+   }
+  },
+  {
+   "frame": "P087",
+   "source_frame": "newtownbreda-roundabout-J05-30m",
+   "kind": "missing-texture",
+   "variant": "orange_building",
+   "params": {
+    "s": 16.761765477244737,
+    "d": -11.075281436576493
+   },
+   "survey": {
+    "asph": 28,
+    "dash": 5,
+    "solid": 21,
+    "zebra": 2,
+    "vis_dash": 3,
+    "vis_solid": 5,
+    "vis_zebra": 0,
+    "vis_marks": 8,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P088",
+   "source_frame": "milltown-road-out-J01-10m",
+   "kind": "missing-texture",
+   "variant": "orange_building",
+   "params": {
+    "s": 15.025338065773813,
+    "d": -12.928231663749365
+   },
+   "survey": {
+    "asph": 10,
+    "dash": 3,
+    "solid": 6,
+    "vis_dash": 10,
+    "vis_solid": 19,
+    "vis_zebra": 0,
+    "vis_marks": 29,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P089",
+   "source_frame": "lady-ishbel-loop-reverse-J03-10m",
+   "kind": "missing-texture",
+   "variant": "orange_building",
+   "params": {
+    "s": 15.511438240297785,
+    "d": 11.568776326154564
+   },
+   "survey": {
+    "asph": 13,
+    "zebra": 2,
+    "vis_dash": 0,
+    "vis_solid": 0,
+    "vis_zebra": 4,
+    "vis_marks": 0,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P090",
+   "source_frame": "milltown-road-back-J08-30m",
+   "kind": "missing-texture",
+   "variant": "orange_building",
+   "params": {
+    "s": 15.011992966189503,
+    "d": -12.348468020508912
+   },
+   "survey": {
+    "asph": 10,
+    "dash": 4,
+    "solid": 8,
+    "vis_dash": 10,
+    "vis_solid": 20,
+    "vis_zebra": 0,
+    "vis_marks": 30,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P091",
+   "source_frame": "hospital-road-ne-out-J04-30m",
+   "kind": "wrong-side-sign",
+   "variant": "back_to_driver",
+   "params": {
+    "shape": "sign_oneway",
+    "yaw": 180,
+    "s": 10.092561842615956,
+    "d": 3.8
+   },
+   "survey": {
+    "asph": 29,
+    "solid": 18,
+    "dash": 4,
+    "zebra": 1,
+    "vis_dash": 2,
+    "vis_solid": 27,
+    "vis_zebra": 0,
+    "vis_marks": 29,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P092",
+   "source_frame": "milltown-road-out-J02-10m",
+   "kind": "wrong-side-sign",
+   "variant": "back_to_driver",
+   "params": {
+    "shape": "sign_giveway",
+    "yaw": 180,
+    "s": 8.847637956336008,
+    "d": 4.2
+   },
+   "survey": {
+    "asph": 4,
+    "dash": 2,
+    "solid": 8,
+    "vis_dash": 0,
+    "vis_solid": 13,
+    "vis_zebra": 0,
+    "vis_marks": 13,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P093",
+   "source_frame": "hospital-road-ne-out-J01-30m",
+   "kind": "wrong-side-sign",
+   "variant": "back_to_driver",
+   "params": {
+    "shape": "sign_oneway",
+    "yaw": 180,
+    "s": 9.748301000160119,
+    "d": 3.8
+   },
+   "survey": {
+    "asph": 9,
+    "dash": 2,
+    "solid": 4,
+    "vis_dash": 10,
+    "vis_solid": 19,
+    "vis_zebra": 0,
+    "vis_marks": 29,
+    "view": 1
+   },
+   "retake_of": {
+    "kind": "wrong-side-sign",
+    "variant": "back_to_driver",
+    "source_frame": "milltown-road-out-J06-30m",
+    "params": {
+     "shape": "sign_noentry",
+     "yaw": 180,
+     "s": 8.809906764253956,
+     "d": 4.0
+    }
+   }
+  },
+  {
+   "frame": "P094",
+   "source_frame": "hospital-road-ne-out-J02-30m",
+   "kind": "wrong-side-sign",
+   "variant": "back_to_driver",
+   "params": {
+    "shape": "sign_giveway",
+    "yaw": 180,
+    "s": 9.92390878892801,
+    "d": 4.2
+   },
+   "survey": {
+    "asph": 5,
+    "dash": 3,
+    "solid": 8,
+    "vis_dash": 10,
+    "vis_solid": 22,
+    "vis_zebra": 0,
+    "vis_marks": 32,
+    "view": 1
+   },
+   "retake_of": {
+    "kind": "wrong-side-sign",
+    "variant": "back_to_driver",
+    "source_frame": "milltown-road-back-J03-10m",
+    "params": {
+     "shape": "sign_priority",
+     "yaw": 180,
+     "s": 9.850054037003064,
+     "d": 4.5
+    }
+   }
+  },
+  {
+   "frame": "P095",
+   "source_frame": "milltown-road-back-J01-10m",
+   "kind": "wrong-side-sign",
+   "variant": "offside",
+   "params": {
+    "shape": "sign_oneway",
+    "yaw": 0,
+    "s": 10.22813857866669,
+    "d": -2.8
+   },
+   "survey": {
+    "asph": 12,
+    "dash": 9,
+    "solid": 23,
+    "zebra": 2,
+    "vis_dash": 6,
+    "vis_solid": 19,
+    "vis_zebra": 6,
+    "vis_marks": 25,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P096",
+   "source_frame": "haddo-woods-loop-J02-30m",
+   "kind": "wrong-side-sign",
+   "variant": "offside",
+   "params": {
+    "shape": "sign_giveway",
+    "yaw": 0,
+    "s": 11.849923064157798,
+    "d": -3.0
+   },
+   "survey": {
+    "asph": 14,
+    "dash": 3,
+    "solid": 6,
+    "zebra": 2,
+    "vis_dash": 0,
+    "vis_solid": 0,
+    "vis_zebra": 4,
+    "vis_marks": 0,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P097",
+   "source_frame": "hospital-road-ne-out-J02-10m",
+   "kind": "wrong-side-sign",
+   "variant": "offside",
+   "params": {
+    "shape": "sign_noentry",
+    "yaw": 0,
+    "s": 12.85978559513317,
+    "d": -2.8
+   },
+   "survey": {
+    "asph": 4,
+    "dash": 2,
+    "solid": 8,
+    "vis_dash": 0,
+    "vis_solid": 14,
+    "vis_zebra": 0,
+    "vis_marks": 14,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P098",
+   "source_frame": "hospital-road-ne-out-J03-10m",
+   "kind": "wrong-side-sign",
+   "variant": "back_to_driver",
+   "params": {
+    "shape": "sign_oneway",
+    "yaw": 180,
+    "s": 9.386033892653133,
+    "d": 4.5
+   },
+   "survey": {
+    "asph": 14,
+    "solid": 16,
+    "dash": 3,
+    "vis_dash": 0,
+    "vis_solid": 33,
+    "vis_zebra": 0,
+    "vis_marks": 33,
+    "view": 1
+   },
+   "retake_of": {
+    "kind": "wrong-side-sign",
+    "variant": "offside",
+    "source_frame": "hospital-road-ne-back-J02-30m",
+    "params": {
+     "shape": "sign_oneway",
+     "yaw": 0,
+     "s": 10.617336052472345,
+     "d": -3.2
+    }
+   }
+  },
+  {
+   "frame": "P099",
+   "source_frame": "hospital-road-ne-back-J04-10m",
+   "kind": "road-geometry",
+   "variant": "narrow",
+   "params": {
+    "s": 11.244355058525711,
+    "factor": 0.3
+   },
+   "survey": {
+    "asph": 28,
+    "solid": 21,
+    "dash": 4,
+    "zebra": 2,
+    "vis_dash": 0,
+    "vis_solid": 22,
+    "vis_zebra": 0,
+    "vis_marks": 22,
+    "view": 1
+   },
+   "retake_of": {
+    "kind": "road-geometry",
+    "variant": "gap",
+    "source_frame": "newtownbreda-roundabout-J12-10m",
+    "params": {
+     "s": 12.811452810887392
+    }
+   }
+  },
+  {
+   "frame": "P100",
+   "source_frame": "hospital-road-ne-back-J04-30m",
+   "kind": "road-geometry",
+   "variant": "narrow",
+   "params": {
+    "s": 12.616913376247826,
+    "factor": 0.3
+   },
+   "survey": {
+    "asph": 28,
+    "solid": 19,
+    "dash": 4,
+    "zebra": 2,
+    "vis_dash": 0,
+    "vis_solid": 8,
+    "vis_zebra": 0,
+    "vis_marks": 8,
+    "view": 1
+   },
+   "retake_of": {
+    "kind": "road-geometry",
+    "variant": "gap",
+    "source_frame": "milltown-road-out-J03-30m",
+    "params": {
+     "s": 14.710660330402602
+    }
+   }
+  },
+  {
+   "frame": "P101",
+   "source_frame": "hospital-road-ne-back-J05-10m",
+   "kind": "road-geometry",
+   "variant": "narrow",
+   "params": {
+    "s": 13.91737755943085,
+    "factor": 0.3
+   },
+   "survey": {
+    "asph": 7,
+    "solid": 9,
+    "dash": 1,
+    "vis_dash": 10,
+    "vis_solid": 20,
+    "vis_zebra": 0,
+    "vis_marks": 30,
+    "view": 1
+   },
+   "retake_of": {
+    "kind": "road-geometry",
+    "variant": "gap",
+    "source_frame": "newtownbreda-roundabout-J05-10m",
+    "params": {
+     "s": 14.199322485759978
+    }
+   }
+  },
+  {
+   "frame": "P102",
+   "source_frame": "hospital-road-ne-back-J06-10m",
+   "kind": "road-geometry",
+   "variant": "narrow",
+   "params": {
+    "s": 11.852015376344113,
+    "factor": 0.3
+   },
+   "survey": {
+    "asph": 10,
+    "dash": 3,
+    "solid": 6,
+    "vis_dash": 10,
+    "vis_solid": 19,
+    "vis_zebra": 0,
+    "vis_marks": 29,
+    "view": 1
+   },
+   "retake_of": {
+    "kind": "road-geometry",
+    "variant": "gap",
+    "source_frame": "haddo-woods-loop-J03-10m",
+    "params": {
+     "s": 11.841653312465338
+    }
+   }
+  },
+  {
+   "frame": "P103",
+   "source_frame": "milltown-road-back-J03-30m",
+   "kind": "road-geometry",
+   "variant": "narrow",
+   "params": {
+    "s": 12.93688518336098,
+    "factor": 0.35
+   },
+   "survey": {
+    "asph": 7,
+    "dash": 5,
+    "solid": 11,
+    "zebra": 1,
+    "vis_dash": 4,
+    "vis_solid": 11,
+    "vis_zebra": 0,
+    "vis_marks": 15,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P104",
+   "source_frame": "milltown-road-back-J04-30m",
+   "kind": "road-geometry",
+   "variant": "narrow",
+   "params": {
+    "s": 13.677896081240156,
+    "factor": 0.35
+   },
+   "survey": {
+    "asph": 26,
+    "dash": 6,
+    "solid": 17,
+    "zebra": 2,
+    "vis_dash": 0,
+    "vis_solid": 8,
+    "vis_zebra": 3,
+    "vis_marks": 8,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P105",
+   "source_frame": "newtownbreda-roundabout-J07-30m",
+   "kind": "road-geometry",
+   "variant": "narrow",
+   "params": {
+    "s": 14.47032704224682,
+    "factor": 0.35
+   },
+   "survey": {
+    "asph": 11,
+    "dash": 7,
+    "zebra": 2,
+    "vis_dash": 30,
+    "vis_solid": 0,
+    "vis_zebra": 2,
+    "vis_marks": 30,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P106",
+   "source_frame": "hospital-road-ne-back-J05-30m",
+   "kind": "road-geometry",
+   "variant": "shift_road",
+   "params": {
+    "s": 11.048022146660902,
+    "lateral": -3.472612970661265
+   },
+   "survey": {
+    "asph": 16,
+    "solid": 16,
+    "dash": 2,
+    "vis_dash": 0,
+    "vis_solid": 16,
+    "vis_zebra": 0,
+    "vis_marks": 16,
+    "view": 1
+   }
+  },
+  {
+   "frame": "P107",
+   "source_frame": "hospital-road-ne-back-J06-30m",
+   "kind": "road-geometry",
+   "variant": "narrow",
+   "params": {
+    "s": 13.417177805950637,
+    "factor": 0.3
+   },
+   "survey": {
+    "asph": 10,
+    "dash": 4,
+    "solid": 8,
+    "vis_dash": 10,
+    "vis_solid": 20,
+    "vis_zebra": 0,
+    "vis_marks": 30,
+    "view": 1
+   },
+   "retake_of": {
+    "kind": "road-geometry",
+    "variant": "shift_road",
+    "source_frame": "milltown-road-out-J03-10m",
+    "params": {
+     "s": 12.592902957766348,
+     "lateral": -3.920441932702333
+    }
+   }
+  },
+  {
+   "frame": "P108",
+   "source_frame": "hospital-road-ne-out-J01-10m",
+   "kind": "road-geometry",
+   "variant": "narrow",
+   "params": {
+    "s": 12.024160923401034,
+    "factor": 0.3
+   },
+   "survey": {
+    "asph": 10,
+    "dash": 3,
+    "solid": 6,
+    "vis_dash": 10,
+    "vis_solid": 19,
+    "vis_zebra": 0,
+    "vis_marks": 29,
+    "view": 1
+   },
+   "retake_of": {
+    "kind": "road-geometry",
+    "variant": "shift_road",
+    "source_frame": "lady-ishbel-loop-reverse-J04-30m",
+    "params": {
+     "s": 11.287948729011239,
+     "lateral": 3.566945762949671
+    }
+   }
+  }
+ ],
+ "counts": {
+  "building-in-road": 8,
+  "buried-object": 10,
+  "floating-object": 12,
+  "missing-markings": 14,
+  "missing-texture": 10,
+  "object-in-road": 12,
+  "road-geometry": 10,
+  "terrain-step": 10,
+  "wrong-markings": 14,
+  "wrong-side-sign": 8
+ }
+}
