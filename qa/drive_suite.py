@@ -129,6 +129,49 @@ class Link:
         return float(m.group(1)) if m else None
 
 
+# What broke, read once after a crash (I-004): which parts and body zones took the damage and which tyres
+# went down, so a crash can be told apart as a kerb or wall strike, a ground strike or a tyre failure without
+# screenshots. All vehicle Lua: beamstate.getPartDamageData (beamstate.lua:1560), getBodyZoneDamage (:1618,
+# zones FL FR ML MR RL RR at :27), beamstate.damage (:690), wheels.wheels[].isTireDeflated / isPunctured
+# (wheels.lua:384, 1105), jsonEncode (common/utils.lua:355).
+LUA_CRASH_DAMAGE = (
+    "local parts = {} for k, d in pairs(beamstate.getPartDamageData() or {}) do "
+    "parts[#parts + 1] = {k, d.name or '', d.damage or 0} end "
+    "local tyres = {} for _, w in pairs(wheels.wheels or {}) do "
+    "if w.isTireDeflated or w.isPunctured then tyres[#tyres + 1] = tostring(w.name) end end "
+    "return jsonEncode({parts = parts, zones = beamstate.getBodyZoneDamage(), tyres = tyres, "
+    "damage = beamstate.damage})")
+CRASH_PARTS_KEPT = 12
+
+
+def parse_crash_damage(text: str) -> dict:
+    """The vehicle's answer to LUA_CRASH_DAMAGE as {parts: [[slot, name, score]] worst first, zones, tyres, damage}.
+    An empty or unreadable answer gives {"error": ...}; the run goes on either way."""
+    try:
+        d = json.loads(text) if text else None
+    except ValueError:
+        d = None
+    if not isinstance(d, dict):
+        return {"error": f"no answer from vehicle Lua: {str(text)[:120]}"}
+    parts = [p for p in (d.get("parts") or []) if isinstance(p, list) and len(p) == 3]
+    parts.sort(key=lambda p: -float(p[2] or 0))
+    zones = d.get("zones") if isinstance(d.get("zones"), dict) else {}
+    return {"parts": [[str(p[0]), str(p[1]), round(float(p[2] or 0), 3)] for p in parts[:CRASH_PARTS_KEPT]],
+            "parts_damaged": len(parts),
+            "zones": {k: round(float(v or 0), 4) for k, v in sorted(zones.items())},
+            "tyres": sorted(str(t) for t in (d.get("tyres") or [])),
+            "damage": round(float(d.get("damage") or 0), 1)}
+
+
+def crash_damage(link: "Link") -> dict:
+    try:
+        return parse_crash_damage(link.vlua(LUA_CRASH_DAMAGE))
+    except SuiteTimeout:
+        raise
+    except (RuntimeError, McpError, beamng_mcp.ToolError) as e:
+        return {"error": str(e)[:200]}
+
+
 # ------------------------------------------------------------------------------- graph
 
 def dump_graph(link: Link) -> dict:
@@ -398,6 +441,8 @@ def drive_route(link: Link, g: rl.Graph, route: dict, mode: str, outdir: Path, s
                 fh.flush()
                 if mon.stop_reason:
                     end_reason = mon.stop_reason
+                    if end_reason == "crash":
+                        extra["crash_damage"] = crash_damage(link)
                     break
                 if mon.samples and mon.samples[-1]["t"] > 2.0 and mon.arrived():
                     end_reason = "arrived"

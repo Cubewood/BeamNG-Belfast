@@ -64,5 +64,5 @@ Both read MapNG's `osm.json` for the slice (`--osm`, default `H:\BelfastData\map
 - `damageSum` is a polled value (0.5 s) and its size is erratic (17 thousand to 2.3 million); only the over-50 test is used.
 - In the graph run the roundabout route crashed before the roundabout (only the script trial reached it); no right turn across a stream of traffic (no other traffic). Signals and give-way are not obeyed or judged.
 - The sim clock is the wall clock of the logger; a heavily loaded game slows physics and skews accelerations.
-- Crash causes and screenshots are not captured (MapNG's shots show the main menu, `docs/spikes/baseline.md`).
+- Screenshots are not captured (MapNG's shots show the main menu, `docs/spikes/baseline.md`). After a crash, `results[].crash_damage` records what broke, read from vehicle Lua: the worst 12 parts (`beamstate.getPartDamageData`), body zones FL to RR, deflated or punctured tyres and `beamstate.damage` (I-004). A `damageSum` rise with no damaged part, no zone and no tyre is not a structural hit (`docs/spikes/drive-crashes.md`).
 - Start point provisional; graph and OSM inputs live in `H:\BelfastData`, so `rebuild` needs them there.
