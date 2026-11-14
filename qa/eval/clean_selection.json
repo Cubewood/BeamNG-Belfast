@@ -1,0 +1,606 @@
+{
+ "sweep": "H:\\BelfastData\\qa\\sweep\\2026-11-13_220428",
+ "note": "One frame per distinct (approach_key, distance): the sweep repeats shared approaches on several routes; those repeats are left out.",
+ "frames": [
+  {
+   "frame": "C001",
+   "source_frame": "haddo-woods-loop-J01-10m",
+   "pose_file": "haddo-woods-loop/haddo-woods-loop-J01-10m.json",
+   "sweep_index": "C001",
+   "approach_key": "-188,-147@180",
+   "distance_m": 10.0
+  },
+  {
+   "frame": "C002",
+   "source_frame": "haddo-woods-loop-J01-30m",
+   "pose_file": "haddo-woods-loop/haddo-woods-loop-J01-30m.json",
+   "sweep_index": "C002",
+   "approach_key": "-188,-147@180",
+   "distance_m": 30.0
+  },
+  {
+   "frame": "C003",
+   "source_frame": "haddo-woods-loop-J02-10m",
+   "pose_file": "haddo-woods-loop/haddo-woods-loop-J02-10m.json",
+   "sweep_index": "C003",
+   "approach_key": "-249,-141@270",
+   "distance_m": 10.0
+  },
+  {
+   "frame": "C004",
+   "source_frame": "haddo-woods-loop-J02-30m",
+   "pose_file": "haddo-woods-loop/haddo-woods-loop-J02-30m.json",
+   "sweep_index": "C004",
+   "approach_key": "-249,-141@270",
+   "distance_m": 30.0
+  },
+  {
+   "frame": "C005",
+   "source_frame": "haddo-woods-loop-J03-10m",
+   "pose_file": "haddo-woods-loop/haddo-woods-loop-J03-10m.json",
+   "sweep_index": "C005",
+   "approach_key": "-268,-166@210",
+   "distance_m": 10.0
+  },
+  {
+   "frame": "C006",
+   "source_frame": "haddo-woods-loop-J03-30m",
+   "pose_file": "haddo-woods-loop/haddo-woods-loop-J03-30m.json",
+   "sweep_index": "C006",
+   "approach_key": "-268,-166@240",
+   "distance_m": 30.0
+  },
+  {
+   "frame": "C007",
+   "source_frame": "haddo-woods-loop-J04-10m",
+   "pose_file": "haddo-woods-loop/haddo-woods-loop-J04-10m.json",
+   "sweep_index": "C007",
+   "approach_key": "-311,-96@30",
+   "distance_m": 10.0
+  },
+  {
+   "frame": "C008",
+   "source_frame": "haddo-woods-loop-J04-30m",
+   "pose_file": "haddo-woods-loop/haddo-woods-loop-J04-30m.json",
+   "sweep_index": "C008",
+   "approach_key": "-311,-96@330",
+   "distance_m": 30.0
+  },
+  {
+   "frame": "C009",
+   "source_frame": "haddo-woods-loop-J05-10m",
+   "pose_file": "haddo-woods-loop/haddo-woods-loop-J05-10m.json",
+   "sweep_index": "C009",
+   "approach_key": "-266,-115@120",
+   "distance_m": 10.0
+  },
+  {
+   "frame": "C010",
+   "source_frame": "haddo-woods-loop-J05-30m",
+   "pose_file": "haddo-woods-loop/haddo-woods-loop-J05-30m.json",
+   "sweep_index": "C010",
+   "approach_key": "-266,-115@90",
+   "distance_m": 30.0
+  },
+  {
+   "frame": "C011",
+   "source_frame": "haddo-woods-loop-J06-10m",
+   "pose_file": "haddo-woods-loop/haddo-woods-loop-J06-10m.json",
+   "sweep_index": "C011",
+   "approach_key": "-116,120@120",
+   "distance_m": 10.0
+  },
+  {
+   "frame": "C012",
+   "source_frame": "haddo-woods-loop-J06-30m",
+   "pose_file": "haddo-woods-loop/haddo-woods-loop-J06-30m.json",
+   "sweep_index": "C012",
+   "approach_key": "-116,120@60",
+   "distance_m": 30.0
+  },
+  {
+   "frame": "C013",
+   "source_frame": "hospital-road-ne-back-J01-10m",
+   "pose_file": "hospital-road-ne-back/hospital-road-ne-back-J01-10m.json",
+   "sweep_index": "C013",
+   "approach_key": "169,283@270",
+   "distance_m": 10.0
+  },
+  {
+   "frame": "C014",
+   "source_frame": "hospital-road-ne-back-J01-30m",
+   "pose_file": "hospital-road-ne-back/hospital-road-ne-back-J01-30m.json",
+   "sweep_index": "C014",
+   "approach_key": "169,283@270",
+   "distance_m": 30.0
+  },
+  {
+   "frame": "C015",
+   "source_frame": "hospital-road-ne-back-J02-10m",
+   "pose_file": "hospital-road-ne-back/hospital-road-ne-back-J02-10m.json",
+   "sweep_index": "C015",
+   "approach_key": "150,280@270",
+   "distance_m": 10.0
+  },
+  {
+   "frame": "C016",
+   "source_frame": "hospital-road-ne-back-J02-30m",
+   "pose_file": "hospital-road-ne-back/hospital-road-ne-back-J02-30m.json",
+   "sweep_index": "C016",
+   "approach_key": "150,280@270",
+   "distance_m": 30.0
+  },
+  {
+   "frame": "C017",
+   "source_frame": "hospital-road-ne-back-J03-10m",
+   "pose_file": "hospital-road-ne-back/hospital-road-ne-back-J03-10m.json",
+   "sweep_index": "C017",
+   "approach_key": "45,253@240",
+   "distance_m": 10.0
+  },
+  {
+   "frame": "C018",
+   "source_frame": "hospital-road-ne-back-J03-30m",
+   "pose_file": "hospital-road-ne-back/hospital-road-ne-back-J03-30m.json",
+   "sweep_index": "C018",
+   "approach_key": "45,253@270",
+   "distance_m": 30.0
+  },
+  {
+   "frame": "C019",
+   "source_frame": "hospital-road-ne-back-J04-10m",
+   "pose_file": "hospital-road-ne-back/hospital-road-ne-back-J04-10m.json",
+   "sweep_index": "C019",
+   "approach_key": "23,245@240",
+   "distance_m": 10.0
+  },
+  {
+   "frame": "C020",
+   "source_frame": "hospital-road-ne-back-J04-30m",
+   "pose_file": "hospital-road-ne-back/hospital-road-ne-back-J04-30m.json",
+   "sweep_index": "C020",
+   "approach_key": "23,245@240",
+   "distance_m": 30.0
+  },
+  {
+   "frame": "C021",
+   "source_frame": "hospital-road-ne-back-J05-10m",
+   "pose_file": "hospital-road-ne-back/hospital-road-ne-back-J05-10m.json",
+   "sweep_index": "C021",
+   "approach_key": "-32,216@240",
+   "distance_m": 10.0
+  },
+  {
+   "frame": "C022",
+   "source_frame": "hospital-road-ne-back-J05-30m",
+   "pose_file": "hospital-road-ne-back/hospital-road-ne-back-J05-30m.json",
+   "sweep_index": "C022",
+   "approach_key": "-32,216@240",
+   "distance_m": 30.0
+  },
+  {
+   "frame": "C023",
+   "source_frame": "hospital-road-ne-back-J06-10m",
+   "pose_file": "hospital-road-ne-back/hospital-road-ne-back-J06-10m.json",
+   "sweep_index": "C023",
+   "approach_key": "-116,120@210",
+   "distance_m": 10.0
+  },
+  {
+   "frame": "C024",
+   "source_frame": "hospital-road-ne-back-J06-30m",
+   "pose_file": "hospital-road-ne-back/hospital-road-ne-back-J06-30m.json",
+   "sweep_index": "C024",
+   "approach_key": "-116,120@210",
+   "distance_m": 30.0
+  },
+  {
+   "frame": "C025",
+   "source_frame": "hospital-road-ne-out-J01-10m",
+   "pose_file": "hospital-road-ne-out/hospital-road-ne-out-J01-10m.json",
+   "sweep_index": "C025",
+   "approach_key": "-116,120@30",
+   "distance_m": 10.0
+  },
+  {
+   "frame": "C026",
+   "source_frame": "hospital-road-ne-out-J01-30m",
+   "pose_file": "hospital-road-ne-out/hospital-road-ne-out-J01-30m.json",
+   "sweep_index": "C026",
+   "approach_key": "-116,120@30",
+   "distance_m": 30.0
+  },
+  {
+   "frame": "C027",
+   "source_frame": "hospital-road-ne-out-J02-10m",
+   "pose_file": "hospital-road-ne-out/hospital-road-ne-out-J02-10m.json",
+   "sweep_index": "C027",
+   "approach_key": "-32,216@60",
+   "distance_m": 10.0
+  },
+  {
+   "frame": "C028",
+   "source_frame": "hospital-road-ne-out-J02-30m",
+   "pose_file": "hospital-road-ne-out/hospital-road-ne-out-J02-30m.json",
+   "sweep_index": "C028",
+   "approach_key": "-32,216@60",
+   "distance_m": 30.0
+  },
+  {
+   "frame": "C029",
+   "source_frame": "hospital-road-ne-out-J03-10m",
+   "pose_file": "hospital-road-ne-out/hospital-road-ne-out-J03-10m.json",
+   "sweep_index": "C029",
+   "approach_key": "-1,242@60",
+   "distance_m": 10.0
+  },
+  {
+   "frame": "C030",
+   "source_frame": "hospital-road-ne-out-J03-30m",
+   "pose_file": "hospital-road-ne-out/hospital-road-ne-out-J03-30m.json",
+   "sweep_index": "C030",
+   "approach_key": "-1,242@60",
+   "distance_m": 30.0
+  },
+  {
+   "frame": "C031",
+   "source_frame": "hospital-road-ne-out-J04-10m",
+   "pose_file": "hospital-road-ne-out/hospital-road-ne-out-J04-10m.json",
+   "sweep_index": "C031",
+   "approach_key": "33,262@60",
+   "distance_m": 10.0
+  },
+  {
+   "frame": "C032",
+   "source_frame": "hospital-road-ne-out-J04-30m",
+   "pose_file": "hospital-road-ne-out/hospital-road-ne-out-J04-30m.json",
+   "sweep_index": "C032",
+   "approach_key": "33,262@60",
+   "distance_m": 30.0
+  },
+  {
+   "frame": "C033",
+   "source_frame": "hospital-road-ne-out-J05-10m",
+   "pose_file": "hospital-road-ne-out/hospital-road-ne-out-J05-10m.json",
+   "sweep_index": "C033",
+   "approach_key": "51,269@60",
+   "distance_m": 10.0
+  },
+  {
+   "frame": "C034",
+   "source_frame": "hospital-road-ne-out-J05-30m",
+   "pose_file": "hospital-road-ne-out/hospital-road-ne-out-J05-30m.json",
+   "sweep_index": "C034",
+   "approach_key": "51,269@60",
+   "distance_m": 30.0
+  },
+  {
+   "frame": "C035",
+   "source_frame": "hospital-road-ne-out-J06-10m",
+   "pose_file": "hospital-road-ne-out/hospital-road-ne-out-J06-10m.json",
+   "sweep_index": "C035",
+   "approach_key": "169,283@90",
+   "distance_m": 10.0
+  },
+  {
+   "frame": "C036",
+   "source_frame": "hospital-road-ne-out-J06-30m",
+   "pose_file": "hospital-road-ne-out/hospital-road-ne-out-J06-30m.json",
+   "sweep_index": "C036",
+   "approach_key": "169,283@90",
+   "distance_m": 30.0
+  },
+  {
+   "frame": "C037",
+   "source_frame": "hospital-road-south-back-J01-10m",
+   "pose_file": "hospital-road-south-back/hospital-road-south-back-J01-10m.json",
+   "sweep_index": "C037",
+   "approach_key": "-188,-147@0",
+   "distance_m": 10.0
+  },
+  {
+   "frame": "C038",
+   "source_frame": "hospital-road-south-back-J01-30m",
+   "pose_file": "hospital-road-south-back/hospital-road-south-back-J01-30m.json",
+   "sweep_index": "C038",
+   "approach_key": "-188,-147@0",
+   "distance_m": 30.0
+  },
+  {
+   "frame": "C039",
+   "source_frame": "lady-ishbel-loop-J03-10m",
+   "pose_file": "lady-ishbel-loop/lady-ishbel-loop-J03-10m.json",
+   "sweep_index": "C045",
+   "approach_key": "-266,-115@330",
+   "distance_m": 10.0
+  },
+  {
+   "frame": "C040",
+   "source_frame": "lady-ishbel-loop-J03-30m",
+   "pose_file": "lady-ishbel-loop/lady-ishbel-loop-J03-30m.json",
+   "sweep_index": "C046",
+   "approach_key": "-266,-115@300",
+   "distance_m": 30.0
+  },
+  {
+   "frame": "C041",
+   "source_frame": "lady-ishbel-loop-reverse-J02-10m",
+   "pose_file": "lady-ishbel-loop-reverse/lady-ishbel-loop-reverse-J02-10m.json",
+   "sweep_index": "C051",
+   "approach_key": "-266,-115@240",
+   "distance_m": 10.0
+  },
+  {
+   "frame": "C042",
+   "source_frame": "lady-ishbel-loop-reverse-J02-30m",
+   "pose_file": "lady-ishbel-loop-reverse/lady-ishbel-loop-reverse-J02-30m.json",
+   "sweep_index": "C052",
+   "approach_key": "-266,-115@270",
+   "distance_m": 30.0
+  },
+  {
+   "frame": "C043",
+   "source_frame": "lady-ishbel-loop-reverse-J03-10m",
+   "pose_file": "lady-ishbel-loop-reverse/lady-ishbel-loop-reverse-J03-10m.json",
+   "sweep_index": "C053",
+   "approach_key": "-249,-141@150",
+   "distance_m": 10.0
+  },
+  {
+   "frame": "C044",
+   "source_frame": "lady-ishbel-loop-reverse-J03-30m",
+   "pose_file": "lady-ishbel-loop-reverse/lady-ishbel-loop-reverse-J03-30m.json",
+   "sweep_index": "C054",
+   "approach_key": "-249,-141@180",
+   "distance_m": 30.0
+  },
+  {
+   "frame": "C045",
+   "source_frame": "lady-ishbel-loop-reverse-J04-10m",
+   "pose_file": "lady-ishbel-loop-reverse/lady-ishbel-loop-reverse-J04-10m.json",
+   "sweep_index": "C055",
+   "approach_key": "-188,-147@90",
+   "distance_m": 10.0
+  },
+  {
+   "frame": "C046",
+   "source_frame": "lady-ishbel-loop-reverse-J04-30m",
+   "pose_file": "lady-ishbel-loop-reverse/lady-ishbel-loop-reverse-J04-30m.json",
+   "sweep_index": "C056",
+   "approach_key": "-188,-147@90",
+   "distance_m": 30.0
+  },
+  {
+   "frame": "C047",
+   "source_frame": "milltown-road-back-J01-10m",
+   "pose_file": "milltown-road-back/milltown-road-back-J01-10m.json",
+   "sweep_index": "C057",
+   "approach_key": "-100,385@120",
+   "distance_m": 10.0
+  },
+  {
+   "frame": "C048",
+   "source_frame": "milltown-road-back-J01-30m",
+   "pose_file": "milltown-road-back/milltown-road-back-J01-30m.json",
+   "sweep_index": "C058",
+   "approach_key": "-100,385@120",
+   "distance_m": 30.0
+  },
+  {
+   "frame": "C049",
+   "source_frame": "milltown-road-back-J02-10m",
+   "pose_file": "milltown-road-back/milltown-road-back-J02-10m.json",
+   "sweep_index": "C059",
+   "approach_key": "-79,371@120",
+   "distance_m": 10.0
+  },
+  {
+   "frame": "C050",
+   "source_frame": "milltown-road-back-J02-30m",
+   "pose_file": "milltown-road-back/milltown-road-back-J02-30m.json",
+   "sweep_index": "C060",
+   "approach_key": "-79,371@120",
+   "distance_m": 30.0
+  },
+  {
+   "frame": "C051",
+   "source_frame": "milltown-road-back-J03-10m",
+   "pose_file": "milltown-road-back/milltown-road-back-J03-10m.json",
+   "sweep_index": "C061",
+   "approach_key": "22,288@120",
+   "distance_m": 10.0
+  },
+  {
+   "frame": "C052",
+   "source_frame": "milltown-road-back-J03-30m",
+   "pose_file": "milltown-road-back/milltown-road-back-J03-30m.json",
+   "sweep_index": "C062",
+   "approach_key": "22,288@120",
+   "distance_m": 30.0
+  },
+  {
+   "frame": "C053",
+   "source_frame": "milltown-road-back-J04-10m",
+   "pose_file": "milltown-road-back/milltown-road-back-J04-10m.json",
+   "sweep_index": "C063",
+   "approach_key": "41,265@150",
+   "distance_m": 10.0
+  },
+  {
+   "frame": "C054",
+   "source_frame": "milltown-road-back-J04-30m",
+   "pose_file": "milltown-road-back/milltown-road-back-J04-30m.json",
+   "sweep_index": "C064",
+   "approach_key": "41,265@150",
+   "distance_m": 30.0
+  },
+  {
+   "frame": "C055",
+   "source_frame": "milltown-road-back-J05-10m",
+   "pose_file": "milltown-road-back/milltown-road-back-J05-10m.json",
+   "sweep_index": "C065",
+   "approach_key": "45,253@150",
+   "distance_m": 10.0
+  },
+  {
+   "frame": "C056",
+   "source_frame": "milltown-road-back-J05-30m",
+   "pose_file": "milltown-road-back/milltown-road-back-J05-30m.json",
+   "sweep_index": "C066",
+   "approach_key": "45,253@150",
+   "distance_m": 30.0
+  },
+  {
+   "frame": "C057",
+   "source_frame": "milltown-road-back-J06-30m",
+   "pose_file": "milltown-road-back/milltown-road-back-J06-30m.json",
+   "sweep_index": "C068",
+   "approach_key": "23,245@150",
+   "distance_m": 30.0
+  },
+  {
+   "frame": "C058",
+   "source_frame": "milltown-road-out-J04-10m",
+   "pose_file": "milltown-road-out/milltown-road-out-J04-10m.json",
+   "sweep_index": "C079",
+   "approach_key": "20,278@30",
+   "distance_m": 10.0
+  },
+  {
+   "frame": "C059",
+   "source_frame": "milltown-road-out-J04-30m",
+   "pose_file": "milltown-road-out/milltown-road-out-J04-30m.json",
+   "sweep_index": "C080",
+   "approach_key": "20,278@30",
+   "distance_m": 30.0
+  },
+  {
+   "frame": "C060",
+   "source_frame": "milltown-road-out-J05-10m",
+   "pose_file": "milltown-road-out/milltown-road-out-J05-10m.json",
+   "sweep_index": "C081",
+   "approach_key": "-58,340@300",
+   "distance_m": 10.0
+  },
+  {
+   "frame": "C061",
+   "source_frame": "milltown-road-out-J05-30m",
+   "pose_file": "milltown-road-out/milltown-road-out-J05-30m.json",
+   "sweep_index": "C082",
+   "approach_key": "-58,340@300",
+   "distance_m": 30.0
+  },
+  {
+   "frame": "C062",
+   "source_frame": "milltown-road-out-J06-10m",
+   "pose_file": "milltown-road-out/milltown-road-out-J06-10m.json",
+   "sweep_index": "C083",
+   "approach_key": "-105,378@300",
+   "distance_m": 10.0
+  },
+  {
+   "frame": "C063",
+   "source_frame": "milltown-road-out-J06-30m",
+   "pose_file": "milltown-road-out/milltown-road-out-J06-30m.json",
+   "sweep_index": "C084",
+   "approach_key": "-105,378@300",
+   "distance_m": 30.0
+  },
+  {
+   "frame": "C064",
+   "source_frame": "newtownbreda-roundabout-J07-10m",
+   "pose_file": "newtownbreda-roundabout/newtownbreda-roundabout-J07-10m.json",
+   "sweep_index": "C097",
+   "approach_key": "204,280@90",
+   "distance_m": 10.0
+  },
+  {
+   "frame": "C065",
+   "source_frame": "newtownbreda-roundabout-J07-30m",
+   "pose_file": "newtownbreda-roundabout/newtownbreda-roundabout-J07-30m.json",
+   "sweep_index": "C098",
+   "approach_key": "204,280@90",
+   "distance_m": 30.0
+  },
+  {
+   "frame": "C066",
+   "source_frame": "newtownbreda-roundabout-J08-10m",
+   "pose_file": "newtownbreda-roundabout/newtownbreda-roundabout-J08-10m.json",
+   "sweep_index": "C099",
+   "approach_key": "241,448@0",
+   "distance_m": 10.0
+  },
+  {
+   "frame": "C067",
+   "source_frame": "newtownbreda-roundabout-J08-30m",
+   "pose_file": "newtownbreda-roundabout/newtownbreda-roundabout-J08-30m.json",
+   "sweep_index": "C100",
+   "approach_key": "241,448@0",
+   "distance_m": 30.0
+  },
+  {
+   "frame": "C068",
+   "source_frame": "newtownbreda-roundabout-J09-10m",
+   "pose_file": "newtownbreda-roundabout/newtownbreda-roundabout-J09-10m.json",
+   "sweep_index": "C101",
+   "approach_key": "269,576@0",
+   "distance_m": 10.0
+  },
+  {
+   "frame": "C069",
+   "source_frame": "newtownbreda-roundabout-J09-30m",
+   "pose_file": "newtownbreda-roundabout/newtownbreda-roundabout-J09-30m.json",
+   "sweep_index": "C102",
+   "approach_key": "269,576@0",
+   "distance_m": 30.0
+  },
+  {
+   "frame": "C070",
+   "source_frame": "newtownbreda-roundabout-J10-10m",
+   "pose_file": "newtownbreda-roundabout/newtownbreda-roundabout-J10-10m.json",
+   "sweep_index": "C103",
+   "approach_key": "335,706@30",
+   "distance_m": 10.0
+  },
+  {
+   "frame": "C071",
+   "source_frame": "newtownbreda-roundabout-J10-30m",
+   "pose_file": "newtownbreda-roundabout/newtownbreda-roundabout-J10-30m.json",
+   "sweep_index": "C104",
+   "approach_key": "335,706@30",
+   "distance_m": 30.0
+  },
+  {
+   "frame": "C072",
+   "source_frame": "newtownbreda-roundabout-J11-10m",
+   "pose_file": "newtownbreda-roundabout/newtownbreda-roundabout-J11-10m.json",
+   "sweep_index": "C105",
+   "approach_key": "438,852@60",
+   "distance_m": 10.0
+  },
+  {
+   "frame": "C073",
+   "source_frame": "newtownbreda-roundabout-J11-30m",
+   "pose_file": "newtownbreda-roundabout/newtownbreda-roundabout-J11-30m.json",
+   "sweep_index": "C106",
+   "approach_key": "438,852@30",
+   "distance_m": 30.0
+  },
+  {
+   "frame": "C074",
+   "source_frame": "newtownbreda-roundabout-J12-10m",
+   "pose_file": "newtownbreda-roundabout/newtownbreda-roundabout-J12-10m.json",
+   "sweep_index": "C107",
+   "approach_key": "451,871@30",
+   "distance_m": 10.0
+  },
+  {
+   "frame": "C075",
+   "source_frame": "newtownbreda-roundabout-J12-30m",
+   "pose_file": "newtownbreda-roundabout/newtownbreda-roundabout-J12-30m.json",
+   "sweep_index": "C108",
+   "approach_key": "451,871@60",
+   "distance_m": 30.0
+  }
+ ]
+}

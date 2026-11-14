@@ -1,0 +1,1495 @@
+{
+ "labeller": "Claude (vision), reading the images; Qwen never saw this set",
+ "viewed": {
+  "planted": 97,
+  "clean": 75
+ },
+ "dropped": {
+  "P008": "Hiding dashed lines changes nothing visible: the pair is the same apart from cloud light.",
+  "P010": "Hiding solid lines changes nothing visible at this junction.",
+  "P012": "Hiding zebra roads changes nothing visible at this junction.",
+  "P013": "Hiding zebra roads changes nothing visible here.",
+  "P024": "Shifted lines cannot be told from the original at this pose.",
+  "P025": "Shifted lines cannot be told from the original at this pose.",
+  "P027": "Chequered material on the lines is not visible at this distance.",
+  "P028": "Chequered material on the lines is not visible at this distance.",
+  "P030": "The planted wall is not visible in this roundabout frame.",
+  "P062": "The planted floating object cannot be found in this frame.",
+  "P066": "The lifted sign cannot be told from the scene; only a faint pole in front of the house."
+ },
+ "labels": {
+  "C001": {
+   "defect_type": "none",
+   "confidence": 0.8,
+   "reason": "Plain two-lane road with dashed centre line, kerb and houses; nothing wrong visible.",
+   "unsure": false,
+   "viewed_as": "C001",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C002": {
+   "defect_type": "none",
+   "confidence": 0.8,
+   "reason": "Road with centre line, edge line and priority sign; plausible.",
+   "unsure": false,
+   "viewed_as": "C002",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C003": {
+   "defect_type": "missing-markings",
+   "confidence": 0.4,
+   "reason": "Junction mouth with a pale slab across it and no give-way line or other paint visible.",
+   "unsure": true,
+   "viewed_as": "C003",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C004": {
+   "defect_type": "none",
+   "confidence": 0.6,
+   "reason": "Quiet side road in shadow with houses at the kerb; no markings but nothing clearly wrong.",
+   "unsure": true,
+   "viewed_as": "C004",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C005": {
+   "defect_type": "none",
+   "confidence": 0.55,
+   "reason": "Residential T-junction with kerbs and houses; no give-way line visible but not clearly a defect.",
+   "unsure": true,
+   "viewed_as": "C005",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C006": {
+   "defect_type": "none",
+   "confidence": 0.6,
+   "reason": "Residential road ahead with houses; plausible.",
+   "unsure": false,
+   "viewed_as": "C006",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C007": {
+   "defect_type": "none",
+   "confidence": 0.55,
+   "reason": "Junction with flats ahead; some paint at the mouth, road surface rough but plausible.",
+   "unsure": true,
+   "viewed_as": "C007",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C008": {
+   "defect_type": "none",
+   "confidence": 0.6,
+   "reason": "Houses close to the kerb on a curved road; plausible.",
+   "unsure": false,
+   "viewed_as": "C008",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C009": {
+   "defect_type": "building-in-road",
+   "confidence": 0.4,
+   "reason": "A house sits right at the centre of the junction ahead with the kerb curving round it; looks like a house on the carriageway.",
+   "unsure": true,
+   "viewed_as": "C009",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C010": {
+   "defect_type": "none",
+   "confidence": 0.5,
+   "reason": "Houses beyond a T-junction; a house at the left kerb; no clear defect.",
+   "unsure": true,
+   "viewed_as": "C010",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C011": {
+   "defect_type": "none",
+   "confidence": 0.6,
+   "reason": "Open flat ground beside a road with an edge line; empty but no clear defect.",
+   "unsure": false,
+   "viewed_as": "C011",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C012": {
+   "defect_type": "building-in-road",
+   "confidence": 0.55,
+   "reason": "The road runs straight up to the front door of a house standing on the carriageway end.",
+   "unsure": true,
+   "viewed_as": "C012",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C013": {
+   "defect_type": "missing-markings",
+   "confidence": 0.35,
+   "reason": "Wide road in the foreground has no centre line or lane paint, only dark tyre-track texture.",
+   "unsure": true,
+   "viewed_as": "C013",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C014": {
+   "defect_type": "none",
+   "confidence": 0.7,
+   "reason": "Road with dashed centre line, kerb, pole and signs; plausible.",
+   "unsure": false,
+   "viewed_as": "C014",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C015": {
+   "defect_type": "none",
+   "confidence": 0.5,
+   "reason": "Bend with kerbed island and signs; sparse paint but nothing clearly wrong.",
+   "unsure": true,
+   "viewed_as": "C015",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C016": {
+   "defect_type": "none",
+   "confidence": 0.5,
+   "reason": "Wide bend with a kerb on the left; paint sparse; plausible.",
+   "unsure": true,
+   "viewed_as": "C016",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C017": {
+   "defect_type": "missing-markings",
+   "confidence": 0.4,
+   "reason": "Signalised junction ahead with no stop line or lane paint on the near approach, only a short stripe at the left.",
+   "unsure": true,
+   "viewed_as": "C017",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C018": {
+   "defect_type": "none",
+   "confidence": 0.5,
+   "reason": "Kerbed island and road bend ahead; plausible.",
+   "unsure": true,
+   "viewed_as": "C018",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C019": {
+   "defect_type": "missing-markings",
+   "confidence": 0.3,
+   "reason": "Approach to a junction with only tyre-track texture and no stop line or centre line in the foreground.",
+   "unsure": true,
+   "viewed_as": "C019",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C020": {
+   "defect_type": "none",
+   "confidence": 0.6,
+   "reason": "Signalised junction with a stripe at the left and a signal head; plausible.",
+   "unsure": false,
+   "viewed_as": "C020",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C021": {
+   "defect_type": "none",
+   "confidence": 0.65,
+   "reason": "Road ahead with dashed centre line and pole; plausible.",
+   "unsure": false,
+   "viewed_as": "C021",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C022": {
+   "defect_type": "none",
+   "confidence": 0.7,
+   "reason": "Road with continuous edge line and dashes; plausible.",
+   "unsure": false,
+   "viewed_as": "C022",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C023": {
+   "defect_type": "none",
+   "confidence": 0.7,
+   "reason": "Road with dashed centre line and edge lines; plausible.",
+   "unsure": false,
+   "viewed_as": "C023",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C024": {
+   "defect_type": "none",
+   "confidence": 0.75,
+   "reason": "Road with edge lines, centre dashes and a priority sign; plausible.",
+   "unsure": false,
+   "viewed_as": "C024",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C025": {
+   "defect_type": "terrain-step",
+   "confidence": 0.4,
+   "reason": "A ragged crack and raised edge of ground runs along the left verge in front of the house, like a torn terrain seam.",
+   "unsure": true,
+   "viewed_as": "C025",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C026": {
+   "defect_type": "none",
+   "confidence": 0.5,
+   "reason": "Same ragged verge edge far left but the road itself looks fine.",
+   "unsure": true,
+   "viewed_as": "C026",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C027": {
+   "defect_type": "none",
+   "confidence": 0.6,
+   "reason": "Junction approach with sign and a pole beside the road; plausible.",
+   "unsure": false,
+   "viewed_as": "C027",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C028": {
+   "defect_type": "none",
+   "confidence": 0.7,
+   "reason": "Road with edge lines and centre dashes; plausible.",
+   "unsure": false,
+   "viewed_as": "C028",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C029": {
+   "defect_type": "none",
+   "confidence": 0.55,
+   "reason": "Junction approach, poles at the verge, little paint; plausible.",
+   "unsure": true,
+   "viewed_as": "C029",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C030": {
+   "defect_type": "none",
+   "confidence": 0.7,
+   "reason": "Road with centre line and a direction arrow at the junction; plausible.",
+   "unsure": false,
+   "viewed_as": "C030",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C031": {
+   "defect_type": "none",
+   "confidence": 0.5,
+   "reason": "Large signalised junction, pale wedge at the right and little paint; plausible.",
+   "unsure": true,
+   "viewed_as": "C031",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C032": {
+   "defect_type": "none",
+   "confidence": 0.6,
+   "reason": "Junction with island, stop line and arrow marking visible; plausible.",
+   "unsure": false,
+   "viewed_as": "C032",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C033": {
+   "defect_type": "none",
+   "confidence": 0.5,
+   "reason": "Wide junction with pale wedge at the right and sparse paint; plausible.",
+   "unsure": true,
+   "viewed_as": "C033",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C034": {
+   "defect_type": "none",
+   "confidence": 0.5,
+   "reason": "Junction approach with pale wedge on the road at the right; plausible.",
+   "unsure": true,
+   "viewed_as": "C034",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C035": {
+   "defect_type": "none",
+   "confidence": 0.55,
+   "reason": "Road ahead with pole at the left verge and faint paint; plausible.",
+   "unsure": true,
+   "viewed_as": "C035",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C036": {
+   "defect_type": "none",
+   "confidence": 0.5,
+   "reason": "Junction mouth with pale hatched wedge at the right and a kerb line; plausible.",
+   "unsure": true,
+   "viewed_as": "C036",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C037": {
+   "defect_type": "none",
+   "confidence": 0.7,
+   "reason": "Straight road, houses at the kerb, warning signs ahead; plausible.",
+   "unsure": false,
+   "viewed_as": "C037",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C038": {
+   "defect_type": "none",
+   "confidence": 0.7,
+   "reason": "Road with edge line and centre dashes, houses and sign at the kerb; plausible.",
+   "unsure": false,
+   "viewed_as": "C038",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C039": {
+   "defect_type": "none",
+   "confidence": 0.55,
+   "reason": "Residential junction with houses at the kerbs; no give-way line visible but not clearly a defect.",
+   "unsure": true,
+   "viewed_as": "C045",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C040": {
+   "defect_type": "none",
+   "confidence": 0.6,
+   "reason": "Residential road with kerb and houses; plausible.",
+   "unsure": false,
+   "viewed_as": "C046",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C041": {
+   "defect_type": "none",
+   "confidence": 0.6,
+   "reason": "Residential junction with a direction arrow on the road and houses at the kerb; plausible.",
+   "unsure": false,
+   "viewed_as": "C051",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C042": {
+   "defect_type": "none",
+   "confidence": 0.5,
+   "reason": "Residential junction with a kerbed island and a slightly ragged ground edge; plausible.",
+   "unsure": true,
+   "viewed_as": "C052",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C043": {
+   "defect_type": "none",
+   "confidence": 0.65,
+   "reason": "Residential junction with give-way paint at the mouth; plausible.",
+   "unsure": false,
+   "viewed_as": "C053",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C044": {
+   "defect_type": "none",
+   "confidence": 0.55,
+   "reason": "Residential road with houses close to the kerb; plausible.",
+   "unsure": true,
+   "viewed_as": "C054",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C045": {
+   "defect_type": "missing-markings",
+   "confidence": 0.35,
+   "reason": "Wide plain tarmac area with no lane or centre paint visible near the junction.",
+   "unsure": true,
+   "viewed_as": "C055",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C046": {
+   "defect_type": "none",
+   "confidence": 0.55,
+   "reason": "Dark road beside a brick house with sign ahead; plausible.",
+   "unsure": true,
+   "viewed_as": "C056",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C047": {
+   "defect_type": "missing-markings",
+   "confidence": 0.35,
+   "reason": "Signalised junction ahead with no stop line or lane paint on the near approach.",
+   "unsure": true,
+   "viewed_as": "C057",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C048": {
+   "defect_type": "none",
+   "confidence": 0.6,
+   "reason": "Signalised junction with stop line, lane lines and signals; a rough dark patch at the left verge but plausible.",
+   "unsure": true,
+   "viewed_as": "C058",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C049": {
+   "defect_type": "none",
+   "confidence": 0.65,
+   "reason": "Road with centre dashes and kerb, pole at the verge; plausible.",
+   "unsure": false,
+   "viewed_as": "C059",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C050": {
+   "defect_type": "none",
+   "confidence": 0.75,
+   "reason": "Signalised junction with zebra crossing and signals; plausible.",
+   "unsure": false,
+   "viewed_as": "C060",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C051": {
+   "defect_type": "none",
+   "confidence": 0.5,
+   "reason": "Junction approach with pale slab at the kerb and a sign; little paint but plausible.",
+   "unsure": true,
+   "viewed_as": "C061",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C052": {
+   "defect_type": "none",
+   "confidence": 0.7,
+   "reason": "Road with edge line, centre dashes and a pole at the verge; plausible.",
+   "unsure": false,
+   "viewed_as": "C062",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C053": {
+   "defect_type": "none",
+   "confidence": 0.5,
+   "reason": "Wide junction with pale wedges and sparse paint; plausible.",
+   "unsure": true,
+   "viewed_as": "C063",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C054": {
+   "defect_type": "none",
+   "confidence": 0.6,
+   "reason": "Signalised junction with signs, signals and some arrows; plausible.",
+   "unsure": false,
+   "viewed_as": "C064",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C055": {
+   "defect_type": "missing-markings",
+   "confidence": 0.35,
+   "reason": "Wide junction mouth with no stop line, centre line or lane paint visible.",
+   "unsure": true,
+   "viewed_as": "C065",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C056": {
+   "defect_type": "none",
+   "confidence": 0.6,
+   "reason": "Junction with zebra crossing stripes and a kerbed island; plausible.",
+   "unsure": false,
+   "viewed_as": "C066",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C057": {
+   "defect_type": "missing-markings",
+   "confidence": 0.35,
+   "reason": "Wide junction mouth with pale wedge and no stop line, centre line or lane paint visible.",
+   "unsure": true,
+   "viewed_as": "C068",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C058": {
+   "defect_type": "missing-markings",
+   "confidence": 0.4,
+   "reason": "Wide bare tarmac junction area with no centre line, lane lines or stop line visible.",
+   "unsure": true,
+   "viewed_as": "C079",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C059": {
+   "defect_type": "none",
+   "confidence": 0.6,
+   "reason": "Signalised junction with kerbed island, signals and edge lines; plausible.",
+   "unsure": false,
+   "viewed_as": "C080",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C060": {
+   "defect_type": "none",
+   "confidence": 0.55,
+   "reason": "Kerb and pale slab beside the road with signs ahead; sparse paint but plausible.",
+   "unsure": true,
+   "viewed_as": "C081",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C061": {
+   "defect_type": "none",
+   "confidence": 0.7,
+   "reason": "Road with kerb on the left, edge line and centre dashes, pole and sign; plausible.",
+   "unsure": false,
+   "viewed_as": "C082",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C062": {
+   "defect_type": "none",
+   "confidence": 0.55,
+   "reason": "Road bending along a kerb with signals ahead; plausible.",
+   "unsure": true,
+   "viewed_as": "C083",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C063": {
+   "defect_type": "none",
+   "confidence": 0.6,
+   "reason": "Signalised junction with island, arrows and signals; plausible.",
+   "unsure": false,
+   "viewed_as": "C084",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C064": {
+   "defect_type": "none",
+   "confidence": 0.5,
+   "reason": "Road between kerbs with a ragged dark edge at the lower left and a long wall ahead; no clear defect.",
+   "unsure": true,
+   "viewed_as": "C097",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C065": {
+   "defect_type": "none",
+   "confidence": 0.7,
+   "reason": "Road with dashed centre line, raised verge and kerb; plausible.",
+   "unsure": false,
+   "viewed_as": "C098",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C066": {
+   "defect_type": "none",
+   "confidence": 0.65,
+   "reason": "Road beside a kerb with street lamps and houses ahead; no centre line in the foreground but plausible.",
+   "unsure": true,
+   "viewed_as": "C099",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C067": {
+   "defect_type": "none",
+   "confidence": 0.7,
+   "reason": "Road with dashed centre line and street lamps; plausible.",
+   "unsure": false,
+   "viewed_as": "C100",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C068": {
+   "defect_type": "none",
+   "confidence": 0.55,
+   "reason": "Road beside a kerb with no centre line in the foreground; plausible for a minor road.",
+   "unsure": true,
+   "viewed_as": "C101",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C069": {
+   "defect_type": "none",
+   "confidence": 0.55,
+   "reason": "Straight road with a house standing on a raised mound at the right verge; plausible.",
+   "unsure": true,
+   "viewed_as": "C102",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C070": {
+   "defect_type": "none",
+   "confidence": 0.6,
+   "reason": "Street with flats and houses at the kerb, no centre line in the foreground; plausible.",
+   "unsure": true,
+   "viewed_as": "C103",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C071": {
+   "defect_type": "none",
+   "confidence": 0.65,
+   "reason": "Street with dashed centre line, kerb and flats; plausible.",
+   "unsure": false,
+   "viewed_as": "C104",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C072": {
+   "defect_type": "none",
+   "confidence": 0.6,
+   "reason": "Roundabout approach with kerbed island and signs; paint sparse but plausible.",
+   "unsure": true,
+   "viewed_as": "C105",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C073": {
+   "defect_type": "none",
+   "confidence": 0.65,
+   "reason": "Road with dashed centre line and kerbed island towards a roundabout; plausible.",
+   "unsure": false,
+   "viewed_as": "C106",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C074": {
+   "defect_type": "none",
+   "confidence": 0.55,
+   "reason": "Roundabout mouth with chevron signs and no visible paint; plausible.",
+   "unsure": true,
+   "viewed_as": "C107",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "C075": {
+   "defect_type": "none",
+   "confidence": 0.6,
+   "reason": "Roundabout approach with kerbed island and signs; plausible.",
+   "unsure": true,
+   "viewed_as": "C108",
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P001": {
+   "defect_type": "missing-markings",
+   "confidence": 0.65,
+   "reason": "Road ahead of the junction has no centre line or edge paint, bare grey tarmac.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P002": {
+   "defect_type": "missing-markings",
+   "confidence": 0.85,
+   "reason": "Signalised junction approach with all lane lines and the stop line gone; bare tarmac.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P003": {
+   "defect_type": "missing-markings",
+   "confidence": 0.75,
+   "reason": "Signalised junction mouth with no zebra stripes, stop line or lane paint.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P004": {
+   "defect_type": "missing-markings",
+   "confidence": 0.55,
+   "reason": "Road toward the junction has no centre dash or edge paint; only a faint difference from a quiet road.",
+   "planted_visible": "partly",
+   "other_defects": null,
+   "unsure": true,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P005": {
+   "defect_type": "missing-markings",
+   "confidence": 0.4,
+   "reason": "Road bend with an edge line but no centre dashes or arrow at the junction mouth; subtle.",
+   "planted_visible": "partly",
+   "other_defects": null,
+   "unsure": true,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P006": {
+   "defect_type": "missing-markings",
+   "confidence": 0.4,
+   "reason": "Roundabout approach with no dashed lane paint at the mouth; subtle.",
+   "planted_visible": "partly",
+   "other_defects": null,
+   "unsure": true,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P007": {
+   "defect_type": "missing-markings",
+   "confidence": 0.8,
+   "reason": "Wide road with no centre line or lane dashes at all, bare tarmac.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P009": {
+   "defect_type": "missing-markings",
+   "confidence": 0.55,
+   "reason": "The continuous edge line has gone; only the centre dash is left on this road.",
+   "planted_visible": "yes",
+   "other_defects": "Cloud shadow darkens the whole frame.",
+   "unsure": true,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P011": {
+   "defect_type": "missing-markings",
+   "confidence": 0.35,
+   "reason": "Edge line still partly visible at the lower left; the removal is hard to see.",
+   "planted_visible": "partly",
+   "other_defects": null,
+   "unsure": true,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P014": {
+   "defect_type": "missing-markings",
+   "confidence": 0.45,
+   "reason": "Give-way/hatching paint at the junction mouth on the right has gone, leaving a pale bare slab.",
+   "planted_visible": "partly",
+   "other_defects": null,
+   "unsure": true,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P016": {
+   "defect_type": "wrong-markings",
+   "confidence": 0.55,
+   "reason": "The centre dashes ahead are yellow instead of white.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P017": {
+   "defect_type": "wrong-markings",
+   "confidence": 0.8,
+   "reason": "Edge and centre lines at the junction are yellow, double yellow at the left, not UK white paint.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P018": {
+   "defect_type": "wrong-markings",
+   "confidence": 0.7,
+   "reason": "The lane lines are very wide white smeared bands across the road ahead, like a crossing, not normal paint.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P022": {
+   "defect_type": "wrong-markings",
+   "confidence": 0.9,
+   "reason": "Very wide yellow double lines and yellow blocks across the lane instead of thin white paint.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P023": {
+   "defect_type": "wrong-markings",
+   "confidence": 0.9,
+   "reason": "Thick yellow dashes laid across the road like a crossing, not UK white paint.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P026": {
+   "defect_type": "wrong-markings",
+   "confidence": 0.5,
+   "reason": "The edge line and stop line are displaced: a white line runs across the verge at the left and the lane lines sit off the carriageway.",
+   "planted_visible": "partly",
+   "other_defects": null,
+   "unsure": true,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P029": {
+   "defect_type": "building-in-road",
+   "confidence": 0.9,
+   "reason": "A large brick wall block stands across the whole carriageway ahead.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P031": {
+   "defect_type": "building-in-road",
+   "confidence": 0.8,
+   "reason": "A tall brick wall stands on the right side of the carriageway blocking part of the road.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P032": {
+   "defect_type": "building-in-road",
+   "confidence": 0.75,
+   "reason": "A tall concrete block wall stands on the right half of the carriageway.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P033": {
+   "defect_type": "building-in-road",
+   "confidence": 0.8,
+   "reason": "A large concrete block wall fills the right half of the road ahead.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P034": {
+   "defect_type": "building-in-road",
+   "confidence": 0.9,
+   "reason": "A stone wall stands right across the carriageway ahead.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P035": {
+   "defect_type": "building-in-road",
+   "confidence": 0.9,
+   "reason": "A stone wall stands across the carriageway ahead.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P036": {
+   "defect_type": "building-in-road",
+   "confidence": 0.85,
+   "reason": "A brick wall block stands on the carriageway across the left of the lane.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P037": {
+   "defect_type": "object-in-road",
+   "confidence": 0.85,
+   "reason": "A tall lamp post stands in the driving lane just ahead.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P038": {
+   "defect_type": "object-in-road",
+   "confidence": 0.85,
+   "reason": "A tall pole stands in the driving lane ahead.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P039": {
+   "defect_type": "object-in-road",
+   "confidence": 0.8,
+   "reason": "A tall pole stands in the lane ahead on the left side of the road.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P040": {
+   "defect_type": "object-in-road",
+   "confidence": 0.85,
+   "reason": "A give-way sign on a post stands in the middle of the lane ahead.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P041": {
+   "defect_type": "object-in-road",
+   "confidence": 0.7,
+   "reason": "A priority-road sign on a post stands in the carriageway ahead.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P042": {
+   "defect_type": "object-in-road",
+   "confidence": 0.65,
+   "reason": "A sign pole stands in the driving lane ahead, seen almost edge on.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": true,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P043": {
+   "defect_type": "object-in-road",
+   "confidence": 0.85,
+   "reason": "A white picket fence section stands in the lane ahead.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P044": {
+   "defect_type": "object-in-road",
+   "confidence": 0.85,
+   "reason": "A white fence section stands in the lane ahead.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P045": {
+   "defect_type": "object-in-road",
+   "confidence": 0.85,
+   "reason": "A farm gate stands across the lane ahead.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P046": {
+   "defect_type": "object-in-road",
+   "confidence": 0.8,
+   "reason": "A metal gate stands across the road ahead.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P047": {
+   "defect_type": "object-in-road",
+   "confidence": 0.85,
+   "reason": "A park bench stands in the lane ahead.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P048": {
+   "defect_type": "object-in-road",
+   "confidence": 0.7,
+   "reason": "A small bench stands in the lane far ahead.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": true,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P049": {
+   "defect_type": "terrain-step",
+   "confidence": 0.9,
+   "reason": "A raised bank of ground with stepped edges runs right across the carriageway, cutting the road lines.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P050": {
+   "defect_type": "terrain-step",
+   "confidence": 0.9,
+   "reason": "A raised ridge of ground runs across the road ahead.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P051": {
+   "defect_type": "terrain-step",
+   "confidence": 0.9,
+   "reason": "A step up in the ground crosses the road ahead and cuts through the zebra paint.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P052": {
+   "defect_type": "terrain-step",
+   "confidence": 0.9,
+   "reason": "A raised ridge of ground crosses the road ahead.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P053": {
+   "defect_type": "terrain-step",
+   "confidence": 0.9,
+   "reason": "A deep trench with stepped sides cuts across the road ahead.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P054": {
+   "defect_type": "terrain-step",
+   "confidence": 0.8,
+   "reason": "The road drops into a cut across the carriageway just ahead.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P055": {
+   "defect_type": "terrain-step",
+   "confidence": 0.8,
+   "reason": "A dark trench runs across the road ahead, cutting the lane paint.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P056": {
+   "defect_type": "terrain-step",
+   "confidence": 0.8,
+   "reason": "A trench crosses the road at the junction mouth, with jagged edges.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P057": {
+   "defect_type": "terrain-step",
+   "confidence": 0.85,
+   "reason": "A ragged trench cuts across the road ahead.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P058": {
+   "defect_type": "terrain-step",
+   "confidence": 0.85,
+   "reason": "A trench with jagged sides crosses the carriageway ahead.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P059": {
+   "defect_type": "floating-object",
+   "confidence": 0.85,
+   "reason": "A bench hovers in the air above the junction with its shadow on the road.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P060": {
+   "defect_type": "floating-object",
+   "confidence": 0.85,
+   "reason": "A bench floats high in the air beside the road ahead.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P061": {
+   "defect_type": "floating-object",
+   "confidence": 0.85,
+   "reason": "A bench hangs in the air above the road, tilted, with its shadow below.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P063": {
+   "defect_type": "floating-object",
+   "confidence": 0.85,
+   "reason": "A brick wall block hangs in the air above the road with nothing under it.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P064": {
+   "defect_type": "floating-object",
+   "confidence": 0.8,
+   "reason": "A stone wall block floats in the air at the left of the road.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P065": {
+   "defect_type": "floating-object",
+   "confidence": 0.9,
+   "reason": "A stone wall block hovers over the road with its shadow on the tarmac below.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P067": {
+   "defect_type": "floating-object",
+   "confidence": 0.5,
+   "reason": "A sign pole hangs in the air from the top of the view with nothing under it.",
+   "planted_visible": "partly",
+   "other_defects": null,
+   "unsure": true,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P068": {
+   "defect_type": "floating-object",
+   "confidence": 0.6,
+   "reason": "A dark pole hangs in mid air above the road with its base well off the ground.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": true,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P069": {
+   "defect_type": "floating-object",
+   "confidence": 0.6,
+   "reason": "A dark pole hangs in mid air above the road with its base well off the ground.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": true,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P070": {
+   "defect_type": "floating-object",
+   "confidence": 0.85,
+   "reason": "A grey concrete block hovers in the air above the road ahead.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P075": {
+   "defect_type": "object-in-road",
+   "confidence": 0.4,
+   "reason": "A flat grey slab sits in the lane ahead (the top of a bench sunk into the road); reads as a low object on the road.",
+   "planted_visible": "partly",
+   "other_defects": null,
+   "unsure": true,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P078": {
+   "defect_type": "object-in-road",
+   "confidence": 0.45,
+   "reason": "A low brick block stands at the right edge of the carriageway; it reads as a short wall on the road, not clearly as a sunk one.",
+   "planted_visible": "partly",
+   "other_defects": null,
+   "unsure": true,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P081": {
+   "defect_type": "missing-texture",
+   "confidence": 0.95,
+   "reason": "The road surface is bright orange with black NO TEXTURE lettering instead of asphalt.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P082": {
+   "defect_type": "missing-texture",
+   "confidence": 0.95,
+   "reason": "The carriageway is solid orange with black lettering, the engine's missing-material surface.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P083": {
+   "defect_type": "missing-texture",
+   "confidence": 0.95,
+   "reason": "The road surface ahead is bright orange with black lettering instead of tarmac.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P084": {
+   "defect_type": "missing-texture",
+   "confidence": 0.95,
+   "reason": "The road surface is bright orange with black NO TEXTURE lettering.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P085": {
+   "defect_type": "missing-texture",
+   "confidence": 0.5,
+   "reason": "The lane lines are orange instead of white; could also be read as wrong-colour paint.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": true,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P086": {
+   "defect_type": "missing-texture",
+   "confidence": 0.5,
+   "reason": "The lane lines are orange instead of white; could also be read as wrong-colour paint.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": true,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P087": {
+   "defect_type": "missing-texture",
+   "confidence": 0.9,
+   "reason": "A building with a bright orange NO MATERIAL surface stands beside the road.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P088": {
+   "defect_type": "missing-texture",
+   "confidence": 0.9,
+   "reason": "A building with a bright orange NO MATERIAL surface stands at the right of the road.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P089": {
+   "defect_type": "missing-texture",
+   "confidence": 0.9,
+   "reason": "A building with a bright orange NO MATERIAL surface stands at the left of the junction.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P090": {
+   "defect_type": "missing-texture",
+   "confidence": 0.9,
+   "reason": "A building with a bright orange NO MATERIAL surface stands at the right of the road.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P091": {
+   "defect_type": "wrong-side-sign",
+   "confidence": 0.6,
+   "reason": "A road sign on the nearside verge shows its grey back to the driver.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P092": {
+   "defect_type": "wrong-side-sign",
+   "confidence": 0.65,
+   "reason": "A give-way sign at the left verge shows only its grey back to the driver.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P095": {
+   "defect_type": "wrong-side-sign",
+   "confidence": 0.45,
+   "reason": "A sign on the offside (right) of the road shows a white back or blank face to the driver, hard to tell.",
+   "planted_visible": "partly",
+   "other_defects": null,
+   "unsure": true,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P096": {
+   "defect_type": "wrong-side-sign",
+   "confidence": 0.4,
+   "reason": "A small give-way sign on the offside (right) side seen almost edge on.",
+   "planted_visible": "partly",
+   "other_defects": null,
+   "unsure": true,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P097": {
+   "defect_type": "wrong-side-sign",
+   "confidence": 0.5,
+   "reason": "A no-entry sign stands on the offside (right) of the road facing the driver.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": true,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P103": {
+   "defect_type": "road-geometry",
+   "confidence": 0.55,
+   "reason": "The road surface is pinched: the left half has gone pale like bare ground and only a narrow dark strip of asphalt is left.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": true,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P104": {
+   "defect_type": "road-geometry",
+   "confidence": 0.55,
+   "reason": "The carriageway is broken into two narrow dark strips with pale bare ground between.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": true,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P105": {
+   "defect_type": "road-geometry",
+   "confidence": 0.6,
+   "reason": "The road is reduced to a narrow dark strip with bare pale ground either side.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": true,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P106": {
+   "defect_type": "road-geometry",
+   "confidence": 0.5,
+   "reason": "A pale strip of bare ground lies beside the lane where the road surface has slipped sideways.",
+   "planted_visible": "partly",
+   "other_defects": null,
+   "unsure": true,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P071": {
+   "defect_type": "buried-object",
+   "confidence": 0.5,
+   "reason": "A large bench is mostly sunk into the road; only its backrest sticks out, tilted, and it could be read as an object in the lane.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": true,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P072": {
+   "defect_type": "buried-object",
+   "confidence": 0.5,
+   "reason": "A large bench is mostly sunk into the road; only its backrest sticks out.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": true,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P073": {
+   "defect_type": "buried-object",
+   "confidence": 0.5,
+   "reason": "A large bench is mostly sunk into the road; only its backrest sticks out.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": true,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P074": {
+   "defect_type": "buried-object",
+   "confidence": 0.5,
+   "reason": "A large bench is mostly sunk into the road; only its backrest sticks out.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": true,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P076": {
+   "defect_type": "buried-object",
+   "confidence": 0.5,
+   "reason": "A large bench is mostly sunk into the road; only its backrest sticks out.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": true,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P077": {
+   "defect_type": "buried-object",
+   "confidence": 0.5,
+   "reason": "A large bench is mostly sunk into the road and kerb; only its backrest sticks out.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": true,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P079": {
+   "defect_type": "buried-object",
+   "confidence": 0.5,
+   "reason": "A large bench is mostly sunk into the road; only its backrest sticks out.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": true,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P080": {
+   "defect_type": "buried-object",
+   "confidence": 0.5,
+   "reason": "A large bench is mostly sunk into the road at the island; only its backrest sticks out.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": true,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P099": {
+   "defect_type": "road-geometry",
+   "confidence": 0.65,
+   "reason": "The road surface is reduced to thin ribbons of asphalt with wide bare pale ground between.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P100": {
+   "defect_type": "road-geometry",
+   "confidence": 0.65,
+   "reason": "The junction road surface is reduced to thin ribbons of asphalt with bare pale ground between.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P101": {
+   "defect_type": "road-geometry",
+   "confidence": 0.6,
+   "reason": "The road is a narrow strip of asphalt with bare pale ground each side.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P102": {
+   "defect_type": "road-geometry",
+   "confidence": 0.6,
+   "reason": "The road is a narrow strip of asphalt with bare pale ground each side.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P107": {
+   "defect_type": "road-geometry",
+   "confidence": 0.5,
+   "reason": "The road ahead is pinched, with a pale wedge of bare ground cutting into the asphalt.",
+   "planted_visible": "partly",
+   "other_defects": null,
+   "unsure": true,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P108": {
+   "defect_type": "road-geometry",
+   "confidence": 0.5,
+   "reason": "The road ahead is pinched, with pale bare ground cutting into the asphalt.",
+   "planted_visible": "partly",
+   "other_defects": null,
+   "unsure": true,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P093": {
+   "defect_type": "wrong-side-sign",
+   "confidence": 0.4,
+   "reason": "A small sign on the left verge shows only its grey back to the driver.",
+   "planted_visible": "partly",
+   "other_defects": null,
+   "unsure": true,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P094": {
+   "defect_type": "wrong-side-sign",
+   "confidence": 0.55,
+   "reason": "A give-way sign at the left of the road shows its grey back to the driver.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P098": {
+   "defect_type": "wrong-side-sign",
+   "confidence": 0.5,
+   "reason": "A sign at the left kerb shows only its grey back to the driver.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": true,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P015": {
+   "defect_type": "wrong-markings",
+   "confidence": 0.9,
+   "reason": "The lane lines are very wide yellow bars and dashes across the road instead of thin white paint.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P019": {
+   "defect_type": "wrong-markings",
+   "confidence": 0.9,
+   "reason": "The lane lines are very wide yellow bars across the junction mouth instead of thin white paint.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P020": {
+   "defect_type": "wrong-markings",
+   "confidence": 0.9,
+   "reason": "The lane lines are very wide yellow bars across the junction mouth instead of thin white paint.",
+   "planted_visible": "yes",
+   "other_defects": null,
+   "unsure": false,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  },
+  "P021": {
+   "defect_type": "wrong-markings",
+   "confidence": 0.5,
+   "reason": "Yellow wide lines lie along the road in the distance, low in contrast.",
+   "planted_visible": "partly",
+   "other_defects": null,
+   "unsure": true,
+   "how": "viewed on a contact sheet (six frames per sheet, 640x360 each)"
+  }
+ }
+}
