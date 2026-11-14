@@ -37,6 +37,9 @@ ARRIVE_PROGRESS_M = 60.0  # ours: arrival only counts in the last 60 m of the ro
 LOST_M = 60.0           # ours: this far from the route the run is stopped as lost
 TIMEOUT_FACTOR = 2.5    # ingame/driveTest.mjs:450 `length / speed * 2.5 + 20` s
 TIMEOUT_EXTRA_S = 20.0
+CALMING_ZONE_M = 14.0   # T-311: within this of mapped traffic calming a vertical jolt is a `calming` note, not a `bump` (the T-302 hump: jolts 7 and 11 m from its OSM node)
+CALMING_SPEED_MS = 4.5  # T-311: a learner's speed over a hump (10 mph); the AI is asked for it (wpSpeeds / script v)
+LANE_TOL_M = 0.3        # T-311: over the lane divider by more than this is the wrong side (was: left of the route line)
 
 G3_FAIL_EVENTS = ("crash", "stuck", "airborne", "off route", "fell", "reversing", "bump", "lost",
                   "no spawn", "error", "timeout", "incomplete")
@@ -48,6 +51,7 @@ class Route:
     id: str
     points: list          # [[x, y, z], ...]
     half: float = 3.0     # road half width (m)
+    layout: list | None = None   # per segment: (lanes with us, lanes against) or None (qa/route_lib.lane_layout)
     cum: list = field(default_factory=list)
 
     def __post_init__(self):
@@ -83,8 +87,14 @@ def nearest_on(route: Route, x: float, y: float, lo: int = 0, hi: int | None = N
 class Monitor:
     """Feed samples in time order; collects events and derived columns. One Monitor per route."""
 
-    def __init__(self, route: Route, offroute_m: float = OFF_ROUTE_M, settle_s: float = SETTLE_S):
+    def __init__(self, route: Route, offroute_m: float = OFF_ROUTE_M, settle_s: float = SETTLE_S,
+                 calming: list | None = None):
         self.route = route
+        self.calming = list(calming or [])   # [{id, kind, pts: [(x, y)]}] mapped traffic calming
+        self.max_calming_acc = 0.0
+        self.sides: list[float] = []      # offset from the lane divider of moving samples (left of it positive)
+        self.known: list[bool] = []       # ... and whether a lane layout was known there
+        self.wrong_side_at: list[tuple[int, int]] = []
         self.offroute_m = offroute_m
         self.settle_s = settle_s
         self.samples: list[dict] = []
@@ -127,7 +137,8 @@ class Monitor:
             s.update(speed=speed, vert_acc=0.0, dev=0.0, off=0.0, progress=self.progress, judged=False)
             return new
         n = self._match(s["x"], s["y"])
-        s.update(speed=speed, dev=n["d"], off=n["off"])
+        div = lane_divider(route_layout(self.route, n["i"]), self.route.half)
+        s.update(speed=speed, dev=n["d"], off=n["off"], lane_off=n["off"] - div)
         self.max_speed = max(self.max_speed, speed)
         # vertical acceleration over a 0.1 s window (driveAnalysis.mjs:270-275)
         smp = self.samples
@@ -154,6 +165,10 @@ class Monitor:
         at = {"x": round(s["x"]), "y": round(s["y"])}
         if speed > 2.0:
             self.offsets.append(n["off"])
+            self.sides.append(n["off"] - div)
+            self.known.append(bool(route_layout(self.route, n["i"])))
+            if n["off"] - div < -LANE_TOL_M and n["d"] < self.route.half + 2:
+                self.wrong_side_at.append((round(s["x"]), round(s["y"])))
         ev = None
         if n["d"] > self.offroute_m + self.route.half:
             ev = self._once("off route", s["t"], **at, value=round(n["d"], 1))
@@ -167,10 +182,17 @@ class Monitor:
             ev = self._once("fell", s["t"], **at, value=round(n["z"] - s["z"], 1))
             if ev:
                 new.append(ev)
-        if abs(az) > self.max_acc:
+        calming = self.calming_at(s["x"], s["y"])
+        if calming:
+            self.max_calming_acc = max(self.max_calming_acc, abs(az))
+        elif abs(az) > self.max_acc:
             self.max_acc = abs(az)
         if abs(az) > BUMP_ACC:
-            ev = self._once("bump", s["t"], **at, value=round(az, 1))
+            if calming:   # mapped hump, table, cushion or bump: noted with the speed, not judged as a bump
+                ev = self._once("calming", s["t"], **at, value=round(az, 1), speed=round(speed, 1),
+                                feature=f"{calming['kind']} {calming['id']}")
+            else:
+                ev = self._once("bump", s["t"], **at, value=round(az, 1))
             if ev:
                 new.append(ev)
         self._air = self._air + dt if az < AIR_ACC else 0.0
@@ -198,6 +220,13 @@ class Monitor:
                 self.stop_reason = e["type"]
         return new
 
+    def calming_at(self, x: float, y: float) -> dict | None:
+        """The mapped traffic calming within CALMING_ZONE_M of (x, y), if any."""
+        for c in self.calming:
+            if _dist_pts((x, y), c["pts"]) <= CALMING_ZONE_M:
+                return c
+        return None
+
     def arrived(self) -> bool:
         """MapNG's arrival test (driveTest.mjs:457): near the end, inside the stopping distance."""
         if not self.samples:
@@ -212,15 +241,61 @@ class Monitor:
         return self.progress >= self.route.length - COMPLETED_M
 
 
-def lane_summary(offsets: list[float]) -> dict:
+def route_layout(route: Route, i: int):
+    lay = route.layout
+    return lay[i] if lay and 0 <= i < len(lay) else None
+
+
+def lane_divider(layout, half: float) -> float:
+    """Offset of the line between our lanes and the oncoming lanes from the route line (left of
+    travel positive). We drive on the left, so our lanes lie left of it. No layout or equal lanes:
+    0 (the route line). All lanes ours (one-way): the right edge, -half. 3 of 4 lanes ours: -half/2."""
+    if not layout:
+        return 0.0
+    w, a = layout
+    return half * (1.0 - 2.0 * w / (w + a)) if w + a else 0.0
+
+
+def _dist_pts(p, pts) -> float:
+    if len(pts) == 1:
+        return math.hypot(p[0] - pts[0][0], p[1] - pts[0][1])
+    best = math.inf
+    for a, b in zip(pts, pts[1:]):
+        dx, dy = b[0] - a[0], b[1] - a[1]
+        l2 = dx * dx + dy * dy
+        t = 0.0 if l2 == 0 else max(0.0, min(1.0, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / l2))
+        best = min(best, math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy))
+    return best
+
+
+def lane_summary(offsets: list[float], sides: list[float] | None = None, known: list[bool] | None = None,
+                 wrong_at: list | None = None) -> dict:
     """Signed offsets from the route centreline of moving samples (left of travel positive). Only
-    meaningful in graph mode on two-way roads; in script mode the car follows the centreline."""
+    meaningful in graph mode on two-way roads; in script mode the car follows the centreline.
+
+    `left`, `right`, `centre` and the median are against the route line (the way). On roads with
+    unequal lanes or one way that line is not the lane divider, so `wrong_side` (T-311) counts the
+    samples over the divider (offset from the divider, `sides`, below -LANE_TOL_M). `right_explained`
+    is the right-of-the-way samples that the layout puts in our own lanes. `layout_samples` is how
+    many samples had a lane layout from OSM; the rest use the route line as the divider."""
     if not offsets:
         return {"samples": 0}
     left = sum(1 for o in offsets if o > 0.3)
     right = sum(1 for o in offsets if o < -0.3)
-    return {"samples": len(offsets), "left": left, "right": right, "centre": len(offsets) - left - right,
-            "median_offset_m": round(statistics.median(offsets), 2)}
+    out = {"samples": len(offsets), "left": left, "right": right, "centre": len(offsets) - left - right,
+           "median_offset_m": round(statistics.median(offsets), 2)}
+    if sides is not None:
+        wrong = sum(1 for d in sides if d < -LANE_TOL_M)
+        out.update(wrong_side=wrong,
+                   right_explained=right - sum(1 for o, d in zip(offsets, sides) if o < -0.3 and d < -LANE_TOL_M),
+                   layout_samples=sum(known or []))
+        if wrong_at:
+            seen: list = []
+            for p in wrong_at:
+                if not any(abs(p[0] - q[0]) < 15 and abs(p[1] - q[1]) < 15 for q in seen):
+                    seen.append(p)
+            out["wrong_side_at"] = seen[:8]
+    return out
 
 
 def route_timeout_s(length_m: float, speed_ms: float) -> float:
@@ -249,11 +324,12 @@ def route_result(route_meta: dict, mon: Monitor, *, mode: str, end_reason: str, 
         "end_reason": end_reason, "started": started_at, "duration_s": round(duration_s, 1),
         "length_m": round(mon.route.length), "progress_m": round(mon.progress),
         "events": events, "event_counts": counts,
-        "max_bump_ms2": round(mon.max_acc, 1), "max_deviation_m": round(mon.max_dev, 1),
+        "max_bump_ms2": round(mon.max_acc, 1), "max_calming_ms2": round(mon.max_calming_acc, 1),
+        "max_deviation_m": round(mon.max_dev, 1),
         "max_speed_ms": round(mon.max_speed, 1),
         "mean_speed_ms": round(mon.route.length / duration_s, 1) if completed and duration_s > 0 else None,
         "damage_start": mon.dmg0, "damage_end": smp[-1].get("dmg") if smp else None,
-        "lane": lane_summary(mon.offsets), "frames": len(smp), "frame_rate_hz": hz,
+        "lane": lane_summary(mon.offsets, mon.sides, mon.known, mon.wrong_side_at), "frames": len(smp), "frame_rate_hz": hz,
         "telemetry": telemetry_file, **(extra or {}),
     }
 
@@ -293,12 +369,12 @@ def summarise(results: list[dict], expected_ids: list[str] | None = None) -> dic
 
 
 TELEMETRY_COLUMNS = ["t", "x", "y", "z", "vx", "vy", "vz", "speed", "dx", "dy", "heading_deg", "vert_acc",
-                     "dev", "off", "progress", "dmg", "steer", "throttle", "brake"]
+                     "dev", "off", "lane_off", "progress", "dmg", "steer", "throttle", "brake"]
 
 
 def telemetry_row(s: dict) -> list:
     h = math.degrees(math.atan2(s.get("dx", 0.0), s.get("dy", 1.0))) % 360   # compass: 0 north, 90 east
     vals = [s["t"], s["x"], s["y"], s["z"], s["vx"], s["vy"], s["vz"], s.get("speed", 0.0), s.get("dx", 0.0),
             s.get("dy", 0.0), h, s.get("vert_acc", 0.0), s.get("dev", 0.0), s.get("off", 0.0),
-            s.get("progress", 0.0), s.get("dmg"), s.get("steer"), s.get("throttle"), s.get("brake")]
+            s.get("lane_off", s.get("off", 0.0)), s.get("progress", 0.0), s.get("dmg"), s.get("steer"), s.get("throttle"), s.get("brake")]
     return ["" if v is None else (round(v, 3) if isinstance(v, float) else v) for v in vals]

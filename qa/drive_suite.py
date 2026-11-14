@@ -47,6 +47,7 @@ from beamng_mcp import McpError  # noqa: E402
 DEFAULT_ROUTES = HERE / "routes" / "belfast_slice.json"
 OUT_ROOT = Path(r"H:\BelfastData\qa\drive")
 GRAPH_DIR = Path(r"H:\BelfastData\qa\graph")
+OSM_JSON = Path(r"H:\BelfastData\mapng\areas\belfast_slice\osm.json")   # MapNG's OSM file: lanes, traffic calming
 LEVEL = "belfast_slice"
 VEHICLE = ("covet", "15le_M")
 SPEED_MS = 13.4          # 30 mph cap for the AI (routeSpeed, 'limit'); MapNG uses 10-12 m/s on turns
@@ -266,7 +267,29 @@ def waypoints(g: rl.Graph, via: list[dict], limit: int = 80) -> list[str]:
     return out
 
 
-def script_points(route: dict, speed: float) -> str:
+class OsmContext:
+    """What the OSM file adds to a drive (T-311): the lane layout along each route (so lane side is
+    judged against the lane the car is in) and the mapped traffic calming (slowed for, not judged as
+    a bump). Without the file both are empty and the metrics say so; nothing is guessed."""
+
+    def __init__(self, osm_json: Path | None, lat0: float, lon0: float):
+        self.roads: list = []
+        self.calming: list = []
+        self.source = None
+        if osm_json and Path(osm_json).is_file():
+            self.roads = rl.load_osm_roads(Path(osm_json), lat0, lon0)
+            self.calming = rl.load_calming(Path(osm_json), lat0, lon0)
+            self.source = str(osm_json)
+
+    def layout(self, route: dict) -> list | None:
+        return rl.lane_layout(route["path"], self.roads) if self.roads else None
+
+    def calming_on(self, route: dict) -> list:
+        return [c for c in self.calming
+                if min(rl.dist_to_polyline(p, route["path"]) for p in c["pts"]) <= dl.CALMING_ZONE_M]
+
+
+def script_points(route: dict, speed: float, calming: list | None = None) -> str:
     pts = route["path"]
     cum = [0.0]
     for a, b in zip(pts, pts[1:]):
@@ -281,12 +304,15 @@ def script_points(route: dict, speed: float) -> str:
             v = min(v, END_SPEED_MS + (v - END_SPEED_MS) * (to_end / END_EASE_M))
         if i == 0:
             v = min(v, speed * 0.6)
+        if any(rl.dist_to_polyline(q, c["pts"] * 2) <= dl.CALMING_ZONE_M for c in calming or []):
+            v = min(v, dl.CALMING_SPEED_MS)    # a learner's speed over a mapped hump (T-311)
         r = max(1.0, route.get("half_width_m", 3.0) - PATH_EDGE_M)
         out.append(f"{{x={q[0]:.2f},y={q[1]:.2f},z={q[2]:.2f},r={r:.1f},v={v:.1f}}}")
     return ",".join(out)
 
 
-def start_ai(link: Link, g: rl.Graph, route: dict, mode: str, speed: float, aggression: float) -> dict:
+def start_ai(link: Link, g: rl.Graph, route: dict, mode: str, speed: float, aggression: float,
+             calming: list | None = None) -> dict:
     if mode == "graph":
         # I-001: a graph-based AI mode needs the level graph in the vehicle's mapmgr
         link.lua("be:getPlayerVehicle(0):queueLuaCommand('mapmgr.requestMap()') return 'ok'")
@@ -300,11 +326,13 @@ def start_ai(link: Link, g: rl.Graph, route: dict, mode: str, speed: float, aggr
             raise RuntimeError("vehicle mapmgr has no level graph (edgeList nil): refusing a graph-based AI mode")
         wps = waypoints(g, route["via"])
         names = ",".join("'" + n + "'" for n in wps)
+        slow = rl.calming_wp_speeds(g, rl.resolve_via(g, route["via"]), calming or [], dl.CALMING_SPEED_MS)
+        wpsp = ", ".join(f"['{n}'] = {v}" for n, v in sorted(slow.items()))
         call = (f"ai.driveUsingPath{{wpTargetList = {{{names}}}, driveInLane = 'on', avoidCars = 'off', "
-                f"routeSpeed = {speed}, routeSpeedMode = 'limit', aggression = {aggression}}}")
-        info = {"waypoints": len(wps)}
+                f"routeSpeed = {speed}, routeSpeedMode = 'limit', wpSpeeds = {{{wpsp}}}, aggression = {aggression}}}")
+        info = {"waypoints": len(wps), "calming_slowed_nodes": len(slow)}
     else:
-        call = (f"ai.driveUsingPath{{script = {{{script_points(route, speed)}}}, avoidCars = 'off', "
+        call = (f"ai.driveUsingPath{{script = {{{script_points(route, speed, calming)}}}, avoidCars = 'off', "
                 f"driveInLane = 'off', aggression = {aggression}}}")
         info = {"script_points": len(route["path"])}
     link.lua(f"be:getPlayerVehicle(0):queueLuaCommand([==[{call}]==]) return 'ok'")
@@ -317,18 +345,22 @@ def write_rows(w, samples: list[dict]) -> None:
 
 
 def drive_route(link: Link, g: rl.Graph, route: dict, mode: str, outdir: Path, speed: float,
-                aggression: float) -> dict:
+                aggression: float, osm: OsmContext | None = None) -> dict:
     rid = route["id"]
     started = dt.datetime.now().isoformat(timespec="seconds")
     t_start = time.monotonic()
     meta = {"id": rid, "name": route["name"]}
-    r = dl.Route(rid, route["path"], half=float(route.get("half_width_m", 3.0)))
-    mon = dl.Monitor(r)
+    osm = osm or OsmContext(None, 0.0, 0.0)
+    r = dl.Route(rid, route["path"], half=float(route.get("half_width_m", 3.0)), layout=osm.layout(route))
+    on_route = osm.calming_on(route)
+    mon = dl.Monitor(r, calming=osm.calming)
     tele = outdir / f"telemetry_{rid}.csv"
     fh = tele.open("w", newline="", encoding="utf-8")
     w = csv.writer(fh)
     w.writerow(dl.TELEMETRY_COLUMNS)
-    extra: dict = {}
+    extra: dict = {"calming_on_route": len(on_route),
+                   "lane_layout_m": round(sum(rl.dist2(a, b) for a, b, ly in zip(route["path"], route["path"][1:], r.layout or [])
+                                              if ly), 0)}
     end_reason = "error"
     try:
         link.lua(LUA_CARROT)
@@ -350,7 +382,7 @@ def drive_route(link: Link, g: rl.Graph, route: dict, mode: str, outdir: Path, s
         else:
             link.lua(lua_start_logger(MAX_ROUTE_S))
             dmg_hold = link.damage()
-            extra.update(start_ai(link, g, route, mode, speed, aggression))
+            extra.update(start_ai(link, g, route, mode, speed, aggression, on_route))
             timeout_s = dl.route_timeout_s(r.length, speed)
             t_run = time.monotonic()
             end_reason = "timeout"
@@ -456,6 +488,10 @@ def run_suite(a) -> int:
         GRAPH_DIR.mkdir(parents=True, exist_ok=True)
         (GRAPH_DIR / f"{a.level}.graph.json").write_text(json.dumps(dump), encoding="utf-8")
         g = rl.Graph(dump)
+        osm = OsmContext(Path(a.osm), doc["origin"]["lat"], doc["origin"]["lon"])
+        m["osm"] = {"file": osm.source, "roads": len(osm.roads), "calming_features": len(osm.calming)}
+        if not osm.source:
+            log(f"no OSM file at {a.osm}: lane layout and traffic calming are not applied")
         m["graph"] = {"nodes": len(g.nodes), "one_way_edges": g.one_way_edges, "components": len(g.components())}
         bad = {}
         for r in doc["routes"]:
@@ -474,12 +510,13 @@ def run_suite(a) -> int:
                        "max_speed_ms": 0.0, "frames": 0, "telemetry": None}
             else:
                 log(f"route {rid} ({route['length_m']} m)")
-                res = drive_route(link, g, route, a.mode, outdir, a.speed, a.aggression)
+                res = drive_route(link, g, route, a.mode, outdir, a.speed, a.aggression, osm)
             m["results"].append(res)
             evs = ", ".join(f"{e['type']}" + (f" {e['value']}" if "value" in e else "") + (f" at ({e['x']}, {e['y']})" if "x" in e else "")
                             for e in res["events"])
             log(f"  {'DONE' if res['completed'] else 'FAIL'} {rid}: {res['progress_m']}/{res['length_m']} m, "
-                f"{res['duration_s']} s, bump {res['max_bump_ms2']}, dev {res['max_deviation_m']}"
+                f"{res['duration_s']} s, bump {res['max_bump_ms2']}, dev {res['max_deviation_m']}, "
+                f"wrong side {res.get('lane', {}).get('wrong_side', '?')}"
                 f"{', ' + evs if evs else ''}")
             m["summary"] = dl.summarise(m["results"], expected)
             write_metrics(outdir, m)
@@ -538,6 +575,44 @@ def hard_stop(outdir: Path, m: dict) -> None:   # pragma: no cover - last resort
     os._exit(EXIT_TIMEOUT)
 
 
+def replay_run(rundir: Path, osm_json: Path) -> dict:
+    """Re-judge a recorded run (telemetry CSVs + routes.json) with the current rules, no game. Used
+    to check a rule change against what the game really did (T-311)."""
+    doc = json.loads((rundir / "routes.json").read_text(encoding="utf-8"))
+    osm = OsmContext(osm_json, doc["origin"]["lat"], doc["origin"]["lon"])
+    out = []
+    for route in doc["routes"]:
+        tele = rundir / f"telemetry_{route['id']}.csv"
+        if not tele.is_file():
+            continue
+        r = dl.Route(route["id"], route["path"], half=float(route.get("half_width_m", 3.0)), layout=osm.layout(route))
+        mon = dl.Monitor(r, calming=osm.calming)
+        with tele.open(newline="", encoding="utf-8") as fh:
+            for row in csv.DictReader(fh):
+                f = {k: (float(v) if v != "" else None) for k, v in row.items()}
+                mon.feed({"t": f["t"], "x": f["x"], "y": f["y"], "z": f["z"], "vx": f["vx"], "vy": f["vy"],
+                          "vz": f["vz"], "dx": f["dx"], "dy": f["dy"], "dmg": f["dmg"], "steer": f["steer"],
+                          "throttle": f["throttle"], "brake": f["brake"]})
+        dur = mon.samples[-1]["t"] - mon.samples[0]["t"] if mon.samples else 0.0
+        out.append(dl.route_result({"id": route["id"], "name": route["name"]}, mon, mode="replay",
+                                   end_reason=mon.stop_reason or ("arrived" if mon.arrived() else "ended"),
+                                   started_at="", duration_s=dur, telemetry_file=tele.name))
+    return {"results": out, "summary": dl.summarise(out, [r["id"] for r in doc["routes"]])}
+
+
+def cmd_replay(a) -> int:
+    res = replay_run(Path(a.dir), Path(a.osm))
+    for r in res["results"]:
+        ln = r["lane"]
+        print(f"{r['id']:28} bump {r['max_bump_ms2']:5} calming {r['max_calming_ms2']:5} "
+              f"events {r['event_counts']}  lane: right {ln.get('right')} wrong_side {ln.get('wrong_side')} "
+              f"explained {ln.get('right_explained')} layout {ln.get('layout_samples')}/{ln.get('samples')} "
+              f"at {ln.get('wrong_side_at', [])}")
+    if a.out:
+        Path(a.out).write_text(json.dumps(res, indent=1), encoding="utf-8")
+    return 0
+
+
 def cmd_dump_graph(a) -> int:
     state, client = gamectl.require_our_game()
     link = Link(client, time.monotonic() + 300)
@@ -557,18 +632,23 @@ def main(argv=None) -> int:
     r.add_argument("--routes", default=str(DEFAULT_ROUTES))
     r.add_argument("--level", default=LEVEL)
     r.add_argument("--only", help="comma separated route ids")
+    r.add_argument("--osm", default=str(OSM_JSON), help="MapNG osm.json (lane layout, traffic calming)")
     r.add_argument("--mode", choices=["graph", "script"], default="graph")
     r.add_argument("--speed", type=float, default=SPEED_MS, help="AI speed cap in m/s (default 13.4 = 30 mph)")
     r.add_argument("--aggression", type=float, default=AGGRESSION)
     r.add_argument("--timeout", type=float, default=OVERALL_TIMEOUT_S, help="overall hard timeout in seconds")
     r.add_argument("--out", help="output folder (default H:\\BelfastData\\qa\\drive\\<date_time>)")
     r.add_argument("--gate", action="store_true", help="exit 20 when gate G3 fails")
+    rp = sub.add_parser("replay", help="re-judge a recorded run folder with the current rules (no game)")
+    rp.add_argument("dir")
+    rp.add_argument("--osm", default=str(OSM_JSON))
+    rp.add_argument("--out", help="write the re-judged results as JSON")
     d = sub.add_parser("dump-graph", help="save map.getMap() of the running game (game must be running)")
     d.add_argument("--level", default=LEVEL)
     d.add_argument("--out")
     a = ap.parse_args(argv)
     try:
-        return run_suite(a) if a.cmd == "run" else cmd_dump_graph(a)
+        return {"run": run_suite, "replay": cmd_replay}.get(a.cmd, cmd_dump_graph)(a)
     except gamectl.GamectlError as e:
         print(f"error: {e.message}", file=sys.stderr)
         return e.code
