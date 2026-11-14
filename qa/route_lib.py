@@ -70,6 +70,127 @@ def dist2(a, b) -> float:
     return math.hypot(a[0] - b[0], a[1] - b[1])
 
 
+# ---- lane layout and traffic calming from the OSM file (T-311) ---------------------------------
+DRIVABLE_HIGHWAYS = {"motorway", "trunk", "primary", "secondary", "tertiary", "unclassified", "residential",
+                     "service", "living_street", "road"}
+LAYOUT_MATCH_M = 6.0     # a route point belongs to the nearest OSM way this near (route follows the way: 0.1-0.9 m)
+LAYOUT_MIN_COS = 0.7     # ... and heading within 45 degrees of it, either way (side roads do not count)
+LAYOUT_AMBIGUOUS_M = 2.0  # ... unless another way this much further gives a different layout (forks, merges)
+CALMING_NEAR_M = 6.0     # a calming feature this near a route segment is on the route
+
+
+def load_osm_roads(osm_json: Path, lat0: float, lon0: float) -> list[dict]:
+    """Drivable OSM ways as [{id, tags, pts: [(x, y)]}] in world metres (MapNG osm.json)."""
+    out = []
+    for f in json.loads(Path(osm_json).read_text(encoding="utf-8")):
+        tags = f.get("tags", {})
+        base = tags.get("highway", "")
+        if f.get("type") != "road" or base.removesuffix("_link") not in DRIVABLE_HIGHWAYS or len(f.get("geometry", [])) < 2:
+            continue
+        out.append({"id": f["id"], "tags": tags,
+                    "pts": [latlon_to_xy(p["lat"], p["lng"], lat0, lon0) for p in f["geometry"]]})
+    return out
+
+
+def load_calming(osm_json: Path, lat0: float, lon0: float) -> list[dict]:
+    """Mapped traffic calming (hump, table, cushion, bump; MapNG places all of them) as
+    [{id, kind, pts: [(x, y)]}]: a node is one point, a way (a raised crossing) is its polyline."""
+    out = []
+    for f in json.loads(Path(osm_json).read_text(encoding="utf-8")):
+        kind = f.get("tags", {}).get("traffic_calming")
+        if not kind or not f.get("geometry"):
+            continue
+        out.append({"id": f["id"], "kind": kind,
+                    "pts": [latlon_to_xy(p["lat"], p["lng"], lat0, lon0) for p in f["geometry"]]})
+    return out
+
+
+def _seg_near(p, a, b) -> tuple[float, float, float]:
+    """(distance, unit direction x, y) of p to segment a-b."""
+    dx, dy = b[0] - a[0], b[1] - a[1]
+    l2 = dx * dx + dy * dy
+    t = 0.0 if l2 == 0 else max(0.0, min(1.0, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / l2))
+    n = math.sqrt(l2) or 1.0
+    return math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy), dx / n, dy / n
+
+
+def _int_tag(tags: dict, key: str) -> int:
+    try:
+        return max(0, int(str(tags.get(key, "")).split(";")[0].strip()))
+    except ValueError:
+        return 0
+
+
+def lane_counts(tags: dict, aligned: bool) -> tuple[int, int] | None:
+    """(lanes going our way, lanes going the other way) for a car driving along an OSM way (`aligned`:
+    in the way's own direction), or None when the tags do not say. Only what MapNG itself builds from
+    the tags is used (exportBeamNGLevel.js, buildLineMarkingLayers): a one-way road has all its lanes
+    one way; a two-way road with `lanes:forward` and `lanes:backward` has that many each way."""
+    ow = str(tags.get("oneway", "")).lower()
+    reverse = ow in ("-1", "reverse")
+    one_way = ow in ("yes", "1", "true") or reverse or (tags.get("junction") == "roundabout" and ow != "no")
+    if one_way:
+        n = max(1, _int_tag(tags, "lanes") or (_int_tag(tags, "lanes:forward") + _int_tag(tags, "lanes:backward")))
+        return (n, 0) if aligned != reverse else (0, n)
+    fwd, back = _int_tag(tags, "lanes:forward"), _int_tag(tags, "lanes:backward")
+    if fwd and back:
+        return (fwd, back) if aligned else (back, fwd)
+    return None
+
+
+def lane_layout(path, roads: list[dict]) -> list[tuple[int, int] | None]:
+    """For each route segment i (path[i] to path[i+1]): the (with, against) lane counts of the OSM way
+    the route runs along, or None. None when no way matches, the tags do not give the layout, or the
+    answer is ambiguous (one-way roads the other way are ignored when another way fits): where carriageways split or merge, ways within LAYOUT_AMBIGUOUS_M of the
+    nearest one, also running our way, give a different layout. Then the route line is used."""
+    out: list[tuple[int, int] | None] = []
+    for i in range(len(path) - 1):
+        a, b = path[i], path[i + 1]
+        mid = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
+        hx, hy = b[0] - a[0], b[1] - a[1]
+        hn = math.hypot(hx, hy) or 1.0
+        cand: dict[str, tuple[float, dict, bool]] = {}   # nearest segment per way
+        for road in roads:
+            for p, q in zip(road["pts"], road["pts"][1:]):
+                d, ux, uy = _seg_near(mid, p, q)
+                if d > LAYOUT_MATCH_M or (road["id"] in cand and cand[road["id"]][0] <= d):
+                    continue
+                c = (hx * ux + hy * uy) / hn
+                if abs(c) >= LAYOUT_MIN_COS:
+                    cand[road["id"]] = (d, road, c > 0)
+        ranked = sorted(cand.values(), key=lambda t: t[0])
+        if not ranked:
+            out.append(None)
+            continue
+        layouts = [lane_counts(r["tags"], al) for d, r, al in ranked if d <= ranked[0][0] + LAYOUT_AMBIGUOUS_M]
+        # a one-way road the other way is no choice for a car routed along our way: drop it when another way fits
+        layouts = [x for x in layouts if x is None or x[0] > 0] or layouts
+        frac = {x[0] / (x[0] + x[1]) if x and x[0] + x[1] else None for x in layouts}   # same divider = same answer
+        out.append(layouts[0] if len(frac) == 1 and None not in frac else None)
+    return out
+
+
+def calming_wp_speeds(g: "Graph", node_path: list[str], calming: list[dict], speed: float,
+                      near_m: float = CALMING_NEAR_M, node_m: float = 40.0) -> dict[str, float]:
+    """Target speeds (m/s) for the graph nodes either side of each calming feature the route crosses,
+    for `ai.driveUsingPath{wpSpeeds}`: the car slows to `speed` before the hump and holds it past it.
+    A node more than `node_m` from the feature is left alone (a long slow stretch is not a learner's)."""
+    out: dict[str, float] = {}
+    pos = [g.nodes[n] for n in node_path]
+    for c in calming:
+        best = None
+        for k, (a, b) in enumerate(zip(pos, pos[1:])):
+            d = min(_seg_near(p, a, b)[0] for p in c["pts"])
+            if d <= near_m and (best is None or d < best[0]):
+                best = (d, k)
+        if best is None:
+            continue
+        for k in (best[1], best[1] + 1):
+            if min(dist2(pos[k], p) for p in c["pts"]) <= node_m:
+                out[node_path[k]] = min(speed, out.get(node_path[k], speed))
+    return out
+
+
 class Graph:
     """Directed road graph of the game (`map.getMap()` nodes and links, dumped by
     `drive_suite.py dump-graph`). nodes: {name: (x, y, z)}; adj[name] = [(other, length_m)].

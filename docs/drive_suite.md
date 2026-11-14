@@ -8,6 +8,7 @@
 $env:UV_CACHE_DIR='H:\BelfastData\cache\uv'; $env:UV_PYTHON_INSTALL_DIR='H:\BelfastData\uv-python'
 uv run --no-project --python 3.12 --with requests python qa/drive_suite.py run [--gate] [--only ID,ID] [--mode graph|script]
 uv run --no-project --python 3.12 --with requests python qa/drive_suite.py dump-graph     # game must be running
+uv run --no-project --python 3.12 --with requests python qa/drive_suite.py replay DIR [--out F]   # re-judge a recorded run, no game
 uv run --no-project --python 3.12 python qa/routes/build_routes.py new | rebuild [--tc X,Y | --tc-latlon LAT,LON] | check
 uv run --no-project --python 3.12 --with pytest --with requests python -m pytest tests/qa -q
 ```
@@ -48,6 +49,14 @@ Bump 7 m/s2 `driveAnalysis.mjs:247`; airborne az < -8 for 0.25 s `:277-278`; off
 ## Result of the run (2026-11-11, 23:20, graph mode, `--gate`)
 
 `H:\BelfastData\qa\drive\2026-11-11_232005\`, 455 s wall, exit 20 (G3 failed), game stopped, no console errors beyond the baseline. 7 of 10 completed. Crashes: `lady-ishbel-loop` at (-211, -93), `haddo-woods-loop` at (-211, -92) (same spot, Lady Ishbel Avenue / west link, turning right), `newtownbreda-roundabout` at (194, 284) after 399 m (T-104 crashed at (199, 283) too). Bumps over 7: 16.4 (haddo, at the crash) and 9.9 (roundabout, at the crash); highest on a clean route 6.9. Lane side: on two-way roads the car sat left of centre (median offset +1.3 to +1.5 m, 0 right samples on Hospital Road south). A trial in `--mode script` (not in the table above) completed `lady-ishbel-loop` and `newtownbreda-roundabout` with no crash (the roundabout route with a bump of -9.1 at (367, 755)), so those crashes belong to the lane-following line, not the road centreline.
+
+## Lane side and traffic calming (T-311)
+
+Both read MapNG's `osm.json` for the slice (`--osm`, default `H:\BelfastData\mapng\areas\belfast_slice\osm.json`); if it is missing both are off and `metrics.json` `osm.file` is null).
+
+- **Lane side (decision 001 gap 4).** `qa/route_lib.lane_layout` matches each route segment to the OSM way it runs along (within 6 m, heading within 45 degrees) and takes the lane counts MapNG builds from the tags: one-way roads and roundabouts have all lanes ours; two-way roads count only when `lanes:forward` and `lanes:backward` are both tagged (`lanes=3` alone is not trusted). Where carriageways split or merge and ways within 2 m disagree, there is no answer and the route line is the divider (a one-way road the other way is ignored if another way fits). `drive_lib.lane_divider` puts the divider at `half * (1 - 2 * ours / lanes)` left of the route line (we drive on the left). `lane` in `metrics.json` keeps `left/right/centre` against the route line and adds `wrong_side` (samples more than 0.3 m past the divider), `right_explained` (right of the route line but in our own lanes), `layout_samples` and `wrong_side_at`. Telemetry gains `lane_off` (offset from the divider). Road width is the route's `half_width_m`.
+- **Traffic calming (gap 3).** `traffic_calming` nodes and raised crossings from OSM (12 humps, 15 tables, 4 cushions, 1 bump). The AI is asked for 4.5 m/s (10 mph) at the graph nodes either side of each one on the route (`wpSpeeds`; nodes more than 40 m away are left alone; script mode: `v` for points within the zone). A vertical jolt over 7 m/s2 within 14 m of a feature is an event `calming` (value, speed, feature), not a `bump`, so it does not fail G3, and `max_bump_ms2` leaves it out (`max_calming_ms2` has it). 14 m because the recorded hump (way node 3762690401) jolted the car 7 and 11 m past its OSM position.
+- `replay` re-judges a recorded run folder with these rules. On `2026-11-14_225258`: the roundabout route's bump at (364, 757) becomes one `calming` note; right-of-route samples on Hospital Road and Milltown Road (382, 63, 214 on three routes, 382 on the roundabout) are in our own lanes of one-way carriageways; 14 remain wrong-side (Lady Ishbel Avenue and Haddo Woods junction turns, no layout there).
 
 ## Known limits
 
