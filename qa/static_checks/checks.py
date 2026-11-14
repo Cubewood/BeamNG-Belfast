@@ -20,6 +20,7 @@ from shapely.strtree import STRtree
 from .buildings import (attribute, exported_building_geometry, osm_buildings,
                         overlay_in_lanes)
 from .game_index import GameIndex
+from .kerbs import level_kerb_faces
 from .geometry import (LineIndex, dedupe_points, finding, lane_corridor, lane_roads, nav_roads, resample)
 from .level import DRIVABLE_HIGHWAYS, PUBLIC_HIGHWAYS, Level
 
@@ -51,6 +52,11 @@ DEFAULTS = {
     "step_cell_m": 10.0,
     "step_bridge_dz_m": 1.0,       # road more than this above the ground is a deck, not a step
     "step_offsets": (-3.0, -1.5, 0.0, 1.5, 3.0),
+    # kerbs (I-006)
+    "kerb_limit_m": 0.20,          # a kerb face taller than this at a lane edge is reported (UK kerbs 0.10 to 0.125 m)
+    "kerb_high_m": 0.30,
+    "kerb_reach_m": 0.5,           # ... if it lies within this of a drivable lane's edge (or inside the lane)
+    "kerb_cell_m": 10.0,
     # reporting
     "max_per_kind": 150,
 }
@@ -622,6 +628,70 @@ def check_terrain_steps(level: Level, c: dict) -> list[dict]:
                     f"second difference over 1 m; limit {c['step_limit_m'] * 100:.0f} cm"
                     + ("" if nav else "; road not in the navigation graph"))
             for v, x, y, name, nav in kept]
+
+
+# ------------------------------------------------------------------ 7b. kerb heights (I-006)
+
+def check_kerb_heights(level: Level, c: dict) -> list[dict]:
+    """Kerb faces of the sidewalk collision meshes taller than `kerb_limit_m` at the edge of a drivable lane.
+
+    A face is the vertical part of a sidewalk tile's Colmesh (`kerbs.kerb_faces`); its height is its z extent. It
+    counts when its ground segment lies within `kerb_reach_m` of the drivable lanes (`geometry.lane_roads`, at
+    drawn width; a face inside the lanes counts too). Faces are merged into one finding per `kerb_cell_m` (the
+    tallest). I-004 found the front wheel of a car on a one-lane slip striking a 0.40 m face."""
+    segs, heights, skipped = level_kerb_faces(level)
+    if not len(segs):
+        return [finding("check-not-run", where="kerb-height", severity="medium",
+                        detail=f"no readable sidewalk collision mesh in the level ({len(skipped)} tile(s) unreadable)")]
+    roads = lane_roads(level)
+    if not roads:
+        return []
+    tall = heights > c["kerb_limit_m"]
+    segs, heights = segs[tall], heights[tall]
+    if not len(segs):
+        return []
+    lines = shapely.linestrings(segs)
+    reach = c["kerb_reach_m"]
+    tree = STRtree(lines)
+    nav_cor = lane_corridor([i for i in roads if i[2]])
+    other_cor = lane_corridor([i for i in roads if not i[2]])
+    near_nav = np.zeros(len(lines), dtype=bool)
+    near_other = np.zeros(len(lines), dtype=bool)
+    for cor, flag in ((nav_cor, near_nav), (other_cor, near_other)):
+        if not cor.is_empty:
+            # one buffer and a tree query: shapely.dwithin / intersects of every face against the big union takes minutes
+            flag[tree.query(cor.buffer(reach), predicate="intersects")] = True
+    keep = near_nav | near_other
+    if not keep.any():
+        return []
+    mids = segs[keep].mean(axis=1)
+    hs = heights[keep]
+    nav = near_nav[keep]
+    idx = LineIndex([r.xy for r, _h, _n in roads])
+    cell = c["kerb_cell_m"]
+    grid: dict[tuple[int, int], list[tuple]] = defaultdict(list)
+    kept: list[tuple] = []
+    for i in np.argsort(-hs, kind="stable"):
+        x, y, h = float(mids[i, 0]), float(mids[i, 1]), float(hs[i])
+        cx, cy = int(x // cell), int(y // cell)
+        if any(math.hypot(x - kx, y - ky) < cell for dx in (-1, 0, 1) for dy in (-1, 0, 1)
+               for kx, ky, _ in grid[(cx + dx, cy + dy)]):
+            continue
+        grid[(cx, cy)].append((x, y, h))
+        hit = idx.nearest(x, y, 15.0)
+        kept.append((h, x, y, roads[hit[0]][0].name if hit else "", bool(nav[i])))
+
+    def sev(h, is_nav):
+        s = "high" if h >= c["kerb_high_m"] else "medium"
+        if not is_nav:
+            s = "medium" if s == "high" else "low"        # service roads and driveways carry no test route
+        return s
+
+    return [finding("kerb-height", x, y, name, sev(h, is_nav), h, "m",
+                    f"{h * 100:.0f} cm kerb face within {reach} m of a drivable lane edge "
+                    f"(sidewalk collision mesh; limit {c['kerb_limit_m'] * 100:.0f} cm, UK kerbs 10 to 12.5 cm)"
+                    + ("" if is_nav else "; road not in the navigation graph"))
+            for h, x, y, name, is_nav in kept]
 
 
 # ------------------------------------------------------------------ 8. stock assets
