@@ -37,3 +37,12 @@ def test_lua_uses_only_named_game_functions():
                  "wheels.wheels", "isTireDeflated", "isPunctured", "jsonEncode("):
         assert name in code
     assert "require" not in code and "io." not in code and "os." not in code
+
+
+def test_scrape_is_a_damage_rise_with_nothing_broken():
+    clean = {"parts": [], "parts_damaged": 0, "zones": {"FL": 0.0, "FR": 0.004}, "tyres": [], "damage": 0.1}
+    assert ds.is_scrape(clean)
+    assert not ds.is_scrape({**clean, "parts": [["s", "Front Spindles", 1.0]]})
+    assert not ds.is_scrape({**clean, "zones": {"FL": 0.048}})
+    assert not ds.is_scrape({**clean, "tyres": ["FL"]})
+    assert not ds.is_scrape({"error": "no answer"})

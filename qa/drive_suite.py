@@ -163,6 +163,19 @@ def parse_crash_damage(text: str) -> dict:
             "damage": round(float(d.get("damage") or 0), 1)}
 
 
+SCRAPE_ZONE_MAX = 0.01      # body zone damage under this is nothing bent (the kerb strike of I-004 read 0.048)
+
+
+def is_scrape(d: dict) -> bool:
+    """True when the damage read after a crash shows nothing broken: no part with a damage score, every body
+    zone under SCRAPE_ZONE_MAX and no tyre down. An unreadable answer is not a scrape: it stays a crash."""
+    if not isinstance(d, dict) or "error" in d or "parts" not in d:
+        return False
+    if any(float(p[2] or 0) > 0 for p in d["parts"]) or d.get("tyres"):
+        return False
+    return all(float(v or 0) < SCRAPE_ZONE_MAX for v in (d.get("zones") or {}).values())
+
+
 def crash_damage(link: "Link") -> dict:
     try:
         return parse_crash_damage(link.vlua(LUA_CRASH_DAMAGE))
@@ -442,7 +455,12 @@ def drive_route(link: Link, g: rl.Graph, route: dict, mode: str, outdir: Path, s
                 if mon.stop_reason:
                     end_reason = mon.stop_reason
                     if end_reason == "crash":
-                        extra["crash_damage"] = crash_damage(link)
+                        dmg = crash_damage(link)
+                        if is_scrape(dmg) and mon.crash_to_scrape():
+                            extra.setdefault("scrape_damage", []).append(dmg)
+                            end_reason = "timeout"
+                            continue
+                        extra["crash_damage"] = dmg
                     break
                 if mon.samples and mon.samples[-1]["t"] > 2.0 and mon.arrived():
                     end_reason = "arrived"

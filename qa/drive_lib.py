@@ -104,6 +104,7 @@ class Monitor:
         self.max_acc = 0.0
         self.max_speed = 0.0
         self.dmg0: float | None = None
+        self._dmg_ref: float | None = None      # damage level the crash rule measures from (moves on a scrape)
         self._last_event: dict[str, float] = {}
         self._still = 0.0
         self._air = 0.0
@@ -120,6 +121,25 @@ class Monitor:
         ev = {"type": kind, "t": round(t, 1), **extra}
         self.events.append(ev)
         return ev
+
+    def crash_to_scrape(self) -> bool:
+        """Turn the crash that just stopped the route into a `scrape` and let the route go on.
+
+        The damage total also counts scratches (crashDetection.lua:284), so a rise with no damaged part, body
+        zone or tyre is the car touching the ground, not a collision. A scrape is logged and does not fail G3.
+        The crash rule then measures from the present damage, so a real crash later is still caught."""
+        if self.stop_reason != "crash":
+            return False
+        ev = next((e for e in reversed(self.events) if e["type"] == "crash"), None)
+        if ev is None:
+            return False
+        ev["type"] = "scrape"
+        self._last_event.pop("crash", None)
+        self._dmg_ref = self.samples[-1].get("dmg") if self.samples else None
+        if self._dmg_ref is None:
+            self._dmg_ref = (self.dmg0 or 0.0) + ev.get("value", 0)
+        self.stop_reason = None
+        return True
 
     def _match(self, x: float, y: float) -> dict:
         n = nearest_on(self.route, x, y, self._i - 3, self._i + 60)
@@ -211,8 +231,9 @@ class Monitor:
             ev = self._once("reversing", s["t"], **at, value=round(fwd, 1))
             if ev:
                 new.append(ev)
-        if s.get("dmg") is not None and self.dmg0 is not None and s["dmg"] - self.dmg0 > DAMAGE_CRASH:
-            ev = self._once("crash", s["t"], **at, value=round(s["dmg"] - self.dmg0))
+        ref = self.dmg0 if self._dmg_ref is None else self._dmg_ref
+        if s.get("dmg") is not None and ref is not None and s["dmg"] - ref > DAMAGE_CRASH:
+            ev = self._once("crash", s["t"], **at, value=round(s["dmg"] - ref))
             if ev:
                 new.append(ev)
         for e in new:

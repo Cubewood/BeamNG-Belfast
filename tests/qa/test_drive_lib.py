@@ -194,3 +194,16 @@ def test_telemetry_row_matches_columns_and_compass_heading():
 
 def test_route_timeout_is_mapng_formula():
     assert dl.route_timeout_s(1000, 10) == 1000 / 10 * 2.5 + 20
+
+
+def test_scrape_lets_the_route_go_on_and_a_later_crash_still_counts():
+    mon, _ = drive(lambda t: {"dmg": 80.0 if t > 2 else 0.0}, seconds=3.0)
+    assert mon.stop_reason == "crash" and mon.crash_to_scrape()
+    assert kinds(mon) == ["scrape"] and mon.stop_reason is None
+    assert not mon.crash_to_scrape()                                   # nothing left to turn
+    drive(lambda t: {"dmg": 100.0}, seconds=3.0, mon=mon)              # 20 more: under the limit from the scrape
+    assert "crash" not in kinds(mon)
+    drive(lambda t: {"dmg": 200.0}, seconds=3.0, mon=mon)
+    assert "crash" in kinds(mon) and mon.stop_reason == "crash"
+    r = {"id": "t", "completed": True, "events": [{"type": "scrape"}]}
+    assert dl.g3([r])["pass"]
