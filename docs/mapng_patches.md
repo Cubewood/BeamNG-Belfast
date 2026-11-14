@@ -46,7 +46,7 @@ git add patches/mapng                              # in the repo root, by name
 1. Move the submodule to the new upstream commit and set `PINNED_COMMIT` in `tools/mapng_export.py`.
 2. `export` now exits 3 ("the pin changed"). `apply --reset` stops at the first patch that no longer applies and leaves the submodule clean at the new pin.
 3. Rebase by hand: `git checkout -B belfast <new pin>`, `git am --3way patches/mapng/<name>` for each, fix conflicts, then `save` (this writes the new `BASE`).
-4. Run MapNG's tests (806 of 812 pass on Windows at the bare pin, 822 of 828 with patches 0001 to 0004, `docs/mapng_export.md`; the six failures are environment) and the new tests of each patch.
+4. Run MapNG's tests (806 of 812 pass on Windows at the bare pin, 822 of 828 with patches 0001 to 0004, 825 of 831 with 0001 to 0005, `docs/mapng_export.md`; the six failures are environment) and the new tests of each patch.
 
 Offering generic patches upstream (the building rule, the junction step, mph signs) needs the user's GitHub account and stays a follow-up.
 
@@ -140,3 +140,40 @@ DecalRoads per UK material, from the zip: `uk_solid_white` 171 (143 edge lines, 
 ### Not verified (no game in this task)
 
 In the game, look at: the dash phase (marks centred in each repeat, half a gap at each end, the joint where a centre line becomes a warning line); which side of the mixed double white is continuous (none in the Slice: needs a tagged road); that the triangle's apex meets the driver (texture row 0 at the first node); z-fighting where give-way lines meet the warning line's end, triangles over the asphalt, and the overlap at (893, 17); and that 0.133 m line widths read as 100 mm.
+
+## Patch 0005: junction mouths blended (T-413, gap 2)
+
+File `services/structures/terrainCompose.js` (`composeTerrain`, structure solver v2 terrain, the stage that writes the ground under every road); test `tests/structureTerrain.test.mjs` (3 new tests).
+
+Before: inside two road cores (half width + 1 m) the nearer centreline owned the pixel outright. Where a side street meets a road on a slope, both flat cross-sections met in a step along the line midway between the centrelines: the side street's level on one half of the main road, the road's own grade on the other. On the Slice: 34 cm at (199, 285) on Hospital Road where Newtownbreda Road meets it (gap 2, the T-104 and T-302 crash site). MapNG's own joint check (`services/structures/metrics.js:105-144`) compares only centreline ends, so it reports 0 steps.
+
+After: where the cores of roads that share a node overlap (directly, or through another road on the pixel), the pixel gets their blend, each road weighted by `smoothstep(1 - d / core)` (1 on its centreline, 0 at its core's edge), so the surface warps across the full width of both and meets each road's own surface where the other's core ends. A claim more than 1 m from the owner's height fades out by 2 m, where MapNG's two-level rule (the lower road keeps its width) takes over. Roads that do not share a node keep the nearest-centreline rule. Past a road's end at a node shared on the ground, its surface now carries on at its end grade (fitted over 8 m; shorter edges stay flat), so a straight road split at a node keeps its grade. `stats.blended` counts the blended pixels (46,000 on the Slice); the terrain stage takes 1.17 s instead of 1.02 s.
+
+Tests: a T-junction with a side street on 6 %: the largest second difference over 1 m in the main road's lanes is 0.24 m before (the test fails on the unpatched file) and under 0.1 m after; a road split at a node on a grade keeps it within 1 cm; two parallel roads that do not meet keep their own surfaces. Upstream: 831 tests, 825 pass, the same six environment failures.
+
+### Result on the Slice (`H:\BelfastData\mapng\t413\`, area copy `t413_slice`: pinned OSM, `gpxz` heights)
+
+| `qa/static_checks --only steps` | Before (0001 to 0004) | After (0001 to 0005) |
+|---|---|---|
+| `terrain-step` over 0.15 m (all / navigation roads) | 519 / 378 | 403 / 278 |
+| high (0.25 m and over, capped list of 150) | 145 | 94 |
+| at junction mouths: two cores of roads sharing a node (navigation) | 136 | 41 |
+| in-lane only: both ends of the 1 m stencil inside the lanes (all / navigation) | 214 / 118 | 101 / 23 |
+| Hospital Road / Newtownbreda Road | 0.34 m in the lane at (199, 285) | none in the lane; 0.28 m at the lane edge at (196, 286), the corner kerb |
+
+MapNG's own report: tilted or humped cross-sections 40 to 26; floating and buried sidewalk samples 413 and 311 to 412 and 308; junction centres off 13 both.
+
+What the check still finds (navigation roads, 278), by where the step comes from (a harness dumped the terrain after `composeTerrain`):
+
+- 183 come after the road terrain, from the sidewalk ground (`gradeSidewalkGround`), at the lane edge: 114 by a kerb or sidewalk run (0.20 to 0.25 m: the 15 cm kerb within 1 m of a lane that reaches the kerb), 69 by a separately mapped footway whose height follows the ground, not the kerb (0.15 to 0.55 m, for example Purdysburn Road at (323, 261)).
+- 41 at junction mouths: forks of steep tracks (two cores over 1 m apart in height, where the blend fades out) and the corner where both cores end, which a symmetric blend cannot match (outside the carriageways, but a lane-edge stencil reaches it).
+- 28 between roads that do not share a node: parallel carriageways (Milltown Road at (-40, 334), Belvoir Road and its link at (430, 890)).
+- 26 on one road: a way that comes back to touch itself (Brerton Crescent at (432, 584): the graph does not join it there, so its two passes have their own heights) and cut banks at the core's edge.
+
+Most (250 of 278) are within 0.5 m of a lane's edge: the check's 1 m stencil at a lane-edge vertex reaches the kerb or bank outside the lane.
+
+### Drive suite: not verified (2026-11-14, `qa/drive_suite.py run --gate`, zip copied to the QA profile's `mods`)
+
+- Run 1 (`H:\BelfastData\qa\drive\2026-11-14_t413`): the game did not answer on MCP within 120 s. Exit 5, the game stopped cleanly, no route driven.
+- Run 2 (`...\2026-11-14_t413b`): the game started and dumped its graph (`H:\BelfastData\qa\graph\belfast_slice.graph.json`, 20:19). All 10 routes were rejected before driving: each path lies 4 to 7 m from the new graph, because this build (pinned OSM, `gpxz`, roads snapped to the ground) moved the roads. Exit 20, 0 of 10 completed, no crash recorded at (-211, -93) or (194, 284) because nothing was driven.
+- Next step: `qa/routes/build_routes.py rebuild` on the new graph dump, then run the suite again. The pre-T-413 QA zip is kept as `H:\BelfastData\mapng\t413\qa_mods_belfast_slice.before_t413.zip`.
