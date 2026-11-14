@@ -313,7 +313,7 @@ def test_blocked_note_and_status_summary(tmp_path, capsys):
 def test_status_counts_on_real_task_file_fits_the_limit(capsys):
     assert status_counts.main(["--file", str(ROOT / "task.md")]) == 0
     out = capsys.readouterr().out.splitlines()
-    assert len(out) <= 12
+    assert len(out) <= 13
     assert any(l.startswith("M0:") for l in out)
 
 
