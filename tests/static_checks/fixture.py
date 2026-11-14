@@ -50,6 +50,7 @@ class Spec:
     texture_ref: str | None = None          # a material texture path to plant
     no_speed_limit: tuple = ()              # road keys whose _ai road has no speedLimit (T-408)
     speed_ms: float = 13.411                # speedLimit of the others (30 mph)
+    kerbs: list = field(default_factory=list)       # [(x0, y0, x1, y1, height)] vertical kerb faces from z 10 up (I-006)
 
 
 ROADS = {
@@ -113,6 +114,22 @@ def box_dae(boxes) -> bytes:
             f'<p>{idx}</p></triangles></mesh></geometry></library_geometries></COLLADA>').encode()
 
 
+def kerb_dae(faces) -> bytes:
+    """Sidewalk Colmesh: one vertical quad (two triangles) per face (x0, y0, x1, y1, z_bottom0, z_top0, z_bottom1, z_top1)."""
+    verts, tris = [], []
+    for (x0, y0, x1, y1, b0, t0, b1, t1) in faces:
+        b = len(verts)
+        verts += [(x0, y0, b0), (x1, y1, b1), (x1, y1, t1), (x0, y0, t0)]
+        tris += [(b, b + 1, b + 2), (b, b + 2, b + 3)]
+    pos = " ".join(f"{v:.4f}" for p in verts for v in p)
+    idx = " ".join(str(i) for t in tris for i in t)
+    return (f'<?xml version="1.0"?><COLLADA><library_geometries><geometry id="Mesh1"><mesh></mesh></geometry>'
+            f'<geometry id="Colmesh-1-mesh" name="Colmesh-1"><mesh><source id="Colmesh-1-mesh-position">'
+            f'<float_array id="Colmesh-1-mesh-position-array" count="{len(verts) * 3}">{pos}</float_array></source>'
+            f'<triangles material="m" count="{len(tris)}"><input semantic="VERTEX" source="#v" offset="0"/>'
+            f'<p>{idx}</p></triangles></mesh></geometry></library_geometries></COLLADA>').encode()
+
+
 def decal(name, material, pts, hw_total, z=10.0, **props):
     nodes = [[round(x, 3), round(y, 3), z, hw_total] for x, y in pts]
     o = {"name": name, "class": "DecalRoad", "persistentId": name, "__parent": "Decal_Roads",
@@ -165,6 +182,12 @@ def build(tmp: Path, spec: Spec | None = None) -> tuple[Path, Path]:
     objs.append({"class": "TSStatic", "name": "buildings_0_0", "persistentId": "bt", "__parent": "MissionGroup",
                  "position": [0, 0, 0], "shapeName": f"/{base}map_assets/custom_assets/osm_objects/buildings/bld_0_0.dae",
                  "collisionType": "Collision Mesh"})
+    objs.append({"class": "TSStatic", "name": "sidewalks_0_0", "persistentId": "sw", "__parent": "MissionGroup",
+                 "position": [0, 0, 0], "shapeName": f"/{base}map_assets/custom_assets/sidewalks/sidewalks_0_0.dae",
+                 "collisionType": "Collision Mesh"})
+    # a clean level still has a sidewalk tile: a 0.12 m kerb well away from every road
+    kerb_faces = [(x0, y0, x1, y1, 10.0, 10.0 + hgt, 10.0, 10.0 + hgt) for (x0, y0, x1, y1, hgt) in spec.kerbs]
+    kerb_faces = kerb_faces or [(300.0, 300.0, 310.0, 300.0, 10.0, 10.12, 10.0, 10.12)]
     mats = {"road_asphalt_2lane": {"name": "road_asphalt_2lane"}, "m_line_white": {"name": "m_line_white"}}
     if spec.road_material == "road_invisible":
         mats["road_invisible"] = {"name": "road_invisible"}
@@ -197,6 +220,7 @@ def build(tmp: Path, spec: Spec | None = None) -> tuple[Path, Path]:
         zf.writestr(f"{base}art/roads/main.materials.json", json.dumps(mats))
         zf.writestr(f"{base}map_assets/custom_assets/osm_objects/buildings/bld_0_0.dae",
                     box_dae(boxes + slabs) if (boxes or slabs) else box_dae([(400, 400, 401, 401, 10, 11, False)]))
+        zf.writestr(f"{base}map_assets/custom_assets/sidewalks/sidewalks_0_0.dae", kerb_dae(kerb_faces))
         zf.writestr(f"{base}export_report.txt", "Shapes: 1 building tile(s), 12 triangles")
         zf.writestr(f"{base}map_assets/custom_assets/bridges/bridge_b001.dae", b"<COLLADA/>")
     osm_path = tmp / "osm.json"

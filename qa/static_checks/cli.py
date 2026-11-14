@@ -29,7 +29,7 @@ DEFAULT_OUT = Path(r"H:\BelfastData\qa\static")
 DEFAULT_BUDGET = ROOT / "config" / "static_budget.json"
 DEFAULT_MAPNG = ROOT / "third_party" / "mapng"
 FALLBACK_MAPNG = Path(r"H:\Claude\BeamNGBelfast\third_party\mapng")
-ALL_CHECKS = ("lint", "roads", "connection", "oneway", "height", "budget", "buildings", "steps", "speed", "assets")
+ALL_CHECKS = ("lint", "roads", "connection", "oneway", "height", "budget", "buildings", "steps", "kerbs", "speed", "assets")
 
 
 def run_mapng_lint(zip_path: Path, index_path: Path | None, mapng_dir: Path | None, out_json: Path) -> list[dict]:
@@ -123,7 +123,8 @@ def run_checks(zip_path: Path, osm_path: Path | None, *, only=ALL_CHECKS, overri
         return f
     findings += step("buildings", buildings)
     findings += step("steps", lambda: ck.check_terrain_steps(level, c))
-    findings += step("speed", lambda: ck.check_speed_limits(level, c))
+    findings += step("kerbs", lambda: ck.check_kerb_heights(level, c))
+    findings += step("speed",lambda: ck.check_speed_limits(level, c))
 
     def assets():
         if index_path is None:

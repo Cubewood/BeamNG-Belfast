@@ -45,6 +45,7 @@ def run_all(lv, budget=None):
     out += ck.check_budget(lv, budget or {"decal_roads": 100, "objects": 100}, 1000)[0]
     out += ck.check_buildings(lv, C, "auto")[0]
     out += ck.check_terrain_steps(lv, C)
+    out += ck.check_kerb_heights(lv, C)
     out += ck.check_speed_limits(lv, C)
     out += ck.check_stock_assets(lv, INDEX)[0]
     return out
@@ -288,3 +289,71 @@ def test_step_at_the_lane_edge_is_not_counted(tmp_path, monkeypatch):
     assert ck.check_terrain_steps(lv, C) == []
     monkeypatch.setattr(ck, "lane_corridor", lambda roads: shapely.box(-500, -500, 500, 500))
     assert ck.check_terrain_steps(lv, C)
+
+
+# ---------------------------------------------------------------- 7b kerb heights (I-006)
+
+# road A's lanes are 3.0 m each side of y = 0, so a face at y = 3.2 is 0.2 m outside the edge
+def kerb_level(tmp_path, kerbs):
+    return level(tmp_path, kerbs=kerbs)
+
+
+def test_tall_kerb_at_the_lane_edge_is_found(tmp_path):
+    found = ck.check_kerb_heights(kerb_level(tmp_path, [(40, 3.2, 60, 3.2, 0.40)]), C)
+    assert kinds(found) == ["kerb-height"] and len(found) == 1
+    f = found[0]
+    assert near(found, "kerb-height", 50, 3.2, 1) and f["value"] == pytest.approx(0.40) and f["severity"] == "high"
+    assert f["where"].startswith("dr_A")
+
+
+def test_kerb_over_the_limit_but_under_high_is_medium(tmp_path):
+    f = ck.check_kerb_heights(kerb_level(tmp_path, [(40, 3.2, 60, 3.2, 0.25)]), C)
+    assert [x["severity"] for x in f] == ["medium"]
+
+
+def test_normal_height_kerb_is_ignored(tmp_path):
+    assert ck.check_kerb_heights(kerb_level(tmp_path, [(40, 3.2, 60, 3.2, 0.15)]), C) == []
+    assert ck.check_kerb_heights(kerb_level(tmp_path, [(40, 3.2, 60, 3.2, 0.20)]), C) == []     # at the limit, not over
+
+
+def test_tall_kerb_away_from_the_lanes_is_ignored(tmp_path):
+    assert ck.check_kerb_heights(kerb_level(tmp_path, [(40, 3.7, 60, 3.7, 0.40)]), C) == []     # 0.7 m from the edge
+    assert ck.check_kerb_heights(kerb_level(tmp_path, [(40, 8.0, 60, 8.0, 0.40)]), C) == []
+
+
+def test_kerb_findings_are_one_per_10_m(tmp_path):
+    long = [(x, 3.2, x + 1, 3.2, 0.40) for x in range(40, 80)]       # 40 m of kerb in 1 m faces
+    found = ck.check_kerb_heights(kerb_level(tmp_path, long), C)
+    assert 4 <= len(found) <= 5 and all(f["value"] == pytest.approx(0.40) for f in found)
+
+
+def test_kerb_off_the_navigation_graph_is_one_notch_lower(tmp_path):
+    lv = kerb_level(tmp_path, [(40, 3.2, 60, 3.2, 0.40)])
+    for r in lv.roads:
+        r.props["drivability"] = 0
+    f = ck.check_kerb_heights(lv, C)
+    assert [x["severity"] for x in f] == ["medium"] and "not in the navigation graph" in f[0]["detail"]
+
+
+def test_kerb_height_on_a_slope_is_the_height_of_the_face(tmp_path):
+    from static_checks.kerbs import kerb_faces
+    # bottom climbs 0.5 m along the face and so does the top: the face is 0.4 m tall everywhere (corners differ by 0.9 m)
+    raw = fx.kerb_dae([(0, 0, 10, 0, 10.0, 10.4, 10.5, 10.9)])
+    segs, heights = kerb_faces(raw)
+    assert len(heights) == 2 and heights == pytest.approx([0.4, 0.4], abs=1e-6)
+
+
+def test_kerb_check_not_run_without_a_readable_sidewalk_mesh(tmp_path):
+    lv = level(tmp_path)
+    lv.objects = [o for o in lv.objects if "/sidewalks/" not in str(o.get("shapeName", ""))]
+    f = ck.check_kerb_heights(lv, C)
+    assert kinds(f) == ["check-not-run"] and f[0]["where"] == "kerb-height"
+    lv2 = level(tmp_path)
+    lv2.zf = type("Z", (), {"namelist": lambda s: [], "read": lambda s, n: b""})()     # tile listed but not in the zip
+    assert kinds(ck.check_kerb_heights(lv2, C)) == ["check-not-run"]
+
+
+def test_kerb_check_runs_from_the_cli(tmp_path):
+    z, o = fx.build(tmp_path, fx.Spec(kerbs=[(40, 3.2, 60, 3.2, 0.40)]))
+    r = cli.run_checks(z, o, only=("kerbs",), out_dir=tmp_path / "run", log=lambda *_: None)
+    assert r["doc"]["counts"] == {"kerb-height": 1}
