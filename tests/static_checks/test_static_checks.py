@@ -278,3 +278,13 @@ def test_cli_exit_code_is_one_when_a_high_finding_exists(tmp_path):
     rc = cli.main(["--zip", str(z2), "--osm", str(o2), "--no-lint", "--game-index", str(idx), "--out-dir", str(tmp_path / "o2"),
                    "--budget", str(ROOT / "config" / "static_budget.json")])
     assert rc == 0
+
+
+def test_step_at_the_lane_edge_is_not_counted(tmp_path, monkeypatch):
+    import shapely
+    lv = level(tmp_path, step_at_x=60.0, step_height=0.3)
+    # the lanes start half a cell past the step: every stencil across the step has one end outside the lanes
+    monkeypatch.setattr(ck, "lane_corridor", lambda roads: shapely.box(59.5, -500, 500, 500))
+    assert ck.check_terrain_steps(lv, C) == []
+    monkeypatch.setattr(ck, "lane_corridor", lambda roads: shapely.box(-500, -500, 500, 500))
+    assert ck.check_terrain_steps(lv, C)

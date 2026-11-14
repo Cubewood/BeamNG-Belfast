@@ -529,20 +529,28 @@ def check_buildings(level: Level, c: dict, mode: str = "mesh") -> tuple[list[dic
 
 # ------------------------------------------------------------------ 7. terrain steps
 
+STEP_DIRECTIONS = ((0, 1), (1, 0), (1, 1), (1, -1))      # (d row, d col): x, y and both diagonals
+
+
+def step_rasters(heights: np.ndarray) -> list[np.ndarray]:
+    """Second difference of the ground over 1 m, per vertex, one raster per direction in STEP_DIRECTIONS."""
+    h = heights.astype(np.float64)
+    n, m = h.shape
+    p = np.pad(h, 1, mode="edge")
+    out = []
+    for dy, dx in STEP_DIRECTIONS:
+        a = p[1 + dy: 1 + dy + n, 1 + dx: 1 + dx + m]
+        b = p[1 - dy: 1 - dy + n, 1 - dx: 1 - dx + m]
+        out.append(np.abs(a - 2 * h + b))
+    return out
+
+
 def step_raster(heights: np.ndarray) -> np.ndarray:
     """Largest second difference of the ground over 1 m in four directions (x, y and both diagonals), per vertex.
 
     A smooth slope, even a steep one, gives 0; a step of height h across one cell gives h in the direction it is
     crossed. Looking in four directions means a step is found whatever way it runs relative to the road."""
-    h = heights.astype(np.float64)
-    n, m = h.shape
-    p = np.pad(h, 1, mode="edge")
-    d = np.zeros_like(h)
-    for dy, dx in ((0, 1), (1, 0), (1, 1), (1, -1)):
-        a = p[1 + dy: 1 + dy + n, 1 + dx: 1 + dx + m]
-        b = p[1 - dy: 1 - dy + n, 1 - dx: 1 - dx + m]
-        d = np.maximum(d, np.abs(a - 2 * h + b))
-    return d
+    return np.maximum.reduce(step_rasters(heights))
 
 
 def check_terrain_steps(level: Level, c: dict) -> list[dict]:
@@ -550,7 +558,7 @@ def check_terrain_steps(level: Level, c: dict) -> list[dict]:
 
     The ground is the exported terrain (the game's heightfield; DecalRoads are draped on it). The lanes are the
     drawn `_ai` carriageways at their drawn width (`geometry.lane_roads`). A step is flagged where the second
-    difference over 1 m exceeds `step_limit_m` (T-413: 0.15 m) at a terrain vertex inside the lanes; flagged
+    difference over 1 m exceeds `step_limit_m` (T-413: 0.15 m) at a terrain vertex whose 1 m stencil lies wholly inside the lanes (kerbs and banks at the lane edge do not count); flagged
     vertices are merged into one finding per `step_cell_m` (the worst one). Roads next to a bridge or tunnel
     mapped in OSM, or a bridge shape, are skipped: a deck is meant to differ from the ground."""
     if level.terrain is None:
@@ -559,17 +567,30 @@ def check_terrain_steps(level: Level, c: dict) -> list[dict]:
     roads = lane_roads(level)
     if not roads:
         return []
-    d = step_raster(ter.heights)
-    cand = np.argwhere(d > c["step_limit_m"])                       # (row, col) of vertices over the limit
-    if not len(cand):
-        return []
-    xs = ter.origin[0] + cand[:, 1] * ter.square
-    ys = ter.origin[1] + cand[:, 0] * ter.square
     corridor = lane_corridor(roads)
     shapely.prepare(corridor)
-    inside = shapely.contains_xy(corridor, xs, ys)
-    cand, xs, ys = cand[inside], xs[inside], ys[inside]
-    vals = d[cand[:, 0], cand[:, 1]]
+    # A step counts only where the whole stencil (the vertex and both neighbours it is measured against) lies
+    # inside the lanes. A kerb or bank beside the lane has one end outside and is not a step a car drives over.
+    best: dict[tuple[int, int], float] = {}
+    for (dy, dx), d in zip(STEP_DIRECTIONS, step_rasters(ter.heights)):
+        cand = np.argwhere(d > c["step_limit_m"])                   # (row, col) of vertices over the limit
+        if not len(cand):
+            continue
+        inside = np.ones(len(cand), dtype=bool)
+        for k in (0, 1, -1):
+            px = ter.origin[0] + (cand[:, 1] + k * dx) * ter.square
+            py = ter.origin[1] + (cand[:, 0] + k * dy) * ter.square
+            inside &= shapely.contains_xy(corridor, px, py)
+        for (r, q) in cand[inside]:
+            v = float(d[r, q])
+            if v > best.get((int(r), int(q)), 0.0):
+                best[(int(r), int(q))] = v
+    if not best:
+        return []
+    cand = np.array(list(best.keys()))
+    vals = np.array(list(best.values()))
+    xs = ter.origin[0] + cand[:, 1] * ter.square
+    ys = ter.origin[1] + cand[:, 0] * ter.square
     order = np.argsort(-vals)
     bridge_idx, bridge_objs = _bridge_zones(level, c)
     # which road each flagged vertex belongs to (nearest lane road), for the name and the navigation flag
