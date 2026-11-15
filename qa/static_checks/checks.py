@@ -37,6 +37,9 @@ DEFAULTS = {
     # one-way
     "oneway_match_m": 6.0,
     "oneway_min_agree": 0.5,
+    # signals and roundabouts (T-407)
+    "signal_match_m": 30.0,        # an OSM signal node with no signal head this close is reported
+    "roundabout_match_m": 4.0,     # a drawn road within this of a ring sample draws the ring there
     # height
     "height_tol_m": 0.5,           # G0: road within 0.5 m of the ground reference
     "bridge_clear_m": 15.0,        # no height check this close to an OSM bridge or tunnel
@@ -298,17 +301,18 @@ def check_oneway(level: Level, c: dict) -> list[dict]:
         for k, (p, t) in enumerate(zip(pts, tans)):
             if len(pts) > 3 and k in (0, len(pts) - 1):
                 continue                      # junction mouths: crossing roads are closer than the road itself
-            hit = ai_idx.nearest_parallel(p[0], p[1], t, c["oneway_match_m"])
-            if hit is None:
+            hits = ai_idx.parallel_all(p[0], p[1], t, c["oneway_match_m"])
+            if not hits:
                 continue
-            r = ai[hit[0]]
+            # roads meeting end to end at this sample (a one-way stub and the two-way road beside it) both fit:
+            # the sample is judged against the one-way ones, and is right if any of them runs the OSM way's way
+            cand = [ai[k] for k, _ in hits if ai[k].props.get("oneWay")] or [ai[hits[0][0]]]
             want += 1
-            if not r.props.get("oneWay"):
+            if not cand[0].props.get("oneWay"):
                 notow += 1
                 first_bad = p if first_bad is None else first_bad
                 continue
-            d = _direction(r, p)
-            if float(np.dot(d, t * ow)) < 0:
+            if all(float(np.dot(_direction(r, p), t * ow)) < 0 for r in cand):
                 wrong += 1
                 first_bad = p if first_bad is None else first_bad
         if not want:
@@ -343,6 +347,118 @@ def check_oneway(level: Level, c: dict) -> list[dict]:
             seen.add(way_id(f.id))
             out.append(finding("oneway-extra", mid.x, mid.y, f"{_name(f)} (OSM way {way_id(f.id)})", "medium", 1,
                                "drawn one-way, OSM says two-way", f"AI road {r.name} has oneWay on a two-way OSM way"))
+    return out
+
+
+# ------------------------------------------------------------------ left-hand traffic: signals, roundabouts (T-407)
+
+def _signals_module():
+    import sys
+    pipe = str(Path(__file__).resolve().parents[2] / "pipeline")
+    if pipe not in sys.path:
+        sys.path.insert(0, pipe)
+    import signals_fix
+    return signals_fix
+
+
+def check_signals(level: Level, c: dict) -> list[dict]:
+    """The level's traffic signal data (`signals.json`) as the game will run it (docs/left_hand_traffic.md).
+
+    * `signal-never-changes` (high): a signal head with no sequence keeps its controller's default state, red, for
+      ever (`core/trafficSignals.lua` SignalInstance:setActive). MapNG gives a sequence only to clusters with two
+      axes or a protected turn, so a one-axis cluster is a light stuck on red. `pipeline/signals_fix.py` repairs it.
+    * `signal-not-uk-order` (high): a controller whose states are not red, red and amber, green, amber (cyclic).
+    * `signal-short-phase` (medium): a sequence phase shorter than its controller's cycle, so the next phase would
+      cut a cycle off and two directions could be open together.
+    * `signal-missing` (medium): an OSM `highway=traffic_signals` node with no signal head within 30 m
+      (MapNG drops a head when it finds no clear spot off the road)."""
+    name = f"{level.base}signals.json"
+    out: list[dict] = []
+    if name not in level.zf.namelist():
+        if any(f.tags.get("highway") == "traffic_signals" for f in level.osm):
+            out.append(finding("signals-file-missing", where=name, severity="high",
+                               detail="OSM has traffic signals but the level has no signals.json: the game runs no lights"))
+        return out
+    sf = _signals_module()
+    data = json.loads(level.zf.read(name).decode("utf-8"))
+    res = sf.analyse(data)
+    by_id = {i["id"]: i for i in data.get("instances", [])}
+    for e in res["never_change"]:
+        i = by_id[e["instance"]]
+        out.append(finding("signal-never-changes", i["pos"][0], i["pos"][1], e["name"] or f"signal {e['instance']}", "high", 1,
+                           "no sequence: red for ever", f"controller {e['controller']} has no sequence, so the light stays red"))
+    first = {}
+    for i in data.get("instances", []):
+        first.setdefault(i["controllerId"], i)
+    for e in res["not_uk_order"]:
+        i = first.get(e["controller"])
+        out.append(finding("signal-not-uk-order", i["pos"][0] if i else None, i["pos"][1] if i else None, e["name"] or "",
+                           "high", 1, " > ".join(s.replace("TrafficLight", "") for s in e["states"]),
+                           "UK order is redYellow, green, yellow, red"))
+    for e in res["short_phase"]:
+        out.append(finding("signal-short-phase", where=f"sequence {e['sequence']} phase {e['phase']}", severity="medium",
+                           value=e["totalDuration"], metric="s",
+                           detail=f"phase lasts {e['totalDuration']} s, its controller needs {e['needs']} s"))
+    heads = [np.array(i["pos"][:2], dtype=float) for i in data.get("instances", [])]
+    for f in level.osm:
+        if f.type != "street_furniture" or f.tags.get("highway") != "traffic_signals" or not len(f.xy):
+            continue
+        d = min((float(np.hypot(*(h - f.xy[0]))) for h in heads), default=1e9)
+        if d > c["signal_match_m"]:
+            out.append(finding("signal-missing", f.xy[0][0], f.xy[0][1], f"OSM node {f.id}", "medium", d,
+                               f"nearest signal head {d:.0f} m away", "no traffic light was placed for this OSM signal"))
+    return out
+
+
+def check_roundabouts(level: Level, c: dict) -> list[dict]:
+    """OSM roundabouts (`junction=roundabout`) as the level draws them, for left-hand traffic.
+
+    * `roundabout-osm-anticlockwise` (high): a closed ring whose node order runs anticlockwise; UK traffic goes
+      clockwise and MapNG follows the node order (the one-way check then agrees with it).
+    * `roundabout-not-drawn` (medium): fewer than 60 % of the ring has a drivable road within 4 m, so no car can
+      circulate (a tiny ring is drawn as a plain junction).
+    * `roundabout-two-way` / `roundabout-wrong-way` (high): the drawn ring is two-way, or runs against the way."""
+    out: list[dict] = []
+    ai = nav_roads(level)
+    idx = LineIndex([r.xy for r in ai])
+    for f in level.osm:
+        if f.type != "road" or f.tags.get("junction") != "roundabout" or len(f.xy) < 4:
+            continue
+        ring = dedupe_points(f.xy)
+        closed = float(np.hypot(*(ring[0] - ring[-1]))) < 1.0
+        centre = ring.mean(axis=0)
+        where = f"{_name(f)} (OSM way {way_id(f.id)})"
+        if closed:
+            a = 0.0
+            for p, q in zip(ring[:-1], ring[1:]):
+                a += p[0] * q[1] - q[0] * p[1]
+            if a > 0:
+                out.append(finding("roundabout-osm-anticlockwise", centre[0], centre[1], where, "high", 1,
+                                   "node order runs anticlockwise", "a UK roundabout is driven clockwise"))
+        pts, tans = resample(ring, 3.0)
+        seen = missing = two = wrong = 0
+        for p, t in zip(pts, tans):
+            seen += 1
+            hit = idx.nearest_parallel(p[0], p[1], t, c["roundabout_match_m"])
+            if hit is None:
+                missing += 1
+                continue
+            r = ai[hit[0]]
+            if not r.props.get("oneWay"):
+                two += 1
+            elif float(np.dot(_direction(r, p), t)) < 0:
+                wrong += 1
+        if seen and missing / seen > 0.4:
+            radius = float(np.mean(np.hypot(*(ring - centre).T)))
+            out.append(finding("roundabout-not-drawn", centre[0], centre[1], where, "medium", missing / seen,
+                               f"{missing} of {seen} samples have no road within {c['roundabout_match_m']:.0f} m",
+                               f"ring radius about {radius:.1f} m"))
+        if seen - missing and two / (seen - missing) >= 0.5:
+            out.append(finding("roundabout-two-way", centre[0], centre[1], where, "high", two / (seen - missing),
+                               f"{two} of {seen - missing} samples on a two-way road", "traffic could circulate both ways"))
+        if seen - missing and wrong / (seen - missing) >= 0.5:
+            out.append(finding("roundabout-wrong-way", centre[0], centre[1], where, "high", wrong / (seen - missing),
+                               f"{wrong} of {seen - missing} samples run against the ring", "the drawn ring runs the other way"))
     return out
 
 

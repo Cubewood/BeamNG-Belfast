@@ -22,6 +22,8 @@ What the wrapper enforces (docs/spikes/mapng.md section 6; details in docs/mapng
   * tools/mapng_preload.mjs serves /country_rules.json (so a UK area comes out left-hand traffic),
     blocks every host not on the allow list, and logs each request;
   * a finished zip must say roadRules.rightHandDrive == true and region == "europe", else exit 4;
+  * a traffic light with no sequence (MapNG gives one only to clusters with two axes) gets a one-phase sequence,
+    else it stays red for ever (pipeline/signals_fix.py, T-407);
   * when its DecalRoads use our UK marking materials (uk_*_cubewood, painted by the belfast patch 0004),
     the materials and textures (pipeline/uk_decals.py) are added under levels/<level>/art/uk_markings_cubewood/.
 
@@ -397,6 +399,20 @@ def add_uk_markings(zip_path: Path, build_dir: Path, builder=build_uk_markings) 
     return {"materials": used, "files": len(files)}
 
 
+def fix_signals(zip_path: Path) -> dict | None:
+    """T-407: give every traffic light that has no sequence one (pipeline/signals_fix.py). MapNG makes a sequence only
+    for a cluster with two axes or a protected turn, so a one-axis cluster is a light that stays red for ever in the
+    game (core/trafficSignals.lua SignalInstance:setActive). Rewrites signals.json in the zip in place; None when the
+    level has no signals file."""
+    sys.path.insert(0, str(REPO_ROOT / "pipeline"))
+    import signals_fix
+    try:
+        signals_fix.signals_name(zip_path)
+    except ValueError:
+        return None
+    return signals_fix.fix_zip(zip_path)
+
+
 # ---------------------------------------------------------------- network log
 
 def read_netlog(path: Path) -> dict[str, dict[str, int]]:
@@ -544,6 +560,9 @@ def cmd_export(args: argparse.Namespace) -> int:
     uk = add_uk_markings(zip_path, out_dir / "uk_markings_build")
     if uk:
         print(f"UK marking materials shipped: {uk['files']} files, DecalRoads per material {json.dumps(uk['materials'])}")
+    sig = fix_signals(zip_path)
+    if sig:
+        print(f"traffic signals: {sig['lights_fixed']} lights with no sequence given one ({sig['sequences_added']} sequences added)")
     # the review's go condition: left-hand traffic in the built zip. Fail loudly, never fake it.
     try:
         found = check_zip(zip_path)
@@ -554,7 +573,7 @@ def cmd_export(args: argparse.Namespace) -> int:
         "zip": str(zip_path), "bytes": zip_path.stat().st_size, "mapng_commit": commit,
         "mapng_pin": PINNED_COMMIT, "mapng_patches": patches,
         "driving_side": found, "hosts": hosts, "base": "none", "trees": bool(args.trees), "dem": dem,
-        "stubs": stubs, "uk_markings": uk,
+        "stubs": stubs, "uk_markings": uk, "signals": sig,
     }
     (out_dir / f"{level}.export.json").write_text(json.dumps(summary, indent=1), encoding="utf-8")
     print(f"driving-side check PASSED: {found}")

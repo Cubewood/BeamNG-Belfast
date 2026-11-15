@@ -84,6 +84,22 @@ DEFAULT_SPECS = [
      [_TC, _RB]),
 ]
 
+# T-407: short routes that go round the Newtownbreda roundabout (C302, centre about (462, 871)), so a drive shows
+# which way the AI circulates. UK roundabouts are driven clockwise. Entry and exit are on the game's graph:
+# SW arm to SE arm sweeps 224 degrees, SE to N 238, E to SW 123 (all clockwise on the game graph, T-407).
+_RB_SW = v("Newtownbreda Rd south-west arm", 433, 848)
+_RB_SE = v("Newtownbreda Rd south-east arm", 496, 862)
+_RB_N = v("C302 north arm", 481, 899)
+_RB_E = v("C302 east arm", 481, 884)
+RULES_SPECS = [
+    ("roundabout-sw-to-se", "Newtownbreda roundabout, south-west arm to south-east arm",
+     "Round the roundabout the long way (over 200 degrees): clockwise in left-hand traffic.", [_RB_SW, _RB_SE]),
+    ("roundabout-se-to-n", "Newtownbreda roundabout, south-east arm to north arm",
+     "Over 200 degrees round the roundabout.", [_RB_SE, _RB_N]),
+    ("roundabout-e-to-sw", "Newtownbreda roundabout, east arm to south-west arm",
+     "About 120 degrees round the roundabout.", [_RB_E, _RB_SW]),
+]
+
 
 def load_graph(path: Path) -> rl.Graph:
     return rl.Graph(json.loads(path.read_text(encoding="utf-8")))
@@ -116,8 +132,9 @@ def document(routes: list[dict], graph: Path, osm: Path) -> dict:
 def cmd_new(a) -> int:
     g = load_graph(Path(a.graph))
     feats = rl.load_osm_features(Path(a.osm), LAT0, LON0)
+    table = RULES_SPECS if getattr(a, "set", "drive") == "rules" else DEFAULT_SPECS
     specs = [{"id": i, "name": n, "description": d, "via": [dict(x) for x in vias]}
-             for i, n, d, vias in DEFAULT_SPECS]
+             for i, n, d, vias in table]
     doc = document(derive(g, specs, feats), Path(a.graph), Path(a.osm))
     return write(doc, Path(a.out), g)
 
@@ -176,6 +193,8 @@ def main(argv=None) -> int:
     ap.add_argument("--graph", default=str(DEFAULT_GRAPH))
     ap.add_argument("--osm", default=str(DEFAULT_OSM))
     ap.add_argument("--out", default=str(DEFAULT_OUT))
+    ap.add_argument("--set", choices=["drive", "rules"], default="drive",
+                    help="new: which route set to build (drive = the G3 suite, rules = T-407 roundabout circuits)")
     ap.add_argument("--tc", help="new test-centre start as world X,Y metres (rebuild)")
     ap.add_argument("--tc-latlon", help="new test-centre start as LAT,LON (rebuild)")
     a = ap.parse_args(argv)

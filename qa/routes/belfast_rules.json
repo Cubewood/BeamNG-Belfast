@@ -1,0 +1,485 @@
+{
+ "level": "belfast_slice",
+ "origin": {
+  "lat": 54.5428,
+  "lon": -5.93,
+  "note": "level centre; world x east, y north, metres"
+ },
+ "provisional": "Start point TC is a working assumption (Hospital Road nearest the level origin). The test centre position is not confirmed by the user.",
+ "generated": "2026-11-15",
+ "sources": {
+  "graph": "game navgraph, map.getMap() on belfast_slice (drive_suite.py dump-graph)",
+  "osm": "MapNG osm.json for the slice (Overpass, OSM data): signals, give-way, roundabouts",
+  "graph_file": "H:\\BelfastData\\qa\\graph\\belfast_slice.graph.json",
+  "osm_file": "H:\\BelfastData\\mapng\\areas\\belfast_slice\\osm.json"
+ },
+ "routes": [
+  {
+   "id": "roundabout-sw-to-se",
+   "name": "Newtownbreda roundabout, south-west arm to south-east arm",
+   "description": "Round the roundabout the long way (over 200 degrees): clockwise in left-hand traffic.",
+   "via": [
+    {
+     "name": "Newtownbreda Rd south-west arm",
+     "x": 433,
+     "y": 848,
+     "lat": 54.550469,
+     "lon": -5.923295
+    },
+    {
+     "name": "Newtownbreda Rd south-east arm",
+     "x": 496,
+     "y": 862,
+     "lat": 54.550596,
+     "lon": -5.922319
+    }
+   ],
+   "length_m": 99,
+   "streets": [
+    "Newtownbreda Road",
+    "C302",
+    "unnamed way 863855829"
+   ],
+   "junctions": [
+    {
+     "x": 438.5,
+     "y": 852.3,
+     "at_m": 7,
+     "from": "Newtownbreda Road",
+     "to": "Newtownbreda Road",
+     "turn": "straight",
+     "angle": 20,
+     "features": [
+      "roundabout"
+     ],
+     "branches": 3
+    },
+    {
+     "x": 450.6,
+     "y": 871.0,
+     "at_m": 29,
+     "from": "Newtownbreda Road",
+     "to": "C302",
+     "turn": "straight",
+     "angle": -19,
+     "features": [
+      "roundabout"
+     ],
+     "branches": 3
+    },
+    {
+     "x": 464.0,
+     "y": 882.3,
+     "at_m": 48,
+     "from": "C302",
+     "to": "C302",
+     "turn": "right",
+     "angle": -99,
+     "features": [
+      "roundabout"
+     ],
+     "branches": 3
+    },
+    {
+     "x": 473.5,
+     "y": 874.1,
+     "at_m": 61,
+     "from": "C302",
+     "to": "C302",
+     "turn": "right",
+     "angle": -51,
+     "features": [
+      "roundabout"
+     ],
+     "branches": 3
+    }
+   ],
+   "counts": {
+    "left": 0,
+    "right": 2,
+    "signals": 0,
+    "roundabouts": 4
+   },
+   "path": [
+    [
+     433.2,
+     848.3,
+     43.23
+    ],
+    [
+     438.5,
+     852.3,
+     43.34
+    ],
+    [
+     442.5,
+     857.6,
+     43.35
+    ],
+    [
+     446.1,
+     863.2,
+     43.32
+    ],
+    [
+     450.6,
+     871.0,
+     43.31
+    ],
+    [
+     453.0,
+     877.7,
+     43.45
+    ],
+    [
+     458.2,
+     881.6,
+     43.59
+    ],
+    [
+     464.0,
+     882.3,
+     43.73
+    ],
+    [
+     469.9,
+     879.3,
+     43.74
+    ],
+    [
+     473.5,
+     874.1,
+     43.76
+    ],
+    [
+     473.0,
+     867.5,
+     43.66
+    ],
+    [
+     470.8,
+     863.4,
+     43.62
+    ],
+    [
+     476.7,
+     860.3,
+     43.85
+    ],
+    [
+     483.1,
+     858.5,
+     44.12
+    ],
+    [
+     489.6,
+     859.0,
+     44.33
+    ],
+    [
+     495.6,
+     861.9,
+     44.49
+    ]
+   ],
+   "half_width_m": 3.2
+  },
+  {
+   "id": "roundabout-se-to-n",
+   "name": "Newtownbreda roundabout, south-east arm to north arm",
+   "description": "Over 200 degrees round the roundabout.",
+   "via": [
+    {
+     "name": "Newtownbreda Rd south-east arm",
+     "x": 496,
+     "y": 862,
+     "lat": 54.550596,
+     "lon": -5.922319
+    },
+    {
+     "name": "C302 north arm",
+     "x": 481,
+     "y": 899,
+     "lat": 54.55093,
+     "lon": -5.922551
+    }
+   ],
+   "length_m": 97,
+   "streets": [
+    "Newtownbreda Road",
+    "C302",
+    "unnamed way 148565334"
+   ],
+   "junctions": [
+    {
+     "x": 470.8,
+     "y": 863.4,
+     "at_m": 26,
+     "from": "Newtownbreda Road",
+     "to": "C302",
+     "turn": "straight",
+     "angle": 11,
+     "features": [
+      "roundabout"
+     ],
+     "branches": 3
+    },
+    {
+     "x": 458.1,
+     "y": 860.1,
+     "at_m": 40,
+     "from": "C302",
+     "to": "C302",
+     "turn": "right",
+     "angle": -74,
+     "features": [
+      "roundabout"
+     ],
+     "branches": 3
+    },
+    {
+     "x": 450.6,
+     "y": 871.0,
+     "at_m": 54,
+     "from": "C302",
+     "to": "C302",
+     "turn": "right",
+     "angle": -103,
+     "features": [
+      "roundabout"
+     ],
+     "branches": 3
+    },
+    {
+     "x": 464.0,
+     "y": 882.3,
+     "at_m": 73,
+     "from": "C302",
+     "to": "unnamed way 148565334",
+     "turn": "straight",
+     "angle": 2,
+     "features": [
+      "roundabout"
+     ],
+     "branches": 3
+    }
+   ],
+   "counts": {
+    "left": 0,
+    "right": 2,
+    "signals": 0,
+    "roundabouts": 4
+   },
+   "path": [
+    [
+     495.6,
+     861.9,
+     44.49
+    ],
+    [
+     489.6,
+     859.0,
+     44.33
+    ],
+    [
+     483.1,
+     858.5,
+     44.12
+    ],
+    [
+     476.7,
+     860.3,
+     43.85
+    ],
+    [
+     470.8,
+     863.4,
+     43.62
+    ],
+    [
+     465.2,
+     860.0,
+     43.44
+    ],
+    [
+     458.1,
+     860.1,
+     43.21
+    ],
+    [
+     453.0,
+     864.2,
+     43.24
+    ],
+    [
+     450.6,
+     871.0,
+     43.31
+    ],
+    [
+     453.0,
+     877.7,
+     43.45
+    ],
+    [
+     458.2,
+     881.6,
+     43.59
+    ],
+    [
+     464.0,
+     882.3,
+     43.73
+    ],
+    [
+     470.1,
+     887.4,
+     44.06
+    ],
+    [
+     475.9,
+     893.0,
+     44.28
+    ],
+    [
+     480.9,
+     899.1,
+     44.33
+    ]
+   ],
+   "half_width_m": 3.2
+  },
+  {
+   "id": "roundabout-e-to-sw",
+   "name": "Newtownbreda roundabout, east arm to south-west arm",
+   "description": "About 120 degrees round the roundabout.",
+   "via": [
+    {
+     "name": "C302 east arm",
+     "x": 481,
+     "y": 884,
+     "lat": 54.550795,
+     "lon": -5.922551
+    },
+    {
+     "name": "Newtownbreda Rd south-west arm",
+     "x": 433,
+     "y": 848,
+     "lat": 54.550469,
+     "lon": -5.923295
+    }
+   ],
+   "length_m": 65,
+   "streets": [
+    "unnamed way 863855829",
+    "C302",
+    "Newtownbreda Road"
+   ],
+   "junctions": [
+    {
+     "x": 473.5,
+     "y": 874.1,
+     "at_m": 13,
+     "from": "unnamed way 863855829",
+     "to": "C302",
+     "turn": "straight",
+     "angle": 7,
+     "features": [
+      "roundabout"
+     ],
+     "branches": 3
+    },
+    {
+     "x": 458.1,
+     "y": 860.1,
+     "at_m": 37,
+     "from": "C302",
+     "to": "Newtownbreda Road",
+     "turn": "straight",
+     "angle": -5,
+     "features": [
+      "roundabout"
+     ],
+     "branches": 3
+    },
+    {
+     "x": 438.5,
+     "y": 852.3,
+     "at_m": 59,
+     "from": "Newtownbreda Road",
+     "to": "Newtownbreda Road",
+     "turn": "straight",
+     "angle": 15,
+     "features": [
+      "roundabout"
+     ],
+     "branches": 3
+    }
+   ],
+   "counts": {
+    "left": 0,
+    "right": 0,
+    "signals": 0,
+    "roundabouts": 3
+   },
+   "path": [
+    [
+     481.1,
+     884.1,
+     44.28
+    ],
+    [
+     477.3,
+     879.1,
+     44.02
+    ],
+    [
+     473.5,
+     874.1,
+     43.76
+    ],
+    [
+     473.0,
+     867.5,
+     43.66
+    ],
+    [
+     470.8,
+     863.4,
+     43.62
+    ],
+    [
+     465.2,
+     860.0,
+     43.44
+    ],
+    [
+     458.1,
+     860.1,
+     43.21
+    ],
+    [
+     449.7,
+     856.2,
+     43.28
+    ],
+    [
+     444.1,
+     854.2,
+     43.31
+    ],
+    [
+     438.5,
+     852.3,
+     43.34
+    ],
+    [
+     433.2,
+     848.3,
+     43.23
+    ]
+   ],
+   "half_width_m": 3.2
+  }
+ ]
+}

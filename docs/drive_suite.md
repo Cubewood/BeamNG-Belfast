@@ -42,6 +42,8 @@ How derived: via points are snapped to the game's navgraph (`map.getMap()`, dump
 
 `metrics.json`: run header (mode, thresholds, graph size, game timings), `results[]` per route (`completed`, `end_reason`, `events[]` with t and x, y, `max_bump_ms2`, `max_deviation_m`, `duration_s`, `length_m`, `progress_m`, `lane`, `frames`, `frame_rate_hz`, `spawn`), `summary` with `g3 {pass, failed[]}`, `console` (error lines, baseline ignored) and `game_stopped` (end state). A route fails G3 for a crash, stuck, airborne, off route, fell, reversing, bump over 7, timeout, error, bad spawn or not completing; a route missing from the results fails too.
 
+`results[].one_way` (T-407, not part of G3): `{on_one_way, wrong_way, first_at}`, the moving samples that ran along a one-way edge of the live graph and how many of them ran against it (`qa/ai_rules_lib.wrong_way`). Roundabout circulation, signals and AI traffic mode are in `qa/ai_rules.py` (`docs/left_hand_traffic.md`), which is a separate run because only AI traffic mode obeys signals.
+
 ## Thresholds (MapNG defaults, not tuned)
 
 Bump 7 m/s2 `driveAnalysis.mjs:247`; airborne az < -8 for 0.25 s `:277-278`; off route 6 m + half width `:268`; stuck < 0.5 m/s for 5 s `:281-282`; fell 3 m under the road `:269`; one event per kind per 2 s `:253`; 1.5 s settle `driveTest.mjs:494`; crash = damage rise over 50 `:468`; reversing below -1 m/s `:51`; arrival within 10 m + v2/10 of the end `:457`; timeout length/speed x 2.5 + 20 s `:450`; spawn roll limit 8 degrees `:50`. Ours: lost beyond 60 m, arrival only in the last 60 m (loops end where they start). The route stops at the first crash, stuck, fell, reversing or lost.

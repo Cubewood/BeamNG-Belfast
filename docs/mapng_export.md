@@ -89,6 +89,8 @@ Area `hydebank_sample`: centre 54.553 N, -5.925 E (from the task brief), 512 m s
 
 When the zip's DecalRoads use `uk_*_cubewood` materials (MapNG patch 0004 paints them on GB roads), `export` draws them with `pipeline/uk_decals.py --level <level>` (a child `uv run` with numpy, pillow, pyyaml; build folder `<out>/uk_markings_build`) and adds `levels/<level>/art/uk_markings_cubewood/` to the zip. A used material or texture that is missing exits 1. `export.json` gets `uk_markings` (DecalRoads per material). Details: `docs/mapng_patches.md`, patch 0004.
 
+After that, `export` runs `fix_signals` (`pipeline/signals_fix.py`, T-407): every traffic light in `levels/<level>/signals.json` that has no sequence gets a one-phase one (MapNG makes a sequence only for a cluster with two axes, and the game keeps a light with none red for ever). `export.json` gets `signals` (`lights_fixed`, `sequences_added`, counts before and after); a level with no `signals.json` is left alone. Details: `docs/left_hand_traffic.md`.
+
 ## Speed limits (T-408)
 
 `fetch`, `pinned-osm` and `export` run `pipeline/speed_limits.py` on the area's `osm.json` first, so every road way

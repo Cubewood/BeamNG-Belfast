@@ -29,7 +29,7 @@ DEFAULT_OUT = Path(r"H:\BelfastData\qa\static")
 DEFAULT_BUDGET = ROOT / "config" / "static_budget.json"
 DEFAULT_MAPNG = ROOT / "third_party" / "mapng"
 FALLBACK_MAPNG = Path(r"H:\Claude\BeamNGBelfast\third_party\mapng")
-ALL_CHECKS = ("lint", "roads", "connection", "oneway", "height", "budget", "buildings", "steps", "kerbs", "speed", "assets")
+ALL_CHECKS = ("lint", "roads", "connection", "oneway", "height", "budget", "buildings", "steps", "kerbs", "speed", "signals", "roundabouts", "assets")
 
 
 def run_mapng_lint(zip_path: Path, index_path: Path | None, mapng_dir: Path | None, out_json: Path) -> list[dict]:
@@ -85,7 +85,7 @@ def run_checks(zip_path: Path, osm_path: Path | None, *, only=ALL_CHECKS, overri
     findings: list[dict] = []
     info: dict = {"zip": str(zip_path), "osm": str(osm_path) if osm_path else None, "level": level.name,
                   "osm_features": len(level.osm), "decal_roads": len(level.roads)}
-    if not level.osm and any(k in only for k in ("roads", "connection", "oneway", "buildings")):
+    if not level.osm and any(k in only for k in ("roads", "connection", "oneway", "buildings", "roundabouts")):
         findings.append(finding("check-not-run", where="osm", severity="medium",
                                 detail="no OSM file: road presence, connection, one-way and OSM building checks need it"))
 
@@ -125,6 +125,8 @@ def run_checks(zip_path: Path, osm_path: Path | None, *, only=ALL_CHECKS, overri
     findings += step("steps", lambda: ck.check_terrain_steps(level, c))
     findings += step("kerbs", lambda: ck.check_kerb_heights(level, c))
     findings += step("speed",lambda: ck.check_speed_limits(level, c))
+    findings += step("signals", lambda: ck.check_signals(level, c))
+    findings += step("roundabouts", lambda: ck.check_roundabouts(level, c))
 
     def assets():
         if index_path is None:

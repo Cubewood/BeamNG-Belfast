@@ -100,6 +100,28 @@ class LineIndex:
         return best
 
 
+    def parallel_all(self, x: float, y: float, tangent, limit: float, min_cos: float = 0.85):
+        """Every line within `limit` that runs along `tangent` (either way) at its closest point: [(index, distance)],
+        nearest first. Two roads that meet end to end (a one-way stub and the two-way road it leaves) both qualify at
+        their shared node (T-407)."""
+        if self.tree is None:
+            return []
+        pt = shapely.Point(x, y)
+        out = []
+        for k in self.tree.query(pt.buffer(limit)):
+            g = self.geoms[k]
+            d = g.distance(pt)
+            if d > limit:
+                continue
+            s = g.project(pt)
+            a, b = g.interpolate(max(0.0, s - 1.0)), g.interpolate(min(g.length, s + 1.0))
+            v = np.array([b.x - a.x, b.y - a.y])
+            n = np.hypot(*v)
+            if n > 0 and abs(float(np.dot(v / n, tangent))) >= min_cos:
+                out.append((self.valid[k], d))
+        return sorted(out, key=lambda t: t[1])
+
+
 def resample(xy: np.ndarray, step: float) -> tuple[np.ndarray, np.ndarray]:
     """Points every `step` metres along a polyline, and the unit tangent at each (x east, y north)."""
     xy = dedupe_points(xy)

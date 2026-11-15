@@ -39,6 +39,7 @@ REPO = HERE.parent
 sys.path.insert(0, str(REPO / "tools"))
 sys.path.insert(0, str(HERE))
 import beamng_mcp  # noqa: E402
+import ai_rules_lib  # noqa: E402
 import drive_lib as dl  # noqa: E402
 import gamectl  # noqa: E402
 import route_lib as rl  # noqa: E402
@@ -551,6 +552,7 @@ def run_suite(a) -> int:
         GRAPH_DIR.mkdir(parents=True, exist_ok=True)
         (GRAPH_DIR / f"{a.level}.graph.json").write_text(json.dumps(dump), encoding="utf-8")
         g = rl.Graph(dump)
+        ow_index = ai_rules_lib.OneWayIndex(dump)
         osm = OsmContext(Path(a.osm), doc["origin"]["lat"], doc["origin"]["lon"])
         m["osm"] = {"file": osm.source, "roads": len(osm.roads), "calming_features": len(osm.calming)}
         if not osm.source:
@@ -574,12 +576,16 @@ def run_suite(a) -> int:
             else:
                 log(f"route {rid} ({route['length_m']} m)")
                 res = drive_route(link, g, route, a.mode, outdir, a.speed, a.aggression, osm)
+                # T-407: the car must never run against a one-way edge of the game's graph (not part of G3)
+                with contextlib.suppress(Exception):
+                    res["one_way"] = ai_rules_lib.wrong_way_csv(outdir / res["telemetry"], ow_index)
             m["results"].append(res)
             evs = ", ".join(f"{e['type']}" + (f" {e['value']}" if "value" in e else "") + (f" at ({e['x']}, {e['y']})" if "x" in e else "")
                             for e in res["events"])
             log(f"  {'DONE' if res['completed'] else 'FAIL'} {rid}: {res['progress_m']}/{res['length_m']} m, "
                 f"{res['duration_s']} s, bump {res['max_bump_ms2']}, dev {res['max_deviation_m']}, "
-                f"wrong side {res.get('lane', {}).get('wrong_side', '?')}"
+                f"wrong side {res.get('lane', {}).get('wrong_side', '?')}, "
+                f"wrong way {res.get('one_way', {}).get('wrong_way', '?')}/{res.get('one_way', {}).get('on_one_way', '?')} one-way samples"
                 f"{', ' + evs if evs else ''}")
             m["summary"] = dl.summarise(m["results"], expected)
             write_metrics(outdir, m)
