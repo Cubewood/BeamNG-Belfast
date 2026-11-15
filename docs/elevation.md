@@ -61,6 +61,10 @@ Checked by reading the installed file the way MapNG does (Node, `H:\BelfastData\
 
 `tools/mapng_export.py export NAME --dem gpxz` passes `gpxz` to `exportArea.mjs` instead of `t30`, checks that `gpxz.f32` is `meta.size ** 2 * 4` bytes and that `meta.json` has `gpxzSmooth` false (exit 6 otherwise). The default stays `t30`.
 
+## Probe (I-008)
+
+`pipeline/elevation_probe.py AREA --from X Y --to X Y [--window 12]` prints the built `gpxz.f32`, the raw OSNI raster and the LiDAR along a game-frame line, the largest drop within the window, the spread of file minus OSNI and the distance to the nearest LiDAR pixel. Use it to ask whether a height feature is in the source data or made by the pipeline. Result for Lady Ishbel Avenue: `docs/spikes/drive-crashes.md` section 3. The MapNG slot name `gpxz` is only a name: the file holds LiDAR and OSNI heights, no GPXZ data.
+
 ## Limits
 
 - Irish Grid to WGS84 uses OSi's 7-parameter Helmert, 1 to 2 m (docs/aoi.md). LiDAR and OSNI share it so they agree with each other; both can sit 1 to 2 m off the OSM roads. On slopes of 8 %, 2 m is 16 cm of height.
