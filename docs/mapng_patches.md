@@ -46,7 +46,7 @@ git add patches/mapng                              # in the repo root, by name
 1. Move the submodule to the new upstream commit and set `PINNED_COMMIT` in `tools/mapng_export.py`.
 2. `export` now exits 3 ("the pin changed"). `apply --reset` stops at the first patch that no longer applies and leaves the submodule clean at the new pin.
 3. Rebase by hand: `git checkout -B belfast <new pin>`, `git am --3way patches/mapng/<name>` for each, fix conflicts, then `save` (this writes the new `BASE`).
-4. Run MapNG's tests (806 of 812 pass on Windows at the bare pin, 822 of 828 with patches 0001 to 0004, 825 of 831 with 0001 to 0005, 832 of 838 with 0001 to 0006, 837 of 843 with 0001 to 0007, 849 of 855 with 0001 to 0009, `docs/mapng_export.md`; the six failures are environment) and the new tests of each patch.
+4. Run MapNG's tests (806 of 812 pass on Windows at the bare pin, 822 of 828 with patches 0001 to 0004, 825 of 831 with 0001 to 0005, 832 of 838 with 0001 to 0006, 837 of 843 with 0001 to 0007, 849 of 855 with 0001 to 0009, 852 of 858 with 0001 to 0012, `docs/mapng_export.md`; the six failures are environment) and the new tests of each patch.
 
 Offering generic patches upstream (the building rule, the junction step, mph signs) needs the user's GitHub account and stays a follow-up.
 
@@ -229,3 +229,18 @@ New file `services/ukJunctions.js` (`impliedGiveWays`, `priorityAtJunction`, `ju
 ## Patch 0009: road snapping keeps a shared node exactly where it is (T-404)
 
 `services/roadSnap.js` (`snapRoadsToTerrain`): the offset faded to zero only at the 2 m samples, so a junction node in the middle of a moved way moved a few centimetres off the way joining it and the junction graphs lost 19 of 909 junction nodes on the Slice. Test: one in `tests/roadSnap.test.mjs`. Upstream tests with 0001 to 0009: 855, 849 pass, the same six environment failures. Build `H:\BelfastData\mapng\t404\`; drive suite `2026-11-18_133155`: 10 of 10, G3 pass.
+
+## Patches 0010 to 0012: narrow roads from DfI widths (T-406)
+
+T-406 draws streets at their DfI width (6 m where MapNG drew 10.6 m), which moved kerbs to 3 m from the centre and
+shrank every road core. Three faults that the wide default roads had hidden, each found from level data and telemetry
+(`docs/dfi_widths.md`, drive gate section):
+
+| Patch | File | Change | Test |
+|---|---|---|---|
+| 0010 junction mouths | `services/structures/terrainCompose.js` | Within a junction (3+ road ends on the ground) a road's core is at least `MOUTH_CORE_M` 6.5 m from its centreline for 6 m from the node, then back to its own over 6 m; blend, ownership and side slopes use it. Service roads and tracks keep their own core | `tests/structureTerrain.test.mjs`: a left turn from a 15 % side street into a level road, both 5 m: vertical curvature 0.385 per m before, under 0.15 after |
+| 0011 T vertex | `services/roadCurves.js` | A bend of 30 degrees or more at a vertex where every other way only ends is rounded like a free vertex (at most 3 m inside it); the vertex moves to the arc's middle and the ending ways follow | `tests/roadCurves.test.mjs`: a 53 degree bend at a driveway, smallest radius 6.9 m before, over 15 m after. The upstream test "a vertex another way is attached to stays exactly" is replaced by one for a way passing through and a gentle bend, which keep the old rule |
+| 0012 kerb at a mouth | `services/beamngSidewalks.js` (`joinCorners`) | A loose sidewalk end at a road it meets with no curb return (no sidewalk on that corner) stops the run's corner radius further back (the country's table first, `UK_CORNER_RADII`: 6 m on residential streets), then ramps | `tests/beamngSidewalks.test.mjs`: the run stops 8.5 m from the cross road's centreline, not 5.5 m; 11.5 m with `UK_CORNER_RADII` |
+
+Upstream tests with 0001 to 0012 (renumbered from 0008 to 0010 and rebased on T-404's 0008 and 0009, 18 November): 858, 852 pass, the same six environment failures. Drive gate: not passed, see
+`docs/dfi_widths.md`.

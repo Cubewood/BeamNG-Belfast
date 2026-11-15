@@ -283,10 +283,28 @@ First t406 run `2026-11-15_183606`: 4 of 10. Causes, each checked against level 
   driving width plus two parking lanes (2 x 2.3 m); the DfI figure stays in `belfast:width_dfi` (widths check 141 to 140 of 158).
 - **Kerb strike at (-295, -163) on `haddo-woods-loop`: real.** Without the parking lanes the kerb stands at 2.8 m from the centre and the
   AI's line through the bend reaches it. Fix: a two-way carriageway up to 0.75 m under its lanes' width is drawn at it (5.6 to 6.0 m).
-- **Still open, real: `lady-ishbel-loop-reverse`.** Bump 8.6 to 11.7 at the known drop (-192, -145) on every t406 build (i007: 6.1), and tiny
-  scrapes at (-129, 129) and (-133, 131) (one of them a `crash` of 3667 once; the road there is 6 m in both builds, the body was 10.6 m, so
-  kerbs and walkways moved in to 3 m). The step needs a gentler vertical curve at the junction mouth (MapNG), not a width change.
+- **`lady-ishbel-loop-reverse`, (-130, 129): real, fixed (MapNG patch 0009).** Not the road at (-130, 129): the damage is polled every 0.5 s and
+  stamped on the batch's first sample, so the hit lies up to 0.5 s on. Front spindle damage, FL zone: the car's left front wheel on the inside
+  kerb at (-136, 131.5), 2.9 m from the centre, with the car's reference node 2.7 m left of it. The West link road bends 53 degrees at the
+  vertex where service road 579543545 ends; MapNG pinned the road through that vertex, an S (right 7 degrees, then the whole turn) with a
+  7.8 m core radius, and the AI cut it by 1.2 m. With the 10.6 m body the kerb had stood at 5.3 m. Patch 0009 rounds such a vertex (20 m arc,
+  the vertex moved 2.4 m, the service road's end with it). No hit there in any of the three t406e runs.
+- **The drop at (-192, -145): improved, not fixed.** The path (y -146 to -144) runs inside both cores; the cores had shrunk to 4.0 m (Lady
+  Ishbel) and 4.55 m (Hospital Road) from 6.3 and 5.5, so the junction-mouth blend of patch 0005 took the car from Lady Ishbel's 15 % to
+  Hospital Road's level within about 2 m. Patch 0008 keeps cores at 6.5 m within a junction mouth; game bump 7.2 and 8.3 (t406d: 8.6 to 11.7,
+  i007 6.1). Widening further is not the answer: Lady Ishbel's own solved profile changes from 15 % to 8.5 % at one node 4 m from the
+  junction, which only easing that profile (a vertical curve on the minor road's approach, `services/structures/profileSolve.js`) can spread.
+- **The known scrape (-196, -146) is partly the kerb end: fixed (patch 0010).** Lady Ishbel's north kerb ran on to 0.5 m from Hospital Road
+  (no sidewalk there, so no curb return) and its ramp lay under the turning car's front left wheel (v1 run: `crash` 2410, front spindle).
+  Patch 0010 stops such a loose end the run's corner radius back (here 3 m). Run `2026-11-15_234431` still logged a `scrape` there.
+- **New with 0008, fixed in it: bump 7.0 to 7.2 at (-96, 144)** on `hospital-road-ne-back` and `milltown-road-back`: a level service road's
+  widened core pulled Hospital Road's climbing lanes off their grade. Service roads and tracks keep their own core (3.3 and 3.6 after).
 
-Last build `H:\BelfastData\mapng\t406d\out\belfast_slice.zip`: static widths 140 of 158, steps 90, kerbs 0; full suite
-`2026-11-15_223352`: 9 of 10 (`lady-ishbel-loop-reverse` crash 3667 at (-130, 129), and the same route passed in a rerun with the bump 11.1). The
-QA profile holds the i007 zip.
+Build `H:\BelfastData\mapng\t406e\out\belfast_slice.zip` (patches 0001 to 0010; `out_run1` is the first t406e build, 0001 to 0009): widths
+140 of 158, `terrain-step` 85 (navigation 18; t406d 90 and 24), kerbs 0. Routes rebuilt on its graph (`build_routes.py rebuild`, `check`: 10
+routes, 0 problems); they match t406e builds only. Suite `2026-11-15_232145` (first t406e build): 10 of 10 completed, G3 failed (bumps 7.2,
+7.2, 7.0). Suite `2026-11-15_234431` (final build): 10 of 10 completed, G3 failed on `lady-ishbel-loop-reverse` only (bump 8.3 at (-193,
+-145), scrape at (-197, -146)); other events: `haddo-woods-loop` scrapes at (-244, -144), (-298, -158), (-271, -111), `newtownbreda-roundabout`
+scrape at (401, 808) (t406d had scrapes at those Haddo Woods and roundabout places too). Console: one error, `Hook discarded:
+FilteredInputChanged` (game UI), not seen before. The QA profile holds the i007 zip again. The suite now reads the osm.json the routes file
+names (`sources.osm_file`) unless `--osm` is given.

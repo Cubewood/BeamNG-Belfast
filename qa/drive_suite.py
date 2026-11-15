@@ -492,6 +492,16 @@ def drive_route(link: Link, g: rl.Graph, route: dict, mode: str, outdir: Path, s
 
 # ------------------------------------------------------------------------------- suite
 
+def osm_file_for(doc: dict, given: str | None) -> Path:
+    """The MapNG osm.json to use: `--osm` when given, else the one the routes were built from
+    (`sources.osm_file`, written by build_routes.py), else OSM_JSON. A build of another area (T-406:
+    `t406_slice`) then gets its own lane layout and calming without a flag."""
+    if given:
+        return Path(given)
+    named = (doc.get("sources") or {}).get("osm_file")
+    return Path(named) if named else OSM_JSON
+
+
 def load_routes(path: Path, only: list[str] | None) -> dict:
     doc = json.loads(path.read_text(encoding="utf-8"))
     errs = rl.validate_routes(doc, None)
@@ -553,10 +563,11 @@ def run_suite(a) -> int:
         (GRAPH_DIR / f"{a.level}.graph.json").write_text(json.dumps(dump), encoding="utf-8")
         g = rl.Graph(dump)
         ow_index = ai_rules_lib.OneWayIndex(dump)
-        osm = OsmContext(Path(a.osm), doc["origin"]["lat"], doc["origin"]["lon"])
+        osm_path = osm_file_for(doc, a.osm)
+        osm = OsmContext(osm_path, doc["origin"]["lat"], doc["origin"]["lon"])
         m["osm"] = {"file": osm.source, "roads": len(osm.roads), "calming_features": len(osm.calming)}
         if not osm.source:
-            log(f"no OSM file at {a.osm}: lane layout and traffic calming are not applied")
+            log(f"no OSM file at {osm_path}: lane layout and traffic calming are not applied")
         m["graph"] = {"nodes": len(g.nodes), "one_way_edges": g.one_way_edges, "components": len(g.components())}
         bad = {}
         for r in doc["routes"]:
@@ -644,11 +655,11 @@ def hard_stop(outdir: Path, m: dict) -> None:   # pragma: no cover - last resort
     os._exit(EXIT_TIMEOUT)
 
 
-def replay_run(rundir: Path, osm_json: Path) -> dict:
+def replay_run(rundir: Path, osm_json: Path | None) -> dict:
     """Re-judge a recorded run (telemetry CSVs + routes.json) with the current rules, no game. Used
     to check a rule change against what the game really did (T-311)."""
     doc = json.loads((rundir / "routes.json").read_text(encoding="utf-8"))
-    osm = OsmContext(osm_json, doc["origin"]["lat"], doc["origin"]["lon"])
+    osm = OsmContext(osm_file_for(doc, osm_json), doc["origin"]["lat"], doc["origin"]["lon"])
     out = []
     for route in doc["routes"]:
         tele = rundir / f"telemetry_{route['id']}.csv"
@@ -670,7 +681,7 @@ def replay_run(rundir: Path, osm_json: Path) -> dict:
 
 
 def cmd_replay(a) -> int:
-    res = replay_run(Path(a.dir), Path(a.osm))
+    res = replay_run(Path(a.dir), a.osm)
     for r in res["results"]:
         ln = r["lane"]
         print(f"{r['id']:28} bump {r['max_bump_ms2']:5} calming {r['max_calming_ms2']:5} "
@@ -701,7 +712,7 @@ def main(argv=None) -> int:
     r.add_argument("--routes", default=str(DEFAULT_ROUTES))
     r.add_argument("--level", default=LEVEL)
     r.add_argument("--only", help="comma separated route ids")
-    r.add_argument("--osm", default=str(OSM_JSON), help="MapNG osm.json (lane layout, traffic calming)")
+    r.add_argument("--osm", help="MapNG osm.json (lane layout, traffic calming); default: the routes file's sources.osm_file")
     r.add_argument("--mode", choices=["graph", "script"], default="graph")
     r.add_argument("--speed", type=float, default=SPEED_MS, help="AI speed cap in m/s (default 13.4 = 30 mph)")
     r.add_argument("--aggression", type=float, default=AGGRESSION)
@@ -711,7 +722,7 @@ def main(argv=None) -> int:
     r.add_argument("--allow-daytime", action="store_true", help="allow a launch between 09:00 and 18:00 (only when the user says so)")
     rp = sub.add_parser("replay", help="re-judge a recorded run folder with the current rules (no game)")
     rp.add_argument("dir")
-    rp.add_argument("--osm", default=str(OSM_JSON))
+    rp.add_argument("--osm", help="default: the run's routes.json sources.osm_file")
     rp.add_argument("--out", help="write the re-judged results as JSON")
     d = sub.add_parser("dump-graph", help="save map.getMap() of the running game (game must be running)")
     d.add_argument("--level", default=LEVEL)
