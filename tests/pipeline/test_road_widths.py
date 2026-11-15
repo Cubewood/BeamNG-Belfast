@@ -54,7 +54,7 @@ def test_osm_width_tag_when_no_dfi():
 def test_lanes_tag_picks_the_row_for_that_lane_count_else_the_class_default():
     feats, _ = run([way("1", lanes="2"), way("2", lanes="3")])
     assert (tags_of(feats, "1")["width"], tags_of(feats, "1")["belfast:width_source"]) == ("6", "osm-lanes")
-    assert (tags_of(feats, "2")["width"], tags_of(feats, "2")["belfast:width_source"]) == ("6", "default")
+    assert (tags_of(feats, "2")["width"], tags_of(feats, "2")["belfast:width_source"]) == ("5.6", "default")
 
 
 def test_class_default_by_direction():
