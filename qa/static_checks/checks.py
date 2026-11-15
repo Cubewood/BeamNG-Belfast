@@ -632,22 +632,38 @@ def check_terrain_steps(level: Level, c: dict) -> list[dict]:
 
 # ------------------------------------------------------------------ 7b. kerb heights (I-006)
 
+def _road_z_at(nodes: np.ndarray, x: float, y: float) -> float:
+    """A DecalRoad's height (nodes x, y, z, width) at its point nearest (x, y)."""
+    a, b = nodes[:-1, :3], nodes[1:, :3]
+    if not len(a):
+        return float(nodes[0, 2])
+    d = b[:, :2] - a[:, :2]
+    ll = np.einsum("ij,ij->i", d, d)
+    t = np.clip(np.einsum("ij,ij->i", np.array([x, y]) - a[:, :2], d) / np.where(ll > 0, ll, 1.0), 0.0, 1.0)
+    q = a + (b - a) * t[:, None]
+    k = int(np.argmin(np.hypot(q[:, 0] - x, q[:, 1] - y)))
+    return float(q[k, 2])
+
+
 def check_kerb_heights(level: Level, c: dict) -> list[dict]:
     """Kerb faces of the sidewalk collision meshes taller than `kerb_limit_m` at the edge of a drivable lane.
 
-    A face is the vertical part of a sidewalk tile's Colmesh (`kerbs.kerb_faces`); its height is its z extent. It
-    counts when its ground segment lies within `kerb_reach_m` of the drivable lanes (`geometry.lane_roads`, at
-    drawn width; a face inside the lanes counts too). Faces are merged into one finding per `kerb_cell_m` (the
-    tallest). I-004 found the front wheel of a car on a one-lane slip striking a 0.40 m face."""
-    segs, heights, skipped = level_kerb_faces(level)
+    A face is the vertical part of a sidewalk tile's Colmesh (`kerbs.kerb_faces`). It counts when its ground
+    segment lies within `kerb_reach_m` of the drivable lanes (`geometry.lane_roads`, at drawn width; a face inside
+    the lanes counts too). Its height is what a wheel on the road meets: its top over the nearest lane's road
+    height there (the decal's z), but never more than the face itself (MapNG sinks faces below the road: a
+    walkway's edge reaches 0.30 m down, so its 0.40 m face shows 0.10 to 0.15 m; I-005). Faces are merged into
+    one finding per `kerb_cell_m` (the tallest). I-004 found the front wheel of a car on a one-lane slip striking
+    a face 0.40 m over the road."""
+    segs, heights, tops, skipped = level_kerb_faces(level, with_tops=True)
     if not len(segs):
         return [finding("check-not-run", where="kerb-height", severity="medium",
                         detail=f"no readable sidewalk collision mesh in the level ({len(skipped)} tile(s) unreadable)")]
     roads = lane_roads(level)
     if not roads:
         return []
-    tall = heights > c["kerb_limit_m"]
-    segs, heights = segs[tall], heights[tall]
+    tall = heights > c["kerb_limit_m"]          # a face no taller than the limit cannot stand over it
+    segs, heights, tops = segs[tall], heights[tall], tops[tall]
     if not len(segs):
         return []
     lines = shapely.linestrings(segs)
@@ -668,6 +684,13 @@ def check_kerb_heights(level: Level, c: dict) -> list[dict]:
     hs = heights[keep]
     nav = near_nav[keep]
     idx = LineIndex([r.xy for r, _h, _n in roads])
+    tk = tops[keep]
+    for i, (x, y) in enumerate(mids):
+        hit = idx.nearest(float(x), float(y), 15.0)
+        if hit:
+            hs[i] = min(hs[i], tk[i] - _road_z_at(roads[hit[0]][0].nodes, float(x), float(y)))
+    over = hs > c["kerb_limit_m"]
+    mids, hs, nav = mids[over], hs[over], nav[over]
     cell = c["kerb_cell_m"]
     grid: dict[tuple[int, int], list[tuple]] = defaultdict(list)
     kept: list[tuple] = []
@@ -688,7 +711,7 @@ def check_kerb_heights(level: Level, c: dict) -> list[dict]:
         return s
 
     return [finding("kerb-height", x, y, name, sev(h, is_nav), h, "m",
-                    f"{h * 100:.0f} cm kerb face within {reach} m of a drivable lane edge "
+                    f"{h * 100:.0f} cm kerb face over the road within {reach} m of a drivable lane edge "
                     f"(sidewalk collision mesh; limit {c['kerb_limit_m'] * 100:.0f} cm, UK kerbs 10 to 12.5 cm)"
                     + ("" if is_nav else "; road not in the navigation graph"))
             for h, x, y, name, is_nav in kept]

@@ -1,0 +1,452 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Belfast Patches <belfast-patches@users.noreply.github.com>
+Date: Sun, 15 Nov 2026 00:25:40 +0000
+Subject: [PATCH] Kerbs and walkways at the solved road heights, never over the
+ road beside them
+
+The curbs and walkways were swept along the carriageways at the heights
+they were laid out at, before the structure solver moved the road decals
+and the terrain under them (about 0.1 m down): curbs stood 0.25 m over the
+asphalt, not 0.15. A walkway took its height from the first carriageway the
+index listed within 5 m, not the nearest: beside a slip under a climbing
+street its edge stood 0.4 m over the slip.
+
+- sidewalks are built on copies of the carriageways at the solved heights
+  (solvedCarriageways), and their ground graded against the same
+- nearestCarriagewayAt: the carriageway whose edge is nearest, with its
+  height there; walkways and their road ends take it
+- a curb no higher than any road beside its line, a curb return no higher
+  than the road nearest it, a walkway no higher than a curb over the street
+  or a driveway beside it (again after the junctions are levelled)
+- the ground under a dip no deeper than 0.04 m under the road it dips to
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+diff --git a/services/beamngSidewalks.js b/services/beamngSidewalks.js
+index 95aaf7e..0b3e5f3 100644
+--- a/services/beamngSidewalks.js
++++ b/services/beamngSidewalks.js
+@@ -22,7 +22,7 @@ import {
+   stripUv, makeCropper, makeCutFinder, makeLevelFinder, stripPanels, panelsForItem,
+   unionTile, unionTiles as unionTilesLocal,
+ } from './sidewalkPanels.js';
+-import { buildCarriagewayIndex, carriagewaysAt, cutNodes, isInZone, isOnOtherCarriageway } from './roadMarkingCuts.js';
++import { buildCarriagewayIndex, carriagewaysAt, cutNodes, isInZone, isOnOtherCarriageway, nearestCarriagewayAt } from './roadMarkingCuts.js';
+ import { isOneWayRoad } from './roadWidth.js';
+ import { PLAZA_MATERIAL, plazaTileM, pavedWalkSurface } from './plazas.js';
+ import { smoothLine } from './lineSmoothing.js';
+@@ -157,6 +157,8 @@ const CORNER_RADII = { residential: 3, living_street: 3, unclassified: 3, servic
+ const CORNER_RADIUS = 5;
+ const CORNER_TRIES = [1, 0.5, 0.25];
+ const CORNER_REACH_M = 15;    // how far past a run's end its corner may lie
++const CORNER_LEVEL_M = 5;     // a curb return no higher than the road this near it
++const CURB_LEVEL_M = 0.6;     // a curb no higher than a road this near its line
+ const CORNER_ANGLES = [30, 150];  // degrees between the two curb lines for a corner
+ const RUNS_PER_MESH = 300;
+ 
+@@ -813,7 +815,13 @@ export function buildSidewalkRuns(carriageways, { zones = [], driveways = [], me
+       if (!width || medianShare(medians.get(cw), side) >= MEDIAN_SIDE_SHARE) continue;
+       // (each node's own half width where the way narrows to the next one)
+       for (const piece of cutNodes(offsetLine(cw.nodes, cw.halfAt ? (i) => side * cw.halfAt[i] : side * cw.half), blocked, { minPieceM: 0.5 })) {
+-        pieces.push({ points: piece.map((n) => [n[0], n[1], n[2]]), side, width, owner: cw.owner, highway: cw.highway, surface: cw.tags?.surface });
++        // (no higher than the road it stands on or beside: where a street
++        // turns back on itself the curb of one leg stood on the other's
++        // asphalt, its curb 0.25 m over it)
++        // (beside a segment only: past a segment's end its nearest point is
++        // metres along the road, on a hill lower than the road here)
++        const levelled = piece.map((n) => [n[0], n[1], Math.min(n[2], ...carriagewaysAt(index, n[0], n[1], CURB_LEVEL_M, { sides: true }).map((h) => h.z))]);
++        pieces.push({ points: levelled, side, width, owner: cw.owner, highway: cw.highway, surface: cw.tags?.surface });
+       }
+     }
+   }
+@@ -1033,6 +1041,35 @@ function buildLineIndex(lines) {
+     return Math.hypot(ax + t * dx - x, ay + t * dy - y) < r;
+   });
+ }
++// nearest(x, y, r): the point [x, y] of the polylines nearest (x, y) within r, or null (null for no lines).
++function buildLineNearest(lines) {
++  if (!lines.length) return null;
++  const grid = new Map();
++  for (const line of lines) {
++    for (let i = 0; i + 1 < line.length; i++) {
++      const [ax, ay] = line[i];
++      const [bx, by] = line[i + 1];
++      for (let gx = Math.floor(Math.min(ax, bx) / LINE_CELL_M) - 1; gx <= Math.floor(Math.max(ax, bx) / LINE_CELL_M) + 1; gx++) {
++        for (let gy = Math.floor(Math.min(ay, by) / LINE_CELL_M) - 1; gy <= Math.floor(Math.max(ay, by) / LINE_CELL_M) + 1; gy++) {
++          const k = `${gx},${gy}`;
++          if (!grid.has(k)) grid.set(k, []);
++          grid.get(k).push([ax, ay, bx, by]);
++        }
++      }
++    }
++  }
++  return (x, y, r) => {
++    let best = null; let bestD = r;
++    for (const [ax, ay, bx, by] of grid.get(`${Math.floor(x / LINE_CELL_M)},${Math.floor(y / LINE_CELL_M)}`) || []) {
++      const dx = bx - ax; const dy = by - ay;
++      const len = dx * dx + dy * dy;
++      const t = len > 0 ? Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / len)) : 0;
++      const d = Math.hypot(ax + t * dx - x, ay + t * dy - y);
++      if (d < bestD) { bestD = d; best = [ax + t * dx, ay + t * dy]; }
++    }
++    return best;
++  };
++}
+ 
+ /**
+  * Pieces joined end to end where one street's sidewalk goes on across a way
+@@ -1474,9 +1511,15 @@ function joinCorners(runs, index, walkRuns = []) {
+       const a1 = Math.atan2(T2[1] - Z[1], T2[0] - Z[0]);
+       const da = ((a1 - a0 + 3 * Math.PI) % (2 * Math.PI)) - Math.PI;
+       const k = Math.max(3, Math.ceil((Math.abs(da) * r) / 0.75) + 1);
++      // (its height from one end's to the other's, but never over the road
++      // beside it: between a street and a higher one it met, the return's
++      // middle stood a curb 0.25 m over the lower street's asphalt)
+       const arc = Array.from({ length: k }, (_, i) => {
+         const a = a0 + (da * i) / (k - 1);
+-        return [Z[0] + r * Math.cos(a), Z[1] + r * Math.sin(a), A.z + ((B.z - A.z) * i) / (k - 1)];
++        const x = Z[0] + r * Math.cos(a); const y = Z[1] + r * Math.sin(a);
++        const z = A.z + ((B.z - A.z) * i) / (k - 1);
++        const road = nearestCarriagewayAt(index, x, y, CORNER_LEVEL_M);
++        return [x, y, road ? Math.min(z, road.z) : z];
+       });
+       // the corner (the curb and the slab behind it) clear of every carriageway
+       const outer = lineX([T1[0] + A.n[0] * A.run.width, T1[1] + A.n[1] * A.run.width], A.d,
+@@ -1979,6 +2022,15 @@ export function buildWalkRuns(paths, carriageways, { groundAt, driveways = [], b
+   const inBuilding = buildings?.length ? buildingIndex(buildings) : () => false;
+   const inParking = parking?.length ? buildingIndex(parking) : () => false;
+   const nearDriveway = buildLineIndex(driveways);
++  const nearestDriveway = buildLineNearest(driveways || []);
++  // the highest a walk's base may stand at (x, y): a curb's height over the
++  // street beside it, and over a driveway (an OSM service road, no
++  // carriageway here) it runs beside or crosses
++  const walkCap = (x, y, half) => {
++    const road = nearestCarriagewayAt(index, x, y, WALK_STREET_LEVEL_M);
++    const p = nearestDriveway ? nearestDriveway(x, y, half + DRIVEWAY_HALF_M) : null;
++    return Math.min(road ? road.z + CURB_H - WALK_H : Infinity, p ? groundAt(p[0], p[1]) + CURB_H - WALK_H : Infinity);
++  };
+   const chosen = chainWalks((paths || []).filter((path) => {
+     if (path.nodes.length < 2) return false;
+     if (path.sidewalk) return true;
+@@ -2115,16 +2167,22 @@ export function buildWalkRuns(paths, carriageways, { groundAt, driveways = [], b
+     const snapped = full.map((q, i) => [q[0] + normals[i][0] * lateral[i], q[1] + normals[i][1] * lateral[i], 0]);
+     // beside a street it is as high as the curb; away from one, on the ground
+     // (a seawall's foot or a mapped end over the water isn't a dip in the walk)
+-    const heights = snapped.map((q) => {
+-      const road = carriagewaysAt(index, q[0], q[1], WALK_STREET_LEVEL_M)[0];
+-      return road ? road.z + CURB_H - WALK_H : groundAt(q[0], q[1]);
++    const curbLevel = snapped.map((q) => {
++      const road = nearestCarriagewayAt(index, q[0], q[1], WALK_STREET_LEVEL_M);
++      return road ? road.z + CURB_H - WALK_H : null;
+     });
++    const heights = snapped.map((q, i) => curbLevel[i] ?? groundAt(q[0], q[1]));
+     // (points out over the water take the shore's height, or it drags the end down)
+     const wet = (v) => v < seaZ + WALK_SHORE_M;
+     for (let i = 1; i < heights.length; i++) if (wet(heights[i]) && !wet(heights[i - 1])) heights[i] = heights[i - 1];
+     for (let i = heights.length - 2; i >= 0; i--) if (wet(heights[i]) && !wet(heights[i + 1])) heights[i] = heights[i + 1];
+     const roll = (xs, f) => xs.map((_, i) => f(...xs.slice(Math.max(0, i - WALK_DIP_NODES), i + WALK_DIP_NODES + 1)));
+-    const z = smooth(roll(roll(heights, Math.max), Math.min), 3);
++    // beside a street never over its curb (the dips filled in above, where
++    // the street fell away under them, stood a walk's edge 0.4 m over it),
++    // nor over a driveway it runs beside or crosses (a service road is no
++    // carriageway here: one falling away from its street left the walk's
++    // edge 0.3 to 0.4 m over its asphalt)
++    const z = smooth(roll(roll(heights, Math.max), Math.min), 3).map((v, i) => Math.min(v, walkCap(snapped[i][0], snapped[i][1], half)));
+     return snapped.map((q, i) => [q[0], q[1], z[i], 0]);
+   });
+   // an end at another walkway goes on to that walkway's middle
+@@ -2202,7 +2260,7 @@ export function buildWalkRuns(paths, carriageways, { groundAt, driveways = [], b
+       if (!joined[1] && piece.length > 1) { const e = toEdge(piece[piece.length - 1], piece[piece.length - 2]); if (e) { piece.push(e); ends[1] = e; } }
+       // (not up to a road well above the walk, as one climbing on to a bridge: that stands up as a fin)
+       const onRoad = ends.map((q, i) => {
+-        const road = joined[i] ? null : carriagewaysAt(index, q[0], q[1], WALK_CURB_M)[0] ?? null;
++        const road = joined[i] ? null : nearestCarriagewayAt(index, q[0], q[1], WALK_CURB_M);
+         return road && road.z - q[2] > WALK_RAMP_UP_M ? null : road;
+       });
+       // an end at a road comes down to the road; any other stays up (one at a seawall folded)
+@@ -2225,11 +2283,24 @@ export function buildWalkRuns(paths, carriageways, { groundAt, driveways = [], b
+       if (nearDriveway) run.dips = dipsAlong(points, (x, y) => nearDriveway(x, y, DRIVEWAY_HALF_M));
+       if (walls.length) run.aprons = apronsOf(run, wallSegments(), { groundAt, seaZ, wet: inWater, clear: (x, y) => !inBuilding(x, y) && !inParking(x, y) && !isOnOtherCarriageway(index, x, y, 0, () => false) });
+       runs.push(run);
++      WALK_CAPS.set(run, (x, y) => walkCap(x, y, half));
+     }
+   });
+   levelWalkJunctions(runs);
++  // (the junctions levelled up to the highest walk meeting there: capped again)
++  for (const run of runs) capWalk(run);
+   return runs;
+ }
++// per walk run: its cap (x, y) => highest base, kept off the run (runs are cloned to workers)
++const WALK_CAPS = new WeakMap();
++function capWalk(run) {
++  const cap = WALK_CAPS.get(run);
++  if (!cap || !run.centre) return;
++  run.centre.forEach((q, i) => {
++    q[2] = Math.min(q[2], cap(q[0], q[1]));
++    if (run.points?.length === run.centre.length) run.points[i][2] = Math.min(run.points[i][2], q[2]);
++  });
++}
+ 
+ // A walk's mapped line with its small zig-zags taken out: a point within
+ // WOBBLE_M of the line through its neighbours eased onto it, a few passes
+@@ -3537,6 +3608,7 @@ function* sidewalkMeshes(carriageways, options = {}) {
+   const medianRuns = buildMedianRuns(carriageways, medians, options);
+   const corners = joinCorners(runs, buildCarriagewayIndex(carriageways), walkRuns);
+   levelWalkEndsOnSidewalks(walkRuns, runs, corners);
++  for (const run of walkRuns) capWalk(run);
+   const paveAt = pavedWalkZones(carriageways, options.walks, { americas: options.americas });
+   const meshes = [];
+   let builder = new PartBuilder(paveAt, options.sidewalkLook);
+@@ -3743,7 +3815,10 @@ export function gradeSidewalkGround(runs, carriageways, grid, { overhead = () =>
+           const zRoad = az + (bz - az) * t;
+           // (the ground goes down with the slab at a driveway or a loose end)
+           const share = shareAt(s0 + t * L);
+-          const top = zRoad + (rise + (run.walk ? 0 : CROSS_SLOPE * Math.max(0, Math.min(o, w)))) * share - (run.walk ? WALK_UNDER_M : GROUND_UNDER_M) - DIP_CLEAR_M * (1 - share);
++          // (never deeper than GROUND_UNDER_M under the road the slab dips to:
++          // where a crossing's or a driveway's dip lies on the drawn road, the
++          // ground dug out under it was a hole in the asphalt)
++          const top = Math.max(zRoad - GROUND_UNDER_M, zRoad + (rise + (run.walk ? 0 : CROSS_SLOPE * Math.max(0, Math.min(o, w)))) * share - (run.walk ? WALK_UNDER_M : GROUND_UNDER_M) - DIP_CLEAR_M * (1 - share));
+           const past = o > w ? o - w : o < 0 ? -o : 0;
+           let key; let target;
+           // (a walkway's own ground comes first: a curb's fill beside it came up through the slab)
+diff --git a/services/exportBeamNGLevel.js b/services/exportBeamNGLevel.js
+index 08719b8..5f34502 100644
+--- a/services/exportBeamNGLevel.js
++++ b/services/exportBeamNGLevel.js
+@@ -47,7 +47,7 @@ import { prepareSurvey, lidarPins } from './lidarDecks.js';
+ import { buildLampGlowDAE, lampGlowMaterialDef, LAMP_GLOW_SHAPE, buildFloodGlowDAE, floodGlowMaterialDef, FLOOD_GLOW_SHAPE } from './lampGlow.js';
+ import { resolveBuildingRoadConflicts } from './buildingRoadConflicts.js';
+ import { shapingSwitches, allShaping, shapingPlan, rawDeckClasses } from './structures/shaping.js';
+-import { decksFromSolver, applySolvedHeights, roadLinesFromSolver } from './structures/adapters.js';
++import { decksFromSolver, applySolvedHeights, roadLinesFromSolver, solvedCarriageways } from './structures/adapters.js';
+ import { checkJoints, checkGrades, checkCrossings, checkRoadSurface } from './structures/metrics.js';
+ import { buildRoadNetwork, getEffectiveRoadLayer, makeRoadNodeKey, mergeLinearRoadSegments } from './roadNetwork.js';
+ import { createBeamNGLinkFileRegistry } from './beamngLinkFiles.js';
+@@ -12161,8 +12161,14 @@ async function runBeamNGLevelExport(terrainData, center, options, jobLog) {
+     await yield_();
+   }
+   // (the walkway tops on worker threads in the desktop app; here otherwise)
++  // (curbs at the roads' solved heights, as their decals and the terrain
++  // under them: at the carriageways' own heights they stood up to 0.3 m over
++  // the asphalt beside them)
++  const sidewalkCarriageways = includeRoads && includeSidewalks && sg?.built
++    ? solvedCarriageways(groundCarriageways, sg, { skipOwners: new Set(decalRoads.tunnels?.bySeg?.keys?.() || []) })
++    : groundCarriageways;
+   const sidewalks = includeRoads && includeSidewalks
+-    ? await buildSidewalkMeshesParallel(groundCarriageways, {
++    ? await buildSidewalkMeshesParallel(sidewalkCarriageways, {
+       zones: decalRoads.crosswalkZones || [],
+       // building footprints at ground level: no slab into a wall
+       buildings: (exportTerrainData.osmFeatures || [])
+@@ -12219,7 +12225,7 @@ async function runBeamNGLevelExport(terrainData, center, options, jobLog) {
+     : { meshes: [], runs: [], triangles: 0 };
+   if (sidewalks.runs.length > 0 && shapeExtras) {
+     // the ground under the slabs (they hang at road height + the curb)
+-    const graded = gradeSidewalkGround([...sidewalks.runs, ...sidewalks.walkRuns, ...sidewalks.cornerRuns, ...sidewalks.cornerGround], groundCarriageways, {
++    const graded = gradeSidewalkGround([...sidewalks.runs, ...sidewalks.walkRuns, ...sidewalks.cornerRuns, ...sidewalks.cornerGround], sidewalkCarriageways, {
+       heightMap: exportTerrainData.heightMap, width: exportTerrainData.width, height: exportTerrainData.height,
+       worldSize: exportTerrainData.width * squareSize, minHeight: Number(exportTerrainData.minHeight) || 0,
+     }, { overhead: underDeck });
+diff --git a/services/roadMarkingCuts.js b/services/roadMarkingCuts.js
+index fb23cd6..284fae6 100644
+--- a/services/roadMarkingCuts.js
++++ b/services/roadMarkingCuts.js
+@@ -71,6 +71,29 @@ export function carriagewaysAt(index, x, y, margin, { sides = false } = {}) {
+   return out;
+ }
+ 
++/**
++ * The carriageway whose edge is nearest (x, y), within `margin` of it:
++ * { owner, z, gap } with its road height at its point nearest (x, y) and
++ * the distance out from its edge (negative on it), or null. (The first of
++ * carriagewaysAt's hits is in index order: on a street climbing past, a
++ * segment metres along it, a walkway beside the lower road took its height
++ * and stood 0.4 m over the asphalt next to it.)
++ */
++export function nearestCarriagewayAt(index, x, y, margin) {
++  const cell = index.grid.get(`${Math.floor(x / CELL_M)},${Math.floor(y / CELL_M)}`);
++  if (!cell) return null;
++  let best = null;
++  for (const idx of cell) {
++    const s = index.segments[idx];
++    const dx = s.bx - s.ax; const dy = s.by - s.ay;
++    const len = dx * dx + dy * dy;
++    const t = len > 0 ? Math.max(0, Math.min(1, ((x - s.ax) * dx + (y - s.ay) * dy) / len)) : 0;
++    const gap = Math.hypot(s.ax + t * dx - x, s.ay + t * dy - y) - halfOfSegment(s, t);
++    if (gap < margin && (!best || gap < best.gap)) best = { owner: s.owner, z: (s.az ?? 0) + ((s.bz ?? 0) - (s.az ?? 0)) * t, gap };
++  }
++  return best;
++}
++
+ /**
+  * Is (x, y) on another road's carriageway, widened by `margin`?
+  * `ignore(owner)` skips the road itself and its plain continuations.
+diff --git a/services/structures/adapters.js b/services/structures/adapters.js
+index 65cda29..3b8e749 100644
+--- a/services/structures/adapters.js
++++ b/services/structures/adapters.js
+@@ -188,3 +188,18 @@ export function applySolvedHeights(groups, graph, { deckLift = 0.02, skipOwners
+   }
+   return { decals, nodes };
+ }
++
++/**
++ * Copies of the carriageways [{ owner, nodes, ... }] with their node heights
++ * from the solved profile, as applySolvedHeights sets the decals' (no deck
++ * lift); the originals are left as they are. The carriageways keep the
++ * heights they were laid out at, before the solver: curbs and walkways swept
++ * along them stood over the solved road beside them by the difference (a
++ * walkway's edge 0.4 m over a slip's asphalt, Belfast I-005).
++ */
++export function solvedCarriageways(carriageways, graph, { skipOwners = null } = {}) {
++  const copies = (carriageways || []).map((cw) => ({ ...cw, nodes: cw.nodes.map((n) => [...n]) }));
++  if (!graph?.profile?.z) return copies;
++  applySolvedHeights([{ __items: copies.map((cw) => ({ __owner: cw.owner, nodes: cw.nodes })) }], graph, { deckLift: 0, skipOwners });
++  return copies;
++}
+diff --git a/tests/beamngSidewalks.test.mjs b/tests/beamngSidewalks.test.mjs
+index 9dfe63e..0caa5a0 100644
+--- a/tests/beamngSidewalks.test.mjs
++++ b/tests/beamngSidewalks.test.mjs
+@@ -223,6 +223,65 @@ test('a walk mapped partly over a road\'s drawn edge is pushed clear, not cut an
+   assert.ok(runs[0].centre.every((q) => q[1] > half + 0.75), 'its slab clear of the road (to the 0.25 m search step)');
+ });
+ 
++test('a walkway between two streets is as high as the curb of the nearer one, never over it', async () => {
++  const { buildWalkRuns } = await import('../services/beamngSidewalks.js');
++  // a street 0.6 m higher, listed first, 9 m north; the walk 1.5 m off the low street's edge
++  const high = street({ owner: 1, half: 1.5, tags: {}, nodes: Array.from({ length: 21 }, (_, i) => [-100 + i * 10, 9, 5.6, 3]) });
++  const low = street({ owner: 2, tags: {}, nodes: Array.from({ length: 21 }, (_, i) => [-100 + i * 10, 0, 5, 8]) });
++  const nodes = Array.from({ length: 21 }, (_, i) => [-50 + i * 5, 5.5, 0]);
++  const runs = buildWalkRuns([{ nodes, half: 0.5, sidewalk: true }], [high, low], { groundAt: () => 5 });
++  assert.equal(runs.length, 1);
++  // base + WALK_H (0.1) is the walk's top: the low street's curb top, 0.15 m over it
++  for (const q of runs[0].centre) assert.ok(Math.abs(q[2] + 0.1 - 5.15) < 0.01, `top ${(q[2] + 0.1).toFixed(3)} m, the low street at 5 m`);
++});
++
++test('a walkway beside a driveway lower than its street comes down to the driveway', async () => {
++  const { buildWalkRuns } = await import('../services/beamngSidewalks.js');
++  const s = street({ tags: {}, nodes: Array.from({ length: 21 }, (_, i) => [-100 + i * 10, 0, 5, 8]) });
++  // a driveway falling away from the street, the walk along it 1.5 m to its side
++  const driveway = [[20, 0, 0], [20, 40, 0]];
++  const groundAt = (x, y) => 5 - Math.max(0, y - 4) * 0.1;
++  const nodes = Array.from({ length: 11 }, (_, i) => [21.5, 8 + i * 2, 0]);
++  const runs = buildWalkRuns([{ nodes, half: 0.5, sidewalk: true }], [s], { groundAt, driveways: [driveway] });
++  assert.equal(runs.length, 1);
++  for (const q of runs[0].centre) {
++    const top = q[2] + 0.1;
++    assert.ok(top <= groundAt(20, q[1]) + 0.15 + 1e-6, `top ${top.toFixed(3)} over the driveway's ${groundAt(20, q[1]).toFixed(3)} at y ${q[1].toFixed(1)}`);
++  }
++});
++
++test('a curb return between a street and a higher one is no higher than the road beside it', () => {
++  const ew = street({ owner: 1, tags: {}, nodes: Array.from({ length: 11 }, (_, i) => [i * 10, 0, 5, 8]) });
++  const ns = street({ owner: 2, tags: {}, nodes: Array.from({ length: 11 }, (_, i) => [0, i * 10, 5 + i * 0.2, 8]) });
++  const { corners } = buildSidewalkMeshes([ew, ns]);
++  assert.ok(corners.length >= 1);
++  const index = (x, y) => Math.min(...[ew, ns].flatMap((cw) => {
++    // each street's height at its point nearest (x, y), for the streets within 5 m of their edge
++    let best = null;
++    for (let i = 0; i + 1 < cw.nodes.length; i++) {
++      const [ax, ay, az] = cw.nodes[i]; const [bx, by, bz] = cw.nodes[i + 1];
++      const L2 = (bx - ax) ** 2 + (by - ay) ** 2; const t = Math.max(0, Math.min(1, ((x - ax) * (bx - ax) + (y - ay) * (by - ay)) / L2));
++      const d = Math.hypot(ax + t * (bx - ax) - x, ay + t * (by - ay) - y) - cw.half;
++      if (d < 5 && (!best || d < best.d)) best = { d, z: az + (bz - az) * t };
++    }
++    return best ? [best.z] : [];
++  }));
++  for (const c of corners) for (const p of c.arc) assert.ok(p[2] <= index(p[0], p[1]) + 1e-6, `arc at ${p.map((v) => v.toFixed(2))}`);
++});
++
++test('a curb standing on another stretch of road is no higher than that road', () => {
++  // a street that turns back on itself: its south leg's curb (y = 4) lies on the north leg (y = 7.5, 4 m half width), 0.3 m lower
++  const loop = street({ owner: 1, tags: {}, nodes: [
++    ...Array.from({ length: 9 }, (_, i) => [-40 + i * 10, 0, 5, 8]),
++    [45, 3.75, 5, 8],
++    ...Array.from({ length: 9 }, (_, i) => [40 - i * 10, 7.5, 4.7, 8]),
++  ] });
++  const runs = buildSidewalkRuns([loop]);
++  const inner = runs.flatMap((r) => r.points).filter((p) => Math.abs(p[1] - 4) < 0.01 && p[0] > -30 && p[0] < 30);
++  assert.ok(inner.length > 3, 'the inner curb of the south leg');
++  for (const p of inner) assert.ok(p[2] <= 4.7 + 1e-6, `curb line at ${p[2]} on the 4.7 m leg`);
++});
++
+ test('a bare curb opens along a car park at the street, not one behind a verge', () => {
+   const s = street({ tags: {}, nodes: Array.from({ length: 21 }, (_, i) => [-100 + i * 10, 0, 5, 8]) });
+   const lot = (y0) => [[-30, y0], [30, y0], [30, y0 + 40], [-30, y0 + 40]];
+diff --git a/tests/roadMarkingCuts.test.mjs b/tests/roadMarkingCuts.test.mjs
+index d4a7178..3593177 100644
+--- a/tests/roadMarkingCuts.test.mjs
++++ b/tests/roadMarkingCuts.test.mjs
+@@ -41,6 +41,23 @@ test('direction-aware lookups tell crossing roads from the road itself', () => {
+   assert.ok(own.dir[0] === -1 && Math.abs(own.dir[1]) < 1e-12, 'direction sign follows the query');
+ });
+ 
++test('the nearest carriageway is the one whose edge is nearest, with its height there, not the first in the index', async () => {
++  const { carriagewaysAt, nearestCarriagewayAt } = await import('../services/roadMarkingCuts.js');
++  // a high road listed first, 9 m north; a low road along y = 0; a point 1 m off the low road's edge
++  const two = buildCarriagewayIndex([
++    { owner: 'high', half: 1.5, nodes: [[-60, 9, 6, 3], [60, 9, 6, 3]] },
++    { owner: 'low', half: 4, nodes: [[-60, 0, 5, 8], [60, 0, 5, 8]] },
++  ]);
++  assert.equal(carriagewaysAt(two, 0, 5, 5)[0].owner, 'high', 'index order: the high road first');
++  const hit = nearestCarriagewayAt(two, 0, 5, 5);
++  assert.equal(hit.owner, 'low');
++  assert.ok(Math.abs(hit.z - 5) < 1e-9 && Math.abs(hit.gap - 1) < 1e-9, JSON.stringify(hit));
++  assert.equal(nearestCarriagewayAt(two, 0, -20, 5), null, 'none within the margin');
++  // on a climbing road: its height beside the point, not at a segment's end metres along
++  const hill = buildCarriagewayIndex([{ owner: 'hill', half: 3, nodes: [[0, 0, 0, 6], [10, 0, 1, 6], [20, 0, 2, 6]] }]);
++  assert.ok(Math.abs(nearestCarriagewayAt(hill, 15, 4, 5).z - 1.5) < 1e-9);
++});
++
+ test('crosswalk zones cut lines along the road', () => {
+   const zones = [{ x: 20, y: 0, ux: 1, uy: 0, halfLength: 2, halfWidth: 5 }];
+   assert.equal(isInZone(zones, 21, 1), true);
+diff --git a/tests/sidewalkGround.test.mjs b/tests/sidewalkGround.test.mjs
+index 77d1448..ee2b89e 100644
+--- a/tests/sidewalkGround.test.mjs
++++ b/tests/sidewalkGround.test.mjs
+@@ -26,6 +26,15 @@ test('sidewalk ground: a slab beside a raised road floats until graded, then sit
+   assert.equal(groundAt(g)(0, 40), 10);
+ });
+ 
++test('sidewalk ground: under a driveway dip no deeper than under a slab at the road', () => {
++  const g = grid();
++  // dipped from 50 to 70 m along (x -10 to 10): the slab down at the road's height there
++  gradeSidewalkGround([{ ...run, dips: [[50, 70]] }], [road], g).apply((idx, v) => { g.heightMap[idx] = v; });
++  const z = groundAt(g)(0, 4.5);
++  assert.ok(z >= 13 - 0.04 - 1e-4 && z < 13, `ground under the dip at ${z.toFixed(3)} m, the road at 13 m`);
++  assert.ok(groundAt(g)(-40, 4.5) > 13, 'up under the raised slab');
++});
++
+ test('sidewalk ground: never raised into a deck over it', () => {
+   const g = grid();
+   gradeSidewalkGround([run], [road], g, { overhead: (x) => x > 0 }).apply((idx, v) => { g.heightMap[idx] = v; });
+diff --git a/tests/structureAdapters.test.mjs b/tests/structureAdapters.test.mjs
+new file mode 100644
+index 0000000..94f307a
+--- /dev/null
++++ b/tests/structureAdapters.test.mjs
+@@ -0,0 +1,22 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++
++import { solvedCarriageways } from '../services/structures/adapters.js';
++
++// one road (segment 7) solved 0.1 m under the height it was laid out at
++const graph = {
++  edges: [{ seg: 7, s: [0, 10, 20], x: [0, 10, 20], y: [0, 0, 0] }],
++  profile: { z: [Float64Array.from([4.9, 5.0, 5.1])] },
++};
++
++test('carriageways for the curbs take the solved heights; the originals keep theirs', () => {
++  const cw = { owner: 7, half: 4, highway: 'residential', nodes: [[0, 0, 5, 8], [5, 0, 5.05, 8], [20, 0, 5.2, 8]] };
++  const other = { owner: 8, half: 3, nodes: [[0, 50, 9, 6], [20, 50, 9, 6]] };
++  const [solved, untouched] = solvedCarriageways([cw, other], graph);
++  assert.deepEqual(solved.nodes.map((n) => n[2]), [4.9, 4.95, 5.1], 'at the solved profile, no deck lift');
++  assert.deepEqual(cw.nodes.map((n) => n[2]), [5, 5.05, 5.2], 'the original left as it was');
++  assert.equal(solved.half, 4);
++  assert.deepEqual(untouched.nodes, other.nodes, 'a road the solver has not got keeps its heights');
++  assert.notEqual(untouched.nodes, other.nodes, 'as a copy');
++  assert.deepEqual(solvedCarriageways([cw], { edges: [] })[0].nodes, cw.nodes, 'no profile: copies as they are');
++});

@@ -46,7 +46,7 @@ git add patches/mapng                              # in the repo root, by name
 1. Move the submodule to the new upstream commit and set `PINNED_COMMIT` in `tools/mapng_export.py`.
 2. `export` now exits 3 ("the pin changed"). `apply --reset` stops at the first patch that no longer applies and leaves the submodule clean at the new pin.
 3. Rebase by hand: `git checkout -B belfast <new pin>`, `git am --3way patches/mapng/<name>` for each, fix conflicts, then `save` (this writes the new `BASE`).
-4. Run MapNG's tests (806 of 812 pass on Windows at the bare pin, 822 of 828 with patches 0001 to 0004, 825 of 831 with 0001 to 0005, `docs/mapng_export.md`; the six failures are environment) and the new tests of each patch.
+4. Run MapNG's tests (806 of 812 pass on Windows at the bare pin, 822 of 828 with patches 0001 to 0004, 825 of 831 with 0001 to 0005, 832 of 838 with 0001 to 0006, `docs/mapng_export.md`; the six failures are environment) and the new tests of each patch.
 
 Offering generic patches upstream (the building rule, the junction step, mph signs) needs the user's GitHub account and stays a follow-up.
 
@@ -177,3 +177,39 @@ Most (250 of 278) are within 0.5 m of a lane's edge: the check's 1 m stencil at 
 - Run 1 (`H:\BelfastData\qa\drive\2026-11-14_t413`): the game did not answer on MCP within 120 s. Exit 5, the game stopped cleanly, no route driven.
 - Run 2 (`...\2026-11-14_t413b`): the game started and dumped its graph (`H:\BelfastData\qa\graph\belfast_slice.graph.json`, 20:19). All 10 routes were rejected before driving: each path lies 4 to 7 m from the new graph, because this build (pinned OSM, `gpxz`, roads snapped to the ground) moved the roads. Exit 20, 0 of 10 completed, no crash recorded at (-211, -93) or (194, 284) because nothing was driven.
 - Next step: `qa/routes/build_routes.py rebuild` on the new graph dump, then run the suite again. The pre-T-413 QA zip is kept as `H:\BelfastData\mapng\t413\qa_mods_belfast_slice.before_t413.zip`.
+
+## Patch 0006: kerbs and walkways at the road beside them (I-005, crash 1 of `docs/spikes/drive-crashes.md`)
+
+Files `services/beamngSidewalks.js`, `services/roadMarkingCuts.js`, `services/structures/adapters.js`, `services/exportBeamNGLevel.js`; tests `tests/beamngSidewalks.test.mjs` (4 new), `tests/roadMarkingCuts.test.mjs` (1), `tests/sidewalkGround.test.mjs` (1), `tests/structureAdapters.test.mjs` (new, 1).
+
+Cause. The 0.40 m faces are walkway edges, not curbs: a separately mapped footway is swept with the profile 0.30 m down and 0.10 m up (`WALK_SINK_M`, `WALK_H`), so every walkway face is 0.40 m tall by design (38,172 faces, the quarter of the slice). What made one dangerous was its height. At (139, 274) the footway beside the Hospital Road slip stood with its base at 29.40 m, the slip's decal at 29.08 to 29.10 m: its top 0.40 m over the asphalt. Two faults, measured with a debug print in the export:
+
+1. The walkway took the height of the first carriageway the index listed within 5 m (`carriagewaysAt(...)[0]`, pin `services/beamngSidewalks.js:2119`), not the nearest. Here that was a segment of the climbing road several metres east, 0.26 m higher.
+2. The curbs and walkways are swept along the carriageways at their laid-out heights. Structure solver v2 then moves the decals (`applySolvedHeights`, `exportBeamNGLevel.js:11951`) and the terrain to the solved profile, about 0.1 m lower here, but not the carriageways. So curbs stood 0.25 m over the road, not 0.15 m; that is the 0.22 to 0.25 m findings on many streets.
+
+Change.
+
+- Sidewalks and their ground grading get copies of the carriageways at the solved heights (`solvedCarriageways`, `adapters.js:200`; `exportBeamNGLevel.js:12167`). Other users of the carriageways are unchanged.
+- `nearestCarriagewayAt` (`roadMarkingCuts.js:82`): the carriageway whose edge is nearest, with its height there. Walkway heights and walkway road ends use it.
+- Caps, which only ever lower a height: a curb line is no higher than any road beside it (a street that turns back on itself put one leg's curb on the other leg's lower asphalt, Brerton Crescent and Forest Grove). A curb return is no higher than the road nearest each arc point. A walkway's base is no higher than the street's curb level (+0.15 m top) or a driveway's ground +0.15 m within its half width + 2.5 m (OSM service roads are no carriageways to the sidewalks). It is capped again after its junctions and ends are levelled.
+- With the curbs 0.1 m lower, a dip's ground (0.09 m under the road) left a hole in the lane where a crossing or driveway dip lies on drawn asphalt (5 more `terrain-step` findings). The ground under a slab is now never more than 0.04 m under the road it dips to.
+
+### Result on the Slice (`H:\BelfastData\mapng\i005\`, area `t413_slice`: pinned OSM, `gpxz`)
+
+| | T-413 build (0001 to 0005) | I-005 build (0001 to 0006) |
+|---|---|---|
+| `kerb-height`, top over the road (all / navigation) | 27 / 18, seven at 0.40 m | 2 / 0, max 0.30 m |
+| `kerb-height`, face's own height (the I-006 measure) | 48 / 26 | 48 / 26 (walkway faces are 0.40 m by design) |
+| HR12 south edge, x 131 to 148: top of the faces within 0.9 m of the slip's edge, over the slip | up to 0.43 m | up to 0.18 m |
+| `terrain-step` (all / navigation / navigation high) | 100 / 23 / 16 | 96 / 23 / 16 |
+| in-lane step vertices over 0.15 m (navigation / other) | 309 / 605 | 309 / 508 |
+
+Still found, both off the navigation graph: a footway carrying on uphill from the end of a service road, its side edge 0.30 m over the road's end at (-277, 821); and a curb 0.23 m over a 6 m service road's mouth at (635, 172), past the 2.5 m driveway dip.
+
+### Drive suite (2026-11-15 00:27, `qa/drive_suite.py run --gate`, `H:\BelfastData\qa\drive\2026-11-15_002703`)
+
+The I-005 zip was put in the QA profile's `mods` (the T-413 zip it replaced is kept as `H:\BelfastData\mapng\i005\qa_mods_belfast_slice.before_i005.zip`). `build_routes.py check`: 10 routes, 0 problems (the roads did not move). Status ok, 10 of 10 routes completed, G3 pass, events: 2 `scrape`.
+
+- `hospital-road-ne-back`: completed 365 of 391 m, through x 131 to 148. It still logs a `scrape` at (141, 276), not a crash: the AI still runs its left wheels about 0.9 m off the slip (the lane count and graph at the fork, crash 1's second defect), now over a 0.15 to 0.18 m edge instead of 0.40 m.
+- `lady-ishbel-loop-reverse`: completed, a `scrape` at (-197, -146).
+- Console (`H:\BeamNG-QA\profile\current\beamng.log`): no TextureCooker error or warning; the 24 TextureCooker lines for `uk_markings_cubewood` are imports. One error (Steam online provider, the throwaway profile). 15 warnings, 11 of them: no licence plate template for `belfast_slice`.
