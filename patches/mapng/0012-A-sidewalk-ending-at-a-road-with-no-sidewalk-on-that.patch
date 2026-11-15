@@ -1,0 +1,75 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cubewood <330162352+Cubewood@users.noreply.github.com>
+Date: Sun, 15 Nov 2026 23:43:07 +0000
+Subject: [PATCH] A sidewalk ending at a road with no sidewalk on that corner
+ stops a curb return's radius back
+
+A run that meets another road where no curb return can be made (the other
+road has no sidewalk on that side) ran its full curb and its ramp on to
+0.5 m from the road met: on the line a turning car's inside front wheel
+takes. On a 6 m street the wheel crossed the ramp's last metre and bent a
+spindle. The loose end now stops the run's curb return radius further back
+(as far as a return would have taken it) and still ramps down. Ends that
+meet no road, and runs too short to lose that much, are unchanged.
+
+diff --git a/services/beamngSidewalks.js b/services/beamngSidewalks.js
+index 0b3e5f3..169975e 100644
+--- a/services/beamngSidewalks.js
++++ b/services/beamngSidewalks.js
+@@ -1563,10 +1563,29 @@ function joinCorners(runs, index, walkRuns = []) {
+     const k = end.atStart ? 0 : 1;
+     if (used.has(end)) run.caps[k] = false;
+     else if (run.width > CURB_ONLY_M && walkGoesOn(end)) continue;
+-    else run.ramps[k] = true;
++    else {
++      run.ramps[k] = true;
++      // a loose end at a road it meets (MOUTH_SETBACK: no return made, the
++      // other road has no sidewalk on that side): back a curb return's radius
++      const ahead = [end.p[0] + end.d[0] * MOUTH_PROBE_M, end.p[1] + end.d[1] * MOUTH_PROBE_M];
++      const r = CORNER_RADII[run.highway] ?? CORNER_RADIUS;
++      if (runLength(run.points) - r >= MIN_RUN_M / 2 && isOnOtherCarriageway(index, ahead[0], ahead[1], -MOUTH_PROBE_IN_M, (o) => o === run.owner)) {
++        moveEnd(end, -r);
++        run.mouthSetback = (run.mouthSetback || 0) + 1;
++      }
++    }
+   }
+   return corners;
+ }
++// A run that ends at a road it meets with no curb return (that road has no
++// sidewalk on the corner) stood its full curb and ramp right at the mouth, on
++// the line a turning car's inside front wheel takes: on a 6 m street the
++// wheel crossed the ramp's last metre. It stops a curb return's radius back,
++// as far as a return would have taken it. MOUTH_PROBE_M: the road met lies
++// this far on along the curb line, MOUTH_PROBE_IN_M inside its edge (a
++// straight continuation of the street, its edge on the curb line, does not).
++const MOUTH_PROBE_M = 2;
++const MOUTH_PROBE_IN_M = 0.3;
+ const SIDEWALK_WALK_JOIN_M = 0.6;
+ const CUT_SLIVER_W_M = 0.15;      // nor one thinner than this on average (twice its area over its outline)
+ const CUT_SLIVER_M2 = 0.25;     // a piece of walk this small left by a corner's cut: dropped
+diff --git a/tests/beamngSidewalks.test.mjs b/tests/beamngSidewalks.test.mjs
+index 0caa5a0..5ccd26f 100644
+--- a/tests/beamngSidewalks.test.mjs
++++ b/tests/beamngSidewalks.test.mjs
+@@ -81,6 +81,21 @@ test('sidewalks meeting at a corner are joined by a curb return; loose ends ramp
+   assert.ok(loose.length >= 4);
+ });
+ 
++test('a sidewalk ending at a road with none on that corner stops a curb return\'s radius back from it', () => {
++  // (before: its curb and ramp ran on to 0.5 m from the road met, on a turning car's inside wheel line)
++  const cross = { owner: 2, half: 5, highway: 'secondary', urban: false, tags: { sidewalk: 'no' }, continuations: [],
++    nodes: [[0, -100, 5, 10], [0, 100, 5, 10]] };
++  const { runs, corners } = buildSidewalkMeshes([street(), cross]);
++  assert.equal(corners.length, 0, 'no curb return to join');
++  assert.equal(runs.length, 4);
++  for (const run of runs) {
++    const xs = run.points.map((p) => Math.abs(p[0]));
++    assert.ok(Math.min(...xs) >= 5.5 + 3 - 1e-6, `run stops ${Math.min(...xs).toFixed(2)} m from the cross road's centreline`);
++    assert.ok(Math.max(...xs) >= 99, 'the end at the map edge stays');
++    assert.ok(run.ramps.every(Boolean), 'both ends still ramp down');
++  }
++});
++
+ test('a driveway lowers the curb across it instead of cutting the sidewalk', () => {
+   const driveway = [[20, 0], [20, 30]];
+   const { meshes, runs } = buildSidewalkMeshes([street()], { driveways: [driveway] });
