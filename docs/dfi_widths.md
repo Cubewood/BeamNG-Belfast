@@ -2,7 +2,7 @@
 
 DfI Roads publishes the width of almost every adopted road in Northern Ireland. This step reads that data, matches it
 to the pinned OSM ways of the three map squares, and writes one width per OSM way with a confidence score. T-406
-(road widths) reads the output.
+(road widths, below) reads the output.
 
 | Thing | Where |
 |---|---|
@@ -229,3 +229,37 @@ thresholds, and I did not try.
 - **Unnamed OSM ways** match on position alone (name part 0.55). The three unprovable ways above are of this kind.
 - The xlsx is from July 2021; the OSM extract is from 12 November 2026.
 - Items dropped for width (118 of 2,101 in the slice box) are counted in `coverage.dfi` of each output file.
+
+## How the level uses it (T-406)
+
+`pipeline/road_widths.py` writes a `width` tag on every road way of the area's `osm.json` before MapNG reads it (the
+same route as the speed limits; `tools/mapng_export.py` calls it in `fetch`, `pinned-osm` and `export`, `--dfi-widths`
+names the file, default `widths_full.json`, `--no-road-widths` turns it off). MapNG draws a road as wide as its
+`width` tag, so nothing in MapNG changed. Details and the order are in the module docstring:
+
+1. DfI width when the match is high or medium confidence; a low confidence one only inside the p10 to p90 of its class
+   and never on a service road (12 of 42 low ways in the Slice are kept).
+2. An OSM `width` tag; a `lanes` tag picks the table row for that lane count when there is one.
+3. The Northern Ireland class default: `config/road_width_defaults.json`, the **DfI median** of the high and
+   medium ways of that class, direction and lanes tag in the full box (5,544 ways; made by `road_widths.py derive`).
+   Residential two-way 5.6 m, unclassified 6.6, tertiary 6.8 (no lanes tag), secondary 10.1, one-way trunk 9.4.
+   Service roads and tracks have no default (width depends on what they serve) and stay with MapNG's.
+
+Before, an untagged Belfast street came out 10.6 m wide (two 3 m lanes plus a 2.3 m parking lane each side) where DfI
+says 5.6 m. On the Slice build (`H:\BelfastData\mapng\t406\`) of the 524 road pieces: DfI high 95, medium 66, low 12,
+OSM lanes 33, class default 57, left to MapNG 261 (228 service, 28 track, 5 links).
+
+Limits found:
+
+- MapNG clamps a `width` to its class range (carriageway 4.4 to 14.6 m for residential and tertiary, 5.6 to 16.6
+  primary and secondary, 7.0 to 22.6 trunk, 3.6 to 11.6 service). A DfI width under the minimum is reached with
+  MapNG's `mapng:carriageway_max` tag (written with `belfast:width_cap=yes`; 13 ways on the Slice). One over the maximum
+  cannot be drawn without a MapNG patch: 1 way on the Slice (Castlehume Gardens 17.8 m, a junction mouth).
+- **MapNG merges consecutive ways of one name, class, ref, one-way and surface into one DecalRoad and draws it with
+  the first way's width.** Where the merged ways have different DfI widths (the A55 Belvoir Road: 7.5 m and 10.2 m)
+  the road gets one of them, and the other way is off by the difference. 5 high or medium ways on the Slice are off
+  for this reason alone. The fix is a MapNG patch adding `width` and `mapng:carriageway_max` to
+  `getDecalMergeStyleKey` (`exportBeamNGLevel.js`); not made in T-406.
+- DfI's wide medium confidence figures at cul-de-sac heads (Moyle Walk 12.5 and 11.1 m, inter-quartile range 5.9 to
+  12.7) are drawn as DfI gives them and put one building 2.4 m into the lanes.
+

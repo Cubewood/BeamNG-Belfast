@@ -50,6 +50,8 @@ class Spec:
     texture_ref: str | None = None          # a material texture path to plant
     no_speed_limit: tuple = ()              # road keys whose _ai road has no speedLimit (T-408)
     speed_ms: float = 13.411                # speedLimit of the others (30 mph)
+    body_width: float = 10.6                # width of every drawn `_b` body road (T-406)
+    body_width_by_road: dict = field(default_factory=dict)   # road key -> width, overrides body_width
     kerbs: list = field(default_factory=list)       # [(x0, y0, x1, y1, height[, bottom z])] vertical kerb faces, from z 10 up by default (I-006)
 
 
@@ -161,7 +163,7 @@ def build(tmp: Path, spec: Spec | None = None) -> tuple[Path, Path]:
                 z = [10.0 + (spec.road_z_bump if abs(p[0] - 100) < 15 else 0.0) for p in pts]
             if key == "C" and spec.reverse_c:
                 pts = pts[::-1]
-            for suffix, mat, w in (("b", "road_asphalt_2lane", 10.6), ("ai", spec.road_material, r["hw"] * 2)):
+            for suffix, mat, w in (("b", "road_asphalt_2lane", spec.body_width_by_road.get(key, spec.body_width)), ("ai", spec.road_material, r["hw"] * 2)):
                 nodes = [[round(x, 3), round(y, 3), zz, w] for (x, y), zz in zip(pts, z)]
                 name = f"dr_{key}{piece}_s1_{suffix}"
                 o = {"name": name, "class": "DecalRoad", "persistentId": name,

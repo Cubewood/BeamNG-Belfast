@@ -62,6 +62,13 @@ DEFAULTS = {
     "kerb_cell_m": 10.0,
     "kerb_side_m": 0.3,            # the ground beside a face is the terrain this far off it, on the lane's side (I-005)
     "kerb_deck_m": 0.5,            # ... unless it is further than this from the road's decal (a bridge deck): the decal
+    # road widths against DfI (T-406)
+    "width_tol_m": 0.75,           # G0: within 0.75 m of the DfI carriageway width
+    "width_sample_m": 6.0,
+    "width_end_skip_m": 8.0,       # junction mouths, flares and MapNG's width tapers are not the running width
+    "width_match_m": 3.0,          # a body road within this of the OSM way, running along it
+    "width_min_samples": 3,
+    "dfi_widths": None,            # a pipeline/dfi.py widths file (default H:\BelfastData\dfi\widths_full.json)
     # reporting
     "max_per_kind": 150,
 }

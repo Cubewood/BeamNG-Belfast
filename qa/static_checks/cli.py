@@ -23,6 +23,7 @@ from .game_index import DEFAULT_GAME, DEFAULT_INDEX, GameIndex, ensure_index
 from .geometry import finding
 from .junctions import check_junctions
 from .level import load_level
+from .widths import check_road_widths
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_ZIP = Path(r"H:\BelfastData\mapng\out\belfast_slice.zip")
@@ -30,7 +31,7 @@ DEFAULT_OUT = Path(r"H:\BelfastData\qa\static")
 DEFAULT_BUDGET = ROOT / "config" / "static_budget.json"
 DEFAULT_MAPNG = ROOT / "third_party" / "mapng"
 FALLBACK_MAPNG = Path(r"H:\Claude\BeamNGBelfast\third_party\mapng")
-ALL_CHECKS = ("lint", "roads", "connection", "oneway", "height", "budget", "buildings", "steps", "kerbs", "speed", "signals", "roundabouts", "junctions", "assets")
+ALL_CHECKS = ("lint", "roads", "connection", "oneway", "height", "budget", "buildings", "steps", "kerbs", "speed", "signals", "roundabouts", "junctions", "widths", "assets")
 
 
 def run_mapng_lint(zip_path: Path, index_path: Path | None, mapng_dir: Path | None, out_json: Path) -> list[dict]:
@@ -135,6 +136,12 @@ def run_checks(zip_path: Path, osm_path: Path | None, *, only=ALL_CHECKS, overri
         return f
     findings += step("junctions", junctions)
 
+    def widths():
+        f, winfo = check_road_widths(level, c)
+        info["widths"] = winfo
+        return f
+    findings += step("widths", widths)
+
     def assets():
         if index_path is None:
             return [finding("check-not-run", where="assets", severity="medium", detail="no game file index")]
@@ -164,6 +171,7 @@ def main(argv=None) -> int:
     ap.add_argument("--mapng-dir", type=Path, default=None)
     ap.add_argument("--only", nargs="+", choices=ALL_CHECKS, default=list(ALL_CHECKS))
     ap.add_argument("--buildings", choices=("auto", "mesh", "osm"), default="auto")
+    ap.add_argument("--dfi", type=Path, default=None, help="DfI widths file for the widths check (default widths_full.json)")
     ap.add_argument("--no-lint", action="store_true", help="skip MapNG's linter (needs node)")
     a = ap.parse_args(argv)
     if not a.zip.exists():
@@ -171,7 +179,8 @@ def main(argv=None) -> int:
         return 2
     only = tuple(k for k in a.only if not (a.no_lint and k == "lint"))
     r = run_checks(a.zip, a.osm, only=only, budget_path=a.budget, index_path=a.game_index, mapng_dir=a.mapng_dir,
-                   out_dir=a.out_dir, buildings_mode=a.buildings)
+                   out_dir=a.out_dir, buildings_mode=a.buildings,
+                   overrides={"dfi_widths": a.dfi} if a.dfi else None)
     doc = r["doc"]
     high = sum(1 for f in doc["findings"] if f.get("severity") == "high")
     print(json.dumps({"findings": len(doc["findings"]), "high": high, "by_kind": doc["counts"],

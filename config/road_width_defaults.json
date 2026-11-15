@@ -1,0 +1,428 @@
+{
+ "source": "DfI Roads carriageway widths matched to OSM ways by pipeline/dfi.py (T-205), the full box (three AOI squares), high and medium confidence only; Open Government Licence v3.0",
+ "rule": "median width in metres of the ways of a class, direction and lanes tag (none = no lanes tag); a row needs 8 ways",
+ "dfi_inputs": {
+  "dfi": {
+   "highway_network": "28a1e37c9d1fd39004be8d8df431317ce5b38bf820b83954f9980264a9a4c07f",
+   "carriageway_details": "f987598b7e00fd5b11d34abc415a884a6a367a96ad754df8b454321e30e31654"
+  },
+  "osm_cut_sha256": "71d9fea65a63ed620691c6db9e56dcba5e6109c59c832f7e8f9fb2faa37e8104",
+  "osm_extract_sha256": "7e52f404b5623a04b7a86026f045e0da1471cee70ea36e96351ffd47d17e9fe1"
+ },
+ "rows": {
+  "living_street|twoway|2": {
+   "n": 13,
+   "p10": 5.4,
+   "median": 10.0,
+   "p90": 12.0
+  },
+  "living_street|twoway|any": {
+   "n": 135,
+   "p10": 5.0,
+   "median": 9.3,
+   "p90": 13.0
+  },
+  "living_street|twoway|none": {
+   "n": 122,
+   "p10": 4.9,
+   "median": 9.15,
+   "p90": 13.8
+  },
+  "motorway_link|oneway|2": {
+   "n": 14,
+   "p10": 6.6,
+   "median": 7.05,
+   "p90": 13.4
+  },
+  "motorway_link|oneway|any": {
+   "n": 18,
+   "p10": 6.6,
+   "median": 7.1,
+   "p90": 13.4
+  },
+  "motorway|oneway|2": {
+   "n": 17,
+   "p10": 7.0,
+   "median": 7.4,
+   "p90": 10.0
+  },
+  "motorway|oneway|3": {
+   "n": 11,
+   "p10": 7.3,
+   "median": 10.5,
+   "p90": 10.9
+  },
+  "motorway|oneway|any": {
+   "n": 30,
+   "p10": 7.0,
+   "median": 8.65,
+   "p90": 13.0
+  },
+  "primary|oneway|1": {
+   "n": 23,
+   "p10": 7.0,
+   "median": 11.2,
+   "p90": 17.7
+  },
+  "primary|oneway|2": {
+   "n": 97,
+   "p10": 7.1,
+   "median": 11.4,
+   "p90": 17.7
+  },
+  "primary|oneway|3": {
+   "n": 80,
+   "p10": 8.8,
+   "median": 11.15,
+   "p90": 15.5
+  },
+  "primary|oneway|4": {
+   "n": 23,
+   "p10": 12.0,
+   "median": 14.2,
+   "p90": 20.0
+  },
+  "primary|oneway|5": {
+   "n": 8,
+   "p10": 12.6,
+   "median": 19.0,
+   "p90": 19.0
+  },
+  "primary|oneway|any": {
+   "n": 234,
+   "p10": 8.0,
+   "median": 12.0,
+   "p90": 18.0
+  },
+  "primary|twoway|2": {
+   "n": 37,
+   "p10": 7.8,
+   "median": 11.0,
+   "p90": 13.9
+  },
+  "primary|twoway|3": {
+   "n": 48,
+   "p10": 9.8,
+   "median": 11.15,
+   "p90": 16.0
+  },
+  "primary|twoway|4": {
+   "n": 116,
+   "p10": 8.7,
+   "median": 11.3,
+   "p90": 16.0
+  },
+  "primary|twoway|5": {
+   "n": 21,
+   "p10": 9.0,
+   "median": 16.0,
+   "p90": 17.0
+  },
+  "primary|twoway|any": {
+   "n": 256,
+   "p10": 8.7,
+   "median": 11.3,
+   "p90": 17.0
+  },
+  "primary|twoway|none": {
+   "n": 30,
+   "p10": 10.5,
+   "median": 11.3,
+   "p90": 12.0
+  },
+  "residential|oneway|1": {
+   "n": 10,
+   "p10": 5.0,
+   "median": 7.7,
+   "p90": 16.0
+  },
+  "residential|oneway|any": {
+   "n": 102,
+   "p10": 5.0,
+   "median": 6.3,
+   "p90": 9.0
+  },
+  "residential|oneway|none": {
+   "n": 88,
+   "p10": 5.1,
+   "median": 6.05,
+   "p90": 7.5
+  },
+  "residential|twoway|1": {
+   "n": 10,
+   "p10": 4.0,
+   "median": 5.25,
+   "p90": 7.2
+  },
+  "residential|twoway|2": {
+   "n": 321,
+   "p10": 4.9,
+   "median": 5.8,
+   "p90": 7.8
+  },
+  "residential|twoway|any": {
+   "n": 2581,
+   "p10": 5.0,
+   "median": 5.6,
+   "p90": 7.5
+  },
+  "residential|twoway|none": {
+   "n": 2249,
+   "p10": 5.0,
+   "median": 5.6,
+   "p90": 7.5
+  },
+  "secondary|oneway|1": {
+   "n": 14,
+   "p10": 6.7,
+   "median": 10.3,
+   "p90": 14.2
+  },
+  "secondary|oneway|2": {
+   "n": 35,
+   "p10": 6.3,
+   "median": 10.7,
+   "p90": 18.0
+  },
+  "secondary|oneway|3": {
+   "n": 17,
+   "p10": 6.5,
+   "median": 11.0,
+   "p90": 13.0
+  },
+  "secondary|oneway|4": {
+   "n": 8,
+   "p10": 10.0,
+   "median": 10.0,
+   "p90": 13.0
+  },
+  "secondary|oneway|any": {
+   "n": 74,
+   "p10": 6.4,
+   "median": 10.45,
+   "p90": 16.1
+  },
+  "secondary|twoway|2": {
+   "n": 83,
+   "p10": 5.9,
+   "median": 9.0,
+   "p90": 11.0
+  },
+  "secondary|twoway|3": {
+   "n": 30,
+   "p10": 7.5,
+   "median": 11.0,
+   "p90": 12.0
+  },
+  "secondary|twoway|4": {
+   "n": 50,
+   "p10": 11.2,
+   "median": 12.15,
+   "p90": 16.0
+  },
+  "secondary|twoway|5": {
+   "n": 10,
+   "p10": 8.3,
+   "median": 12.3,
+   "p90": 13.3
+  },
+  "secondary|twoway|any": {
+   "n": 196,
+   "p10": 7.2,
+   "median": 10.5,
+   "p90": 12.5
+  },
+  "secondary|twoway|none": {
+   "n": 22,
+   "p10": 9.5,
+   "median": 10.05,
+   "p90": 12.3
+  },
+  "service|oneway|any": {
+   "n": 13,
+   "p10": 4.0,
+   "median": 7.7,
+   "p90": 15.4
+  },
+  "service|twoway|any": {
+   "n": 126,
+   "p10": 3.7,
+   "median": 5.65,
+   "p90": 9.2
+  },
+  "service|twoway|none": {
+   "n": 122,
+   "p10": 3.8,
+   "median": 5.8,
+   "p90": 9.2
+  },
+  "tertiary|oneway|1": {
+   "n": 11,
+   "p10": 7.2,
+   "median": 12.1,
+   "p90": 15.6
+  },
+  "tertiary|oneway|2": {
+   "n": 11,
+   "p10": 7.4,
+   "median": 11.0,
+   "p90": 14.9
+  },
+  "tertiary|oneway|any": {
+   "n": 29,
+   "p10": 7.4,
+   "median": 12.0,
+   "p90": 14.9
+  },
+  "tertiary|twoway|2": {
+   "n": 164,
+   "p10": 6.5,
+   "median": 9.05,
+   "p90": 11.0
+  },
+  "tertiary|twoway|3": {
+   "n": 21,
+   "p10": 9.0,
+   "median": 11.0,
+   "p90": 12.8
+  },
+  "tertiary|twoway|4": {
+   "n": 12,
+   "p10": 11.4,
+   "median": 13.55,
+   "p90": 15.1
+  },
+  "tertiary|twoway|any": {
+   "n": 215,
+   "p10": 6.4,
+   "median": 9.2,
+   "p90": 12.1
+  },
+  "tertiary|twoway|none": {
+   "n": 18,
+   "p10": 6.1,
+   "median": 6.75,
+   "p90": 9.1
+  },
+  "trunk_link|oneway|1": {
+   "n": 8,
+   "p10": 4.6,
+   "median": 6.6,
+   "p90": 7.0
+  },
+  "trunk_link|oneway|any": {
+   "n": 15,
+   "p10": 4.6,
+   "median": 6.9,
+   "p90": 11.4
+  },
+  "trunk|oneway|2": {
+   "n": 103,
+   "p10": 6.6,
+   "median": 8.2,
+   "p90": 13.8
+  },
+  "trunk|oneway|3": {
+   "n": 50,
+   "p10": 7.4,
+   "median": 9.55,
+   "p90": 11.9
+  },
+  "trunk|oneway|4": {
+   "n": 11,
+   "p10": 9.2,
+   "median": 10.0,
+   "p90": 18.3
+  },
+  "trunk|oneway|any": {
+   "n": 169,
+   "p10": 6.8,
+   "median": 9.4,
+   "p90": 14.3
+  },
+  "trunk|twoway|2": {
+   "n": 8,
+   "p10": 11.0,
+   "median": 11.2,
+   "p90": 12.0
+  },
+  "trunk|twoway|4": {
+   "n": 28,
+   "p10": 11.0,
+   "median": 11.6,
+   "p90": 16.2
+  },
+  "trunk|twoway|any": {
+   "n": 44,
+   "p10": 11.0,
+   "median": 11.65,
+   "p90": 16.8
+  },
+  "unclassified|oneway|1": {
+   "n": 53,
+   "p10": 4.5,
+   "median": 8.4,
+   "p90": 13.0
+  },
+  "unclassified|oneway|2": {
+   "n": 43,
+   "p10": 6.2,
+   "median": 9.3,
+   "p90": 16.0
+  },
+  "unclassified|oneway|any": {
+   "n": 137,
+   "p10": 5.6,
+   "median": 8.6,
+   "p90": 13.8
+  },
+  "unclassified|oneway|none": {
+   "n": 34,
+   "p10": 5.6,
+   "median": 7.8,
+   "p90": 11.3
+  },
+  "unclassified|twoway|1": {
+   "n": 12,
+   "p10": 4.0,
+   "median": 5.0,
+   "p90": 10.2
+  },
+  "unclassified|twoway|2": {
+   "n": 132,
+   "p10": 6.2,
+   "median": 8.5,
+   "p90": 11.3
+  },
+  "unclassified|twoway|3": {
+   "n": 24,
+   "p10": 9.2,
+   "median": 10.45,
+   "p90": 11.9
+  },
+  "unclassified|twoway|4": {
+   "n": 11,
+   "p10": 9.3,
+   "median": 11.4,
+   "p90": 12.3
+  },
+  "unclassified|twoway|5": {
+   "n": 8,
+   "p10": 16.2,
+   "median": 16.2,
+   "p90": 17.2
+  },
+  "unclassified|twoway|any": {
+   "n": 318,
+   "p10": 5.0,
+   "median": 8.0,
+   "p90": 11.6
+  },
+  "unclassified|twoway|none": {
+   "n": 130,
+   "p10": 4.6,
+   "median": 6.6,
+   "p90": 11.0
+  }
+ }
+}
