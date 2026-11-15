@@ -36,6 +36,11 @@ the two carriageways of the dual road 6 m apart: the game's graph lost the eastb
 Where the carriageway is more than 1.6 m wider than that driving width, the rest is written as `shoulder:both:width`
 (half each side), which MapNG draws as paved edge and keeps out of the AI path, as it does for a parking lane.
 
+A low confidence DfI width is never drawn wider than the driving width plus two parking lanes (2 x 2.3 m), the most MapNG's own
+defaults give a way. Wider than that (Hospital Road, one-way, lanes=1 in OSM, 14.3 m in DfI: really a 3-lane
+carriageway) it was drawn 14 m and MapNG's street props, which stand 2.4 m beyond the carriageway edge, put a utility
+pole on the slip road beside it; the drive suite crashed into it at (125, 275). The DfI figure stays in `belfast:width_dfi`.
+
 Tags written: `width` (metres, one decimal), `belfast:width_source` (`dfi-high`, `dfi-medium`, `dfi-low`, `osm-width`,
 `osm-lanes`, `default`, or `none` when left to MapNG), `width:osm` (original, when replaced), `belfast:width_cap`
 (`yes` when `mapng:carriageway_max` was set), `shoulder:both:width` with `belfast:shoulder=yes` (see above). Safe to run twice: a way that carries the source tag is restored first.
@@ -59,6 +64,7 @@ CAP_FLAG = "belfast:width_cap"
 CAP_KEY = "mapng:carriageway_max"
 SHOULDER_KEY = "shoulder:both:width"      # MapNG keeps the lanes' width and draws the rest as an edge strip
 SHOULDER_FLAG = "belfast:shoulder"
+DFI_KEY = "belfast:width_dfi"             # the source width when it was cut to the most MapNG's own defaults would draw
 SHOULDER_SLACK_M = 1.6                    # a carriageway this much over the lanes gets no strip: a strip under 0.8 m a side puts the kerb face within 0.5 m of the lane edge (I-006 kerb check)
 
 VEHICLE_HIGHWAYS = {
@@ -240,6 +246,7 @@ def restore(tags: dict) -> None:
         tags.pop("width", None)
     if tags.pop(CAP_FLAG, None):
         tags.pop(CAP_KEY, None)
+    tags.pop(DFI_KEY, None)
     if tags.pop(SHOULDER_FLAG, None):
         tags.pop(SHOULDER_KEY, None)
     del tags[SOURCE_KEY]
@@ -268,6 +275,10 @@ def apply(features: list[dict], dfi_ways: dict, table: dict) -> dict:
             lo, hi = mapng_clamp(tags["highway"])
             if "width" in tags:
                 tags[ORIGINAL_KEY] = tags["width"]
+            widest = driving_width(tags) + 2 * PARKING_LANE_M
+            if source == "dfi-low" and w > widest + 0.05 and not any(k.startswith(("shoulder", "parking")) for k in tags):
+                tags[DFI_KEY] = fmt(w)
+                w = widest
             tags["width"] = fmt(w)
             if w < lo - 0.05:
                 tags[CAP_KEY] = fmt(w)

@@ -158,3 +158,24 @@ def test_the_committed_table_has_the_main_classes():
     t = json.loads((ROOT / "config" / "road_width_defaults.json").read_text(encoding="utf-8"))
     assert t["rows"]["residential|twoway|none"]["median"] == pytest.approx(5.6, abs=0.3)
     assert "DfI" in t["source"]
+
+
+def test_wide_carriageway_over_the_lanes_gets_a_shoulder_not_a_wide_ai_road():
+    feats, _ = run([way("7", highway="secondary")], dfi("7", 12.0))
+    t = tags_of(feats, "7")
+    assert t["width"] == "12" and t["belfast:shoulder"] == "yes" and float(t["shoulder:both:width"]) > 0.8
+
+
+def test_a_small_excess_gets_no_shoulder():
+    feats, _ = run([way("8")], dfi("8", 6.8))     # residential, 2 lanes of 3.0 m
+    assert "shoulder:both:width" not in tags_of(feats, "8")
+
+
+def test_low_confidence_width_is_cut_to_what_mapng_defaults_would_draw():
+    w = way("9", highway="trunk")
+    w["tags"]["oneway"] = "yes"
+    d = dfi("9", 14.3, tier="low")
+    d["9"]["highway"] = "trunk"
+    feats, _ = run([w], d)
+    t = tags_of(feats, "9")
+    assert float(t["width"]) <= 7.4 + 4.6 + 0.05 and t["belfast:width_dfi"] == "14.3"
