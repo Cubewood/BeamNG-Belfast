@@ -1,0 +1,366 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cubewood <330162352+Cubewood@users.noreply.github.com>
+Date: Sun, 15 Nov 2026 16:43:40 +0000
+Subject: [PATCH] Lane forks: a branch off the outer lanes gets an AI lead-in
+ piece, so the AI settles on it near the fork
+
+Where a one-way way's lanes split between one-way branches, a branch whose lanes lie off its own line at the fork gets its AI path in two pieces: a short lead-in from the fork, 0.15 m wider each side, then the rest at the branch's driving width. map.lua keeps the lead-in's end node (an end node while it loads and first thins the roads; the step in radius keeps the two ends apart in its first merge), so the navgraph has a node there and the AI is on the branch's line within a few metres, not over the whole first edge of a straight branch (50 m). The lead-in ends past the approach's radius and clear of the other branches' lines.
+
+diff --git a/services/exportBeamNGLevel.js b/services/exportBeamNGLevel.js
+index 5f34502..3042fcb 100644
+--- a/services/exportBeamNGLevel.js
++++ b/services/exportBeamNGLevel.js
+@@ -63,6 +63,7 @@ import {
+   inferRoadDrivability,
+   parseMaxspeedMps,
+ } from './beamngMapNavigation.js';
++import { findLaneForkLeadIns, leadInEnd, LANE_FORK_STEP_M } from './laneForkLeadIns.js';
+ import { resolveRoadRulesAt } from './countryRules.js';
+ import { buildRoadSignProps } from './roadSigns.js';
+ import { generateRoadLamps } from './streetLamps.js';
+@@ -3098,7 +3099,9 @@ function getLayeredRoadDecals(centerNodes, highway, tags, styleHalfWidth, parent
+   const laneShift = Number.isFinite(options.laneShift) ? options.laneShift : 0;
+   const paving = isUnpaved ? null : pavingOf(tags.surface, { americas: options.markingStyle === 'americas' });
+   // paved in strips, none of which can carry the AI: an invisible path does
+-  const separateAiPath = !isUnpaved && (!!paving || styleHalfWidth - drivingHalfWidth > 0.1);
++  // (a branch of a lane fork: its own AI path, a lead-in piece from the fork, laneForkLeadIns.js)
++  const leadEnd = isUnpaved ? -1 : leadInEnd(centerNodes, options.leadIn);
++  const separateAiPath = !isUnpaved && (!!paving || styleHalfWidth - drivingHalfWidth > 0.1 || leadEnd > 0);
+ 
+   const concrete = !isUnpaved && CONCRETE_SURFACES.has(String(tags.surface ?? '').trim().toLowerCase());
+   let layers = (ROAD_TEMPLATES[templateKey] || ROAD_TEMPLATES.default).filter((layer) => {
+@@ -3127,8 +3130,15 @@ function getLayeredRoadDecals(centerNodes, highway, tags, styleHalfWidth, parent
+     // Like the official maps' road_invisible: the AI drives the lanes, not the
+     // parking lane or shoulder the asphalt also covers.
+     layers = layers.map((layer) => (layer.drivability ? { ...layer, drivability: undefined } : layer));
++    if (leadEnd > 0) {
++      layers.push({
++        ...AI_PATH_LAYER, width: 2 * (drivingHalfWidth + LANE_FORK_STEP_M), offset: laneShift,
++        levelName: 'AI Path Lead-in', nodeRange: [0, leadEnd],
++      });
++    }
+     layers.push({
+       ...AI_PATH_LAYER, width: 2 * drivingHalfWidth, offset: laneShift,
++      ...(leadEnd > 0 ? { nodeRange: [leadEnd, centerNodes.length - 1] } : {}),
+     });
+   }
+   // a paved raceway: white edge lines, a drag strip's centre line between its two lanes
+@@ -3164,9 +3174,11 @@ function getLayeredRoadDecals(centerNodes, highway, tags, styleHalfWidth, parent
+     // node by node, the lanes kept where they are)
+     const scaled = !layer.width;
+     const edgeOffset = layer.isEdgeRelative || layer.isEdge;
+-    const baseNodes = options.halfAt && (scaled || edgeOffset)
++    const fullNodes = options.halfAt && (scaled || edgeOffset)
+       ? offsetNodes(centerNodes, (k) => (edgeOffset ? offset * (options.halfAt[k] / styleHalfWidth) : offset), (k) => (scaled ? width * (options.halfAt[k] / styleHalfWidth) : width))
+       : offsetNodes(centerNodes, offset, width);
++    // (a piece of the line: offset whole, so the pieces meet on one node)
++    const baseNodes = layer.nodeRange ? fullNodes.slice(layer.nodeRange[0], layer.nodeRange[1] + 1) : fullNodes;
+     const shouldTrimAtJunction = layer.name.startsWith('line_') || layer.name.startsWith('edge_');
+     let trimStartM = 0;
+     let trimEndM = 0;
+@@ -5829,6 +5841,7 @@ function* decalRoadSteps(terrainData, squareSize, opts = {}) {
+     'Edge Blend - Left': 'ebl',
+     'Edge Blend - Right': 'ebr',
+     'AI Path': 'ai',
++    'AI Path Lead-in': 'lead_ai',
+   };
+ 
+   const getOrCreateSplineGroup = (groupName) => {
+@@ -5876,6 +5889,21 @@ function* decalRoadSteps(terrainData, squareSize, opts = {}) {
+   const widthTapers = findWidthTapers(drivableRoads.map((sf) => (shouldGenerateDecalRoads(sf.highway, sf.sourceFeature.tags || {})
+     ? { name: sf.sourceFeature.tags?.name || '', half: widthsOf(sf).styleHalfWidth, xy: sf.geometry.map((pt) => geoToWorldPoint(pt.lat, pt.lng, terrainData, squareSize, 0).slice(0, 2)) }
+     : null)));
++  // a branch of a lane fork gets an AI path that settles on it near the fork (laneForkLeadIns.js)
++  const laneForkLeadIns = findLaneForkLeadIns(drivableRoads.map((sf) => {
++    const tags = sf.sourceFeature.tags || {};
++    if (!shouldGenerateDecalRoads(sf.highway, tags)) return null;
++    const { isOneWay, crossSection, drivingHalfWidth } = widthsOf(sf);
++    const lanes = inferManualLaneData(sf.highway, getMergedRoadRenderTags(sf), isOneWay, leftHandTraffic);
++    return {
++      oneWay: !isOneWay ? 'no' : isReverseOneWayRoad(tags) ? 'reverse' : 'forward',
++      lanes: (lanes.lanesLeft || 0) + (lanes.lanesRight || 0),
++      half: drivingHalfWidth,
++      shift: Number.isFinite(crossSection.laneShift) ? crossSection.laneShift : 0,
++      xy: sf.geometry.map((pt) => geoToWorldPoint(pt.lat, pt.lng, terrainData, squareSize, 0).slice(0, 2)),
++    };
++  }));
++  if (laneForkLeadIns.size) console.log(`${BEAMNG_EXPORT_SERVICE_LOG} Lane forks: ${laneForkLeadIns.size} branch AI path lead-in(s)`);
+   for (let segIndex = 0; segIndex < drivableRoads.length; segIndex++) {
+     if (segIndex % 200 === 199) yield;
+     const segmentFeature = drivableRoads[segIndex];
+@@ -5989,6 +6017,7 @@ function* decalRoadSteps(terrainData, squareSize, opts = {}) {
+           }),
+           drivingHalfWidth,
+           halfAt,
++          leadIn: i === 0 ? laneForkLeadIns.get(segIndex) : undefined,
+           laneShift: crossSection.laneShift,
+           markingStyle,
+           ukMarkings,
+diff --git a/services/laneForkLeadIns.js b/services/laneForkLeadIns.js
+new file mode 100644
+index 0000000..c0a208a
+--- /dev/null
++++ b/services/laneForkLeadIns.js
+@@ -0,0 +1,128 @@
++// Lane forks: where one one-way way splits into two or more one-way ways that
++// share its lanes out (lanes=3 into a 1-lane slip and a 2-lane road), every way
++// starts on the fork node, the centre of the wider way. BeamNG's AI holds the
++// lane it is in up to that node and then eases onto the branch's line over the
++// branch's first navgraph edge. map.lua drops every node of a straight branch
++// of one width (optimizeNodes; a decal's subdivisions are thinned by position
++// only), so that first edge can be 50 m long: a car in the outer lane of the
++// approach ran that far beside a narrow slip, its wheels off the asphalt.
++//
++// A branch whose lanes lie off its own line at the fork (so a car in them is
++// not on the branch) gets its AI path in two pieces: a short lead-in from the
++// fork, a little wider than the branch, then the rest at the branch's width.
++// The lead-in's end is an end node, so map.lua keeps it while it loads and
++// first thins the roads; the step in width keeps the two ends apart in its
++// first merge (end nodes merge there only at the same radius, within 0.1 m),
++// and once merged the node keeps its own radius, well off the fork node's. So
++// the navgraph has a node where the lead-in ends, and the AI is on the
++// branch's line there. The lead-in ends clear of the other branches (map.lua
++// merges a node lying within its radius of another road's line into that
++// road) and past the approach's own radius (the fork node takes in every node
++// within it).
++//
++// ways: [{ xy: [[x, y]...] (direction of travel for a one-way), oneWay: 'forward'|'reverse'|'no',
++//          lanes, half (driving half width), shift (the lanes' offset, left +) } | null] by index.
++// Returns Map(index -> { at: [x, y], minS, maxS, clear, siblings: [xy...] }).
++export const LANE_FORK_MEET_M = 0.75;      // ends this close are one node (shared OSM nodes can come out under different keys)
++export const LANE_FORK_CAR_HALF_M = 0.9;   // a car centred in the lanes it takes is on the branch when that centre is this far inside its edge
++export const LANE_FORK_DIR_M = 10;         // a way's heading at the fork, over its first (last) metres
++export const LANE_FORK_MIN_M = 6;          // the lead-in is at least this long ...
++export const LANE_FORK_PAST_M = 1;         // ... and ends this far past the approach's driving half width
++export const LANE_FORK_MAX_M = 24;         // never longer (nor longer than half the branch)
++export const LANE_FORK_CLEAR_M = 0.25;     // its end this far further from another branch's line than the branch's half width
++export const LANE_FORK_STEP_M = 0.15;      // the lead-in's extra half width (map.lua merges end nodes within 0.1 m of radius)
++
++const lengthOf = (xy) => xy.reduce((sum, q, i) => (i ? sum + Math.hypot(q[0] - xy[i - 1][0], q[1] - xy[i - 1][1]) : 0), 0);
++
++function pointAlong(xy, dist) {
++  let s = 0;
++  for (let i = 1; i < xy.length; i++) {
++    const L = Math.hypot(xy[i][0] - xy[i - 1][0], xy[i][1] - xy[i - 1][1]);
++    if (s + L >= dist && L > 0) {
++      const t = (dist - s) / L;
++      return [xy[i - 1][0] + t * (xy[i][0] - xy[i - 1][0]), xy[i - 1][1] + t * (xy[i][1] - xy[i - 1][1])];
++    }
++    s += L;
++  }
++  return xy[xy.length - 1];
++}
++
++export function distanceToPolyline(p, xy) {
++  let best = Infinity;
++  for (let i = 0; i + 1 < xy.length; i++) {
++    const ex = xy[i + 1][0] - xy[i][0]; const ey = xy[i + 1][1] - xy[i][1]; const L2 = ex * ex + ey * ey;
++    const t = L2 > 0 ? Math.max(0, Math.min(1, ((p[0] - xy[i][0]) * ex + (p[1] - xy[i][1]) * ey) / L2)) : 0;
++    best = Math.min(best, Math.hypot(p[0] - xy[i][0] - t * ex, p[1] - xy[i][1] - t * ey));
++  }
++  return best;
++}
++
++export function findLaneForkLeadIns(ways) {
++  const joints = [];
++  ways.forEach((w, k) => {
++    if (!w || !(w.xy?.length >= 2)) return;
++    const n = w.xy.length;
++    for (const [p, atStart] of [[w.xy[0], true], [w.xy[n - 1], false]]) {
++      let joint = joints.find((j) => Math.hypot(j.p[0] - p[0], j.p[1] - p[1]) < LANE_FORK_MEET_M);
++      if (!joint) { joint = { p, ins: [], outs: [], other: 0 }; joints.push(joint); }
++      if (w.oneWay === 'forward') (atStart ? joint.outs : joint.ins).push(k);
++      else joint.other++;
++    }
++  });
++  const out = new Map();
++  for (const j of joints) {
++    if (j.ins.length !== 1 || j.outs.length < 2 || j.other > 0) continue;
++    const parent = ways[j.ins[0]];
++    const branches = j.outs.map((k) => ({ k, w: ways[k] }));
++    if (!(parent.lanes > 0) || !(parent.half > 0) || branches.some(({ w }) => !(w.lanes > 0))) continue;
++    if (branches.reduce((sum, { w }) => sum + w.lanes, 0) !== parent.lanes) continue;
++    // the approach's heading into the fork; each branch's out of it, signed left +
++    const pLen = lengthOf(parent.xy);
++    const back = pointAlong(parent.xy, Math.max(0, pLen - LANE_FORK_DIR_M));
++    const end = parent.xy[parent.xy.length - 1];
++    const hx = end[0] - back[0]; const hy = end[1] - back[1]; const hL = Math.hypot(hx, hy);
++    if (!(hL > 0)) continue;
++    for (const b of branches) {
++      const q = pointAlong(b.w.xy, Math.min(LANE_FORK_DIR_M, lengthOf(b.w.xy)));
++      const dx = q[0] - b.w.xy[0][0]; const dy = q[1] - b.w.xy[0][1];
++      b.turn = Math.atan2(hx * dy - hy * dx, hx * dx + hy * dy);
++    }
++    branches.sort((a, b) => b.turn - a.turn);   // leftmost first
++    // the lanes each branch takes, counted from the left of the approach
++    const laneW = (2 * parent.half) / parent.lanes;
++    let taken = 0;
++    for (const b of branches) {
++      const centre = (parent.shift || 0) + parent.half - (taken + b.w.lanes / 2) * laneW;
++      taken += b.w.lanes;
++      const off = Math.abs(centre - (b.w.shift || 0));
++      if (off <= b.w.half - LANE_FORK_CAR_HALF_M) continue;
++      const maxS = Math.min(LANE_FORK_MAX_M, lengthOf(b.w.xy) / 2);
++      const minS = Math.max(LANE_FORK_MIN_M, parent.half + LANE_FORK_PAST_M);
++      if (minS > maxS) continue;
++      out.set(b.k, {
++        at: [j.p[0], j.p[1]],
++        minS,
++        maxS,
++        clear: b.w.half + LANE_FORK_CLEAR_M,
++        siblings: branches.filter((o) => o.k !== b.k).map((o) => o.w.xy),
++      });
++    }
++  }
++  return out;
++}
++
++// Where a branch's first piece ([[x, y, ...]...], from the fork) ends its
++// lead-in: the index of the first node past minS that is clear of the other
++// branches. -1 when the piece does not start at the fork or no node qualifies.
++export function leadInEnd(nodes, leadIn) {
++  if (!leadIn || !(nodes?.length >= 3)) return -1;
++  if (Math.hypot(nodes[0][0] - leadIn.at[0], nodes[0][1] - leadIn.at[1]) > LANE_FORK_MEET_M) return -1;
++  let s = 0;
++  for (let i = 1; i < nodes.length - 1; i++) {
++    s += Math.hypot(nodes[i][0] - nodes[i - 1][0], nodes[i][1] - nodes[i - 1][1]);
++    if (s > leadIn.maxS) break;
++    if (s < leadIn.minS) continue;
++    if (leadIn.siblings.every((xy) => distanceToPolyline(nodes[i], xy) > leadIn.clear)) return i;
++  }
++  return -1;
++}
+diff --git a/tests/beamngExportGuideConformance.test.mjs b/tests/beamngExportGuideConformance.test.mjs
+index 5b53b75..3fd13ab 100644
+--- a/tests/beamngExportGuideConformance.test.mjs
++++ b/tests/beamngExportGuideConformance.test.mjs
+@@ -753,6 +753,60 @@ test('decal roads: asphalt covers the carriageway, AI path + paint the driving l
+   }
+ });
+ 
++// ── Lane fork: the slip's AI path settles on it near the fork (laneForkLeadIns.js) ──
++test('lane fork: a slip off the outer lane of a 3-lane approach gets its AI path in a lead-in and the rest', async () => {
++  const restore = installCanvasPolyfill();
++  try {
++    const td = makeTerrainData();
++    // about 220 m square at the equator
++    td.width = 256; td.height = 256; td.heightMap = new Float32Array(256 * 256).fill(10);
++    td.bounds = { north: 0.002, south: 0, west: 0, east: 0.002 };
++    const m = 1 / 111320;   // a metre in degrees
++    const sec = (name, lanes) => ({ highway: 'secondary', oneway: 'yes', lanes: String(lanes), name });
++    td.osmFeatures = [
++      // heading west into the fork at the centre: lane 1 (left, south) to the slip 2 deg left, lanes 2-3 to the
++      // right road 10 deg right
++      { id: 'approach_1', type: 'road', tags: sec('approach_rd', 3), geometry: [{ lat: 0.001, lng: 0.001 + 40 * m }, { lat: 0.001, lng: 0.001 }] },
++      { id: 'slip_1', type: 'road', tags: sec('slip_rd', 1), geometry: [{ lat: 0.001, lng: 0.001 }, { lat: 0.001 - 3.1 * m, lng: 0.001 - 90 * m }] },
++      { id: 'right_1', type: 'road', tags: sec('right_rd', 2), geometry: [{ lat: 0.001, lng: 0.001 }, { lat: 0.001 + 15.9 * m, lng: 0.001 - 90 * m }] },
++    ];
++    const result = await exportBeamNGLevel(td, { lat: 0.001, lng: 0.001 }, {
++      roadType: 'decal', levelName: LEVEL_ID, biomeId: 'west_coast_usa',
++      baseTexture: 'none', pbrSource: 'none', includeBuildings: false,
++      includeBackdrop: false, includeWater: false,
++      includeTrees: false, includeRocks: false, includeNativeBarriers: false,
++    });
++    const zip = await JSZip.loadAsync(await result.blob.arrayBuffer());
++    const decals = [];
++    for (const path of Object.keys(zip.files)) {
++      if (!/Decal_Roads\/[^/]+\/items\.level\.json$/.test(path)) continue;
++      const text = await zip.file(path).async('string');
++      if (text.trim()) decals.push(...parseNDJSON(text));
++    }
++    const of = (group, suffix) => decals.filter((d) => d.class === 'DecalRoad' && d.name.startsWith(`dr_${group}`) && d.name.endsWith(suffix));
++    const lead = of('slip_rd', '_lead_ai');
++    const rest = of('slip_rd', '_s1_ai');
++    assert.equal(lead.length, 1, 'a lead-in AI piece');
++    assert.equal(rest.length, 1, 'and the rest of the AI path');
++    for (const d of [...lead, ...rest]) {
++      assert.ok(d.drivability > 0 && d.material === 'road_invisible' && d.oneWay === true && d.lanesLeft + d.lanesRight === 1);
++    }
++    for (const d of of('slip_rd', '_b')) assert.ok(!(d.drivability > 0), 'its asphalt is not the AI road');
++    const L = lead[0].nodes; const R = rest[0].nodes;
++    const ends = [...of('approach_rd', '_ai'), ...of('approach_rd', '_b')].flatMap((d) => [d.nodes[0], d.nodes.at(-1)]);
++    assert.ok(ends.some((p) => Math.hypot(L[0][0] - p[0], L[0][1] - p[1]) < 0.01), `the lead-in starts on the fork node (${L[0]})`);
++    assert.ok(Math.hypot(L.at(-1)[0] - R[0][0], L.at(-1)[1] - R[0][1]) < 1e-6, 'the pieces meet on one node');
++    const along = Math.hypot(L.at(-1)[0] - L[0][0], L.at(-1)[1] - L[0][1]);
++    assert.ok(along >= 6 && along <= 24, `the lead-in is ${along.toFixed(1)} m`);
++    // map.lua merges end nodes at one place only within 0.1 m of radius: the step keeps them apart
++    assert.ok(L.at(-1)[3] / 2 - R[0][3] / 2 >= 0.1 + 1e-9, `the lead-in is wider (${L.at(-1)[3]} vs ${R[0][3]})`);
++    // the road centred on the lanes it takes: one AI path, no lead-in
++    assert.equal(of('right_rd', '_lead_ai').length, 0, 'the right road: no lead-in');
++  } finally {
++    restore();
++  }
++});
++
+ // ── Road rules follow the export location (country_rules.json) ────────────────
+ test('road rules: a London export drives on the left with matching lane sides', async () => {
+   const restore = installCanvasPolyfill();
+diff --git a/tests/laneForkLeadIns.test.mjs b/tests/laneForkLeadIns.test.mjs
+new file mode 100644
+index 0000000..47fb9f8
+--- /dev/null
++++ b/tests/laneForkLeadIns.test.mjs
+@@ -0,0 +1,63 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++
++import { findLaneForkLeadIns, leadInEnd, distanceToPolyline } from '../services/laneForkLeadIns.js';
++
++// heading west (-x) into a fork at (0, 0); left of travel is -y
++const westLine = (x0, x1, y = 0, n = 21) => Array.from({ length: n }, (_, i) => [x0 + ((x1 - x0) * i) / (n - 1), y]);
++const bend = (deg, len, n = 41) => Array.from({ length: n }, (_, i) => {
++  const s = (len * i) / (n - 1); const a = (deg * Math.PI) / 180;
++  return [-s * Math.cos(a), -s * Math.sin(a)];   // turned deg to the left (south) of due west
++});
++
++// A 3-lane one-way approach, its left lane into a 1-lane slip running almost straight on, the other two
++// into a 2-lane road bending right (BeamNG Belfast's Hospital Road fork, drawn from OSM)
++const approach = { oneWay: 'forward', lanes: 3, half: 4.875, shift: 0, xy: westLine(19, 0) };
++const slip = { oneWay: 'forward', lanes: 1, half: 1.7, shift: 0, xy: bend(2, 107) };
++const right = { oneWay: 'forward', lanes: 2, half: 3, shift: 0, xy: bend(-10, 90) };
++const nodesOf = (xy) => xy.map(([x, y]) => [x, y, 10, 3.4]);
++
++test('lane fork: the slip off the outer lane gets an AI lead-in, the road centred on its lanes does not', () => {
++  const leadIns = findLaneForkLeadIns([approach, slip, right]);
++  assert.deepEqual([...leadIns.keys()], [1], 'only the slip');
++  const li = leadIns.get(1);
++  assert.ok(Math.hypot(li.at[0], li.at[1]) < 1e-9, 'at the fork node');
++  assert.ok(li.minS >= approach.half + 1 - 1e-9 && li.minS >= 6, `past the approach's radius (${li.minS})`);
++  assert.ok(li.maxS <= 24 && li.maxS <= 107 / 2);
++  assert.ok(Math.abs(li.clear - (slip.half + 0.25)) < 1e-9);
++  assert.equal(li.siblings.length, 1);
++});
++
++test('lane fork: the lead-in ends at the first node past the approach that is clear of the other branch', () => {
++  const li = findLaneForkLeadIns([approach, slip, right]).get(1);
++  const nodes = nodesOf(bend(2, 40, 21));   // a node every 2 m
++  const end = leadInEnd(nodes, li);
++  assert.ok(end > 0 && end < nodes.length - 1, `an inner node (${end})`);
++  assert.ok(2 * end >= li.minS, `not inside the approach's radius (${2 * end} m)`);
++  assert.ok(distanceToPolyline(nodes[end], right.xy) > li.clear, 'clear of the other branch');
++  for (let k = 1; k < end; k++) {
++    assert.ok(2 * k < li.minS || distanceToPolyline(nodes[k], right.xy) <= li.clear, `node ${k} would have done`);
++  }
++  assert.ok(2 * end <= 12, `close to the fork (${2 * end} m)`);
++});
++
++test('lane fork: nothing where the lanes do not add up, the way is two-way, or a piece does not start at the fork', () => {
++  assert.equal(findLaneForkLeadIns([{ ...approach, lanes: 4 }, slip, right]).size, 0, 'lanes 4 != 1 + 2');
++  assert.equal(findLaneForkLeadIns([approach, { ...slip, oneWay: 'no' }, right]).size, 0, 'a two-way branch');
++  assert.equal(findLaneForkLeadIns([approach, slip, right, { oneWay: 'no', lanes: 2, half: 3, xy: [[0, 0], [0, 40]] }]).size, 0, 'a crossroads');
++  assert.equal(findLaneForkLeadIns([approach, slip]).size, 0, 'one way on is no fork');
++  assert.equal(findLaneForkLeadIns([approach, { ...slip, oneWay: 'reverse' }, right]).size, 0, 'a branch drawn against its traffic');
++  const li = findLaneForkLeadIns([approach, slip, right]).get(1);
++  assert.equal(leadInEnd(nodesOf(bend(2, 40, 21)).slice(5), li), -1, 'a later piece of the branch');
++  // a slip that stays within reach of the other branch's line all through the lead-in's range
++  assert.equal(leadInEnd(nodesOf(bend(0.5, 40, 21)), { ...li, siblings: [westLine(0, -60)] }), -1);
++});
++
++test('lane fork: three 1-lane branches, the outer two get lead-ins, the middle one is on its lane', () => {
++  const a = { oneWay: 'forward', lanes: 3, half: 4.875, shift: 0, xy: westLine(30, 0) };
++  const leftB = { oneWay: 'forward', lanes: 1, half: 1.7, shift: 0, xy: bend(25, 60) };
++  const mid = { oneWay: 'forward', lanes: 1, half: 1.7, shift: 0, xy: bend(0, 60) };
++  const rightB = { oneWay: 'forward', lanes: 1, half: 1.7, shift: 0, xy: bend(-25, 60) };
++  const leadIns = findLaneForkLeadIns([a, rightB, mid, leftB]);
++  assert.deepEqual([...leadIns.keys()].sort(), [1, 3]);
++});

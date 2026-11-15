@@ -46,7 +46,7 @@ git add patches/mapng                              # in the repo root, by name
 1. Move the submodule to the new upstream commit and set `PINNED_COMMIT` in `tools/mapng_export.py`.
 2. `export` now exits 3 ("the pin changed"). `apply --reset` stops at the first patch that no longer applies and leaves the submodule clean at the new pin.
 3. Rebase by hand: `git checkout -B belfast <new pin>`, `git am --3way patches/mapng/<name>` for each, fix conflicts, then `save` (this writes the new `BASE`).
-4. Run MapNG's tests (806 of 812 pass on Windows at the bare pin, 822 of 828 with patches 0001 to 0004, 825 of 831 with 0001 to 0005, 832 of 838 with 0001 to 0006, `docs/mapng_export.md`; the six failures are environment) and the new tests of each patch.
+4. Run MapNG's tests (806 of 812 pass on Windows at the bare pin, 822 of 828 with patches 0001 to 0004, 825 of 831 with 0001 to 0005, 832 of 838 with 0001 to 0006, 837 of 843 with 0001 to 0007, `docs/mapng_export.md`; the six failures are environment) and the new tests of each patch.
 
 Offering generic patches upstream (the building rule, the junction step, mph signs) needs the user's GitHub account and stays a follow-up.
 
@@ -213,3 +213,9 @@ The I-005 zip was put in the QA profile's `mods` (the T-413 zip it replaced is k
 - `hospital-road-ne-back`: completed 365 of 391 m, through x 131 to 148. It still logs a `scrape` at (141, 276), not a crash: the AI still runs its left wheels about 0.9 m off the slip (the lane count and graph at the fork, crash 1's second defect), now over a 0.15 to 0.18 m edge instead of 0.40 m.
 - `lady-ishbel-loop-reverse`: completed, a `scrape` at (-197, -146).
 - Console (`H:\BeamNG-QA\profile\current\beamng.log`): no TextureCooker error or warning; the 24 TextureCooker lines for `uk_markings_cubewood` are imports. One error (Steam online provider, the throwaway profile). 15 warnings, 11 of them: no licence plate template for `belfast_slice`.
+
+## Patch 0007: an AI lead-in for a branch of a lane fork (I-007, crash 1's second defect)
+
+New file `services/laneForkLeadIns.js` (`findLaneForkLeadIns`, `leadInEnd`), hooked into `services/exportBeamNGLevel.js` (`getLayeredRoadDecals`: AI layer pieces by `nodeRange`; layer code `lead_ai`). Tests: `tests/laneForkLeadIns.test.mjs` (4, new) and one export test in `tests/beamngExportGuideConformance.test.mjs`.
+
+A lane fork is one one-way way whose lanes split between two or more one-way branches, with the lanes adding up. A branch whose lanes lie off its own line gets its AI path as a short `_lead_ai` piece, 0.15 m wider each side, then the `_ai` rest, so BeamNG's navgraph keeps a node about 10 m past the fork. Cause, numbers and the game result: `docs/spikes/drive-crashes.md` section 4. Build `H:\BelfastData\mapng\i007\` (area `t413_slice`, `gpxz`). Upstream tests: 843, 837 pass, the same six environment failures. Drive suite `2026-11-15_165700`: 10 of 10 completed, G3 passed, one `scrape` (`lady-ishbel-loop-reverse`). The `hospital-road-ne-back` scrape is gone.
