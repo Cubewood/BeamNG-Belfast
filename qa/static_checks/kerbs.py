@@ -3,7 +3,8 @@
 MapNG builds the sidewalks as 256 m tile shapes (`sidewalks/sidewalks_<x>_<y>.dae`), each with a `Colmesh`
 collision geometry in world coordinates (the TSStatic sits at the origin). The kerb a wheel meets is a near-vertical
 face of that mesh; its height is the z extent of the face. Roads are not part of the mesh, so the face height is
-the kerb's own height, not its height above the road decal.
+the kerb's own height, not its height above the road decal: MapNG sinks every face below the road (a curb 0.10 m,
+a walkway's edge 0.30 m), so the check measures the face's top against the road beside it (`with_tops`).
 """
 from __future__ import annotations
 
@@ -43,9 +44,10 @@ def _chord_height(p: np.ndarray, w: np.ndarray, segs: np.ndarray) -> np.ndarray:
     return best
 
 
-def kerb_faces(raw: bytes) -> tuple[np.ndarray, np.ndarray] | None:
+def kerb_faces(raw: bytes, with_tops: bool = False):
     """Vertical faces of a COLLADA file's Colmesh: ground segments (n, 2, 2) and heights (n,), z extent in metres.
 
+    With `with_tops`, also the z of each face's top (n,), so a caller can measure it against the road beside it.
     None when the file has no readable Colmesh."""
     block = _colmesh_block(raw)
     if block is None:
@@ -64,7 +66,7 @@ def kerb_faces(raw: bytes) -> tuple[np.ndarray, np.ndarray] | None:
     nz = np.divide(np.abs(cross[:, 2]), norm, out=np.ones_like(norm), where=norm > 1e-12)
     p = p[(nz < WALL_NORMAL_Z) & (norm > 1e-9)]
     if not len(p):
-        return np.zeros((0, 2, 2)), np.zeros(0)
+        return (np.zeros((0, 2, 2)), np.zeros(0)) + ((np.zeros(0),) if with_tops else ())
     w = p[:, :, :2]
     d = np.stack([np.linalg.norm(w[:, 0] - w[:, 1], axis=1), np.linalg.norm(w[:, 1] - w[:, 2], axis=1),
                   np.linalg.norm(w[:, 0] - w[:, 2], axis=1)], axis=1)
@@ -74,24 +76,32 @@ def kerb_faces(raw: bytes) -> tuple[np.ndarray, np.ndarray] | None:
     segs = np.stack([w[rows, pairs[pair, 0]], w[rows, pairs[pair, 1]]], axis=1)
     height = _chord_height(p, w, segs)
     keep = d.max(axis=1) > MIN_FACE_LEN_M
+    if with_tops:
+        return segs[keep], height[keep], p[:, :, 2].max(axis=1)[keep]
     return segs[keep], height[keep]
 
 
-def level_kerb_faces(level: Level) -> tuple[np.ndarray, np.ndarray, list[str]]:
-    """World-space kerb face segments and heights of every sidewalk tile, and the tiles that could not be read."""
+def level_kerb_faces(level: Level, with_tops: bool = False):
+    """World-space kerb face segments and heights of every sidewalk tile, and the tiles that could not be read.
+
+    With `with_tops`: (segments, heights, top z, skipped tiles)."""
     names = set(level.zf.namelist())
-    segs, heights, skipped = [], [], []
+    segs, heights, tops, skipped = [], [], [], []
     for o in level.objects:
         shape = str(o.get("shapeName", ""))
         if o.get("class") != "TSStatic" or "/sidewalks/" not in shape:
             continue
         rel = shape.lstrip("/")
-        faces = kerb_faces(level.zf.read(rel)) if rel in names else None
+        faces = kerb_faces(level.zf.read(rel), with_tops=True) if rel in names else None
         if faces is None:
             skipped.append(rel)
             continue
         pos = o.get("position", [0, 0, 0])
         segs.append(faces[0] + np.array([pos[0], pos[1]]))
         heights.append(faces[1])
-    return (np.concatenate(segs) if segs else np.zeros((0, 2, 2)),
-            np.concatenate(heights) if heights else np.zeros(0), skipped)
+        tops.append(faces[2] + (pos[2] if len(pos) > 2 else 0.0))
+    cat = (np.concatenate(segs) if segs else np.zeros((0, 2, 2)),
+           np.concatenate(heights) if heights else np.zeros(0))
+    if with_tops:
+        return cat + (np.concatenate(tops) if tops else np.zeros(0), skipped)
+    return cat + (skipped,)

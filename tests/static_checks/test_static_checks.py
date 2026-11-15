@@ -335,6 +335,17 @@ def test_kerb_off_the_navigation_graph_is_one_notch_lower(tmp_path):
     assert [x["severity"] for x in f] == ["medium"] and "not in the navigation graph" in f[0]["detail"]
 
 
+def test_kerb_height_is_its_top_over_the_road_beside_it(tmp_path):
+    # MapNG sinks faces below the road (road A at z 10): a walkway edge 0.40 m tall, 0.25 m of it under the road
+    assert ck.check_kerb_heights(kerb_level(tmp_path, [(40, 3.2, 60, 3.2, 0.40, 9.75)]), C) == []
+    # the crash at (141, 276): the same face standing on the road, its top 0.40 m over it
+    f = ck.check_kerb_heights(kerb_level(tmp_path, [(40, 3.2, 60, 3.2, 0.40, 10.0)]), C)
+    assert [x["value"] for x in f] == [pytest.approx(0.40)]
+    # a face higher up on a bank than its own height: never more than the face itself
+    f = ck.check_kerb_heights(kerb_level(tmp_path, [(40, 3.2, 60, 3.2, 0.25, 10.2)]), C)
+    assert [x["value"] for x in f] == [pytest.approx(0.25)]
+
+
 def test_kerb_height_on_a_slope_is_the_height_of_the_face(tmp_path):
     from static_checks.kerbs import kerb_faces
     # bottom climbs 0.5 m along the face and so does the top: the face is 0.4 m tall everywhere (corners differ by 0.9 m)

@@ -50,7 +50,7 @@ class Spec:
     texture_ref: str | None = None          # a material texture path to plant
     no_speed_limit: tuple = ()              # road keys whose _ai road has no speedLimit (T-408)
     speed_ms: float = 13.411                # speedLimit of the others (30 mph)
-    kerbs: list = field(default_factory=list)       # [(x0, y0, x1, y1, height)] vertical kerb faces from z 10 up (I-006)
+    kerbs: list = field(default_factory=list)       # [(x0, y0, x1, y1, height[, bottom z])] vertical kerb faces, from z 10 up by default (I-006)
 
 
 ROADS = {
@@ -186,7 +186,9 @@ def build(tmp: Path, spec: Spec | None = None) -> tuple[Path, Path]:
                  "position": [0, 0, 0], "shapeName": f"/{base}map_assets/custom_assets/sidewalks/sidewalks_0_0.dae",
                  "collisionType": "Collision Mesh"})
     # a clean level still has a sidewalk tile: a 0.12 m kerb well away from every road
-    kerb_faces = [(x0, y0, x1, y1, 10.0, 10.0 + hgt, 10.0, 10.0 + hgt) for (x0, y0, x1, y1, hgt) in spec.kerbs]
+    # (a sixth value is the face's bottom z; the road is at z 10)
+    kerb_faces = [(k[0], k[1], k[2], k[3], b, b + k[4], b, b + k[4])
+                  for k in spec.kerbs for b in [k[5] if len(k) > 5 else 10.0]]
     kerb_faces = kerb_faces or [(300.0, 300.0, 310.0, 300.0, 10.0, 10.12, 10.0, 10.12)]
     mats = {"road_asphalt_2lane": {"name": "road_asphalt_2lane"}, "m_line_white": {"name": "m_line_white"}}
     if spec.road_material == "road_invisible":
