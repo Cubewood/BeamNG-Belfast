@@ -263,3 +263,30 @@ Limits found:
 - DfI's wide medium confidence figures at cul-de-sac heads (Moyle Walk 12.5 and 11.1 m, inter-quartile range 5.9 to
   12.7) are drawn as DfI gives them and put one building 2.4 m into the lanes.
 
+
+## Drive gate on the T-406 build (15 November 2026, not passed)
+
+First t406 run `2026-11-15_183606`: 4 of 10. Causes, each checked against level data and telemetry:
+
+- **Six routes refused, 244 m on the roundabout route: real.** MapNG takes `width` as the whole carriageway and, with no parking or
+  shoulder tag, makes all of it the AI road. Hospital Road 24 (OSM one-way, lanes=1, DfI low confidence 14.3 m) became a 14.3 m AI lane;
+  the game merges graph nodes within the road radius and joined the two carriageways 6 m apart, so the eastbound link at (150, 282) was lost
+  (the graph had no path from the test centre to the Newtownbreda junction). Fix: `pipeline/road_widths.py` keeps MapNG's own driving
+  width (lanes x class lane width) and writes the rest as `shoulder:both:width` (only over 1.6 m, else the kerb face lands within 0.5 m
+  of the lane edge: 6 kerb findings at 0.4 m strips); the `_ai` roads are back as in i007. Routes then validate to 3 to 6 m (artefact:
+  the `_ai` lines were shifted by `laneShift`, the body is not), so `build_routes.py rebuild` was run on the new graph. **The routes file
+  now matches this build only; `dev` (i007, t407) needs its own copy** (`H:\BelfastData\mapng\t406b\routes_dev_i007.json`).
+- **Wrong-side 86, 28, 106 and `milltown-road-out` median -0.62: artefact.** The route line came from the old graph; the AI line sat 1 to 2 m east
+  of it (checked at (-190, 85): car 1.1 m left of the new graph line, 1.9 m east of the old route line).
+- **Crash at (127, 275) on `hospital-road-ne-back`: real.** A 14.3 m body pushed MapNG's street props (2.4 m beyond the carriageway
+  edge) onto the slip road: `utility_pole_36` at (123.4, 273.8), 0.5 m from the slip centre. Fix: a low-confidence DfI width is cut to the
+  driving width plus two parking lanes (2 x 2.3 m); the DfI figure stays in `belfast:width_dfi` (widths check 141 to 140 of 158).
+- **Kerb strike at (-295, -163) on `haddo-woods-loop`: real.** Without the parking lanes the kerb stands at 2.8 m from the centre and the
+  AI's line through the bend reaches it. Fix: a two-way carriageway up to 0.75 m under its lanes' width is drawn at it (5.6 to 6.0 m).
+- **Still open, real: `lady-ishbel-loop-reverse`.** Bump 8.6 to 11.7 at the known drop (-192, -145) on every t406 build (i007: 6.1), and tiny
+  scrapes at (-129, 129) and (-133, 131) (one of them a `crash` of 3667 once; the road there is 6 m in both builds, the body was 10.6 m, so
+  kerbs and walkways moved in to 3 m). The step needs a gentler vertical curve at the junction mouth (MapNG), not a width change.
+
+Last build `H:\BelfastData\mapng\t406d\out\belfast_slice.zip`: static widths 140 of 158, steps 90, kerbs 0; full suite
+`2026-11-15_223352`: 9 of 10 (`lady-ishbel-loop-reverse` crash 3667 at (-130, 129), and the same route passed in a rerun with the bump 11.1). The
+QA profile holds the i007 zip.
