@@ -1,0 +1,193 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cubewood <330162352+Cubewood@users.noreply.github.com>
+Date: Sun, 15 Nov 2026 23:09:07 +0000
+Subject: [PATCH] Junction mouths of narrow roads: cores at least 6.5 m from
+ the centreline near a junction
+
+The junction-mouth blend reaches as far as the road cores (half width plus
+the 1 m shoulder), so the narrower the roads the shorter the warp from one
+road's grade to the other's. A 6 m street falling at 15 % into a 7 m road
+changed grade within two metres of the mouth, where a turning car runs.
+Within a junction (a node three or more roads share on the ground) a road's
+core is now at least MOUTH_CORE_M (6.5 m) from its centreline for 6 m along
+it from the node, narrowing back to its own over the next 6 m. The blend,
+ownership and side slopes all use that core.
+
+diff --git a/services/structures/terrainCompose.js b/services/structures/terrainCompose.js
+index a392f8a..63d6174 100644
+--- a/services/structures/terrainCompose.js
++++ b/services/structures/terrainCompose.js
+@@ -40,6 +40,17 @@ const BLEND_FADE_M = CORE_STEP_M / 2;
+ // grade, fitted over this far, not flat at the end's height: a flat disc
+ // there blended into the road carrying on flattened its grade at every node)
+ const END_GRADE_M = 8;
++// Junction mouths of narrow roads. The blend above reaches as far as the
++// cores, so the narrower the roads the shorter the warp from one road's grade
++// to the other's: a 6 m street falling at 15 % into a 7 m road changed grade
++// within two metres of the mouth, where the turning car runs (at 10.6 m and
++// 9 m drawn widths the same mouth took twice that). Within a junction (a node
++// three or more roads share on the ground) a road's core is at least
++// MOUTH_CORE_M from its centreline for MOUTH_FLAT_M along it, then narrows
++// back to its own over MOUTH_TAPER_M.
++const MOUTH_CORE_M = 6.5;
++const MOUTH_FLAT_M = 6;
++const MOUTH_TAPER_M = 6;
+ 
+ const smoothstep = (t) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
+ 
+@@ -94,7 +105,7 @@ export function composeTerrain(graph, grid) {
+     const key = Math.floor(c / TILE) * 65536 + Math.floor(r / TILE);
+     let t = tiles.get(key);
+     if (!t) {
+-      t = { h: new Float32Array(TILE * TILE), w: new Float32Array(TILE * TILE).fill(Infinity), q: new Float32Array(TILE * TILE).fill(1), n: new Uint8Array(TILE * TILE), cap: new Float32Array(TILE * TILE).fill(Infinity), k: new Int32Array(TILE * TILE).fill(-1) };
++      t = { h: new Float32Array(TILE * TILE), w: new Float32Array(TILE * TILE).fill(Infinity), q: new Float32Array(TILE * TILE).fill(1), n: new Uint8Array(TILE * TILE), cap: new Float32Array(TILE * TILE).fill(Infinity), k: new Int32Array(TILE * TILE).fill(-1), cr: new Float32Array(TILE * TILE) };
+       tiles.set(key, t);
+     }
+     return t;
+@@ -183,6 +194,10 @@ export function composeTerrain(graph, grid) {
+     const ds = e.s[i1] - e.s[i0];
+     return Math.abs(ds) >= END_GRADE_M - 1e-6 && Number.isFinite(zk[i1] - zk[i0]) ? (zk[i1] - zk[i0]) / ds : 0;
+   };
++  // a junction (MOUTH_CORE_M): three or more road ends at a node on the ground
++  const junctionNode = (id) => openNode(id) && nodeKinds.get(id).length >= 3;
++  // how much of the mouth's widening is left s metres from the node
++  const mouthShare = (s) => (s <= MOUTH_FLAT_M ? 1 : 1 - smoothstep((s - MOUTH_FLAT_M) / MOUTH_TAPER_M));
+   // the junction-mouth blend's claims: pixel -> [edge, distance, core, height]
+   // per road whose core reaches it, kept only where two roads' cores overlap
+   const claims = new Map();
+@@ -191,7 +206,7 @@ export function composeTerrain(graph, grid) {
+     if (!list) {
+       // (the pixel's first core, or more of the same road's: nothing to blend yet)
+       if (!(t.w[j] < -500) || t.k[j] < 0 || t.k[j] === k) return;
+-      list = [t.k[j], t.w[j] + 1000, graph.edges[t.k[j]].half + SHOULDER_M, t.h[j]];
++      list = [t.k[j], t.w[j] + 1000, t.cr[j], t.h[j]];
+       claims.set(idx, list);
+     }
+     for (let a = 0; a < list.length; a += 4) {
+@@ -206,6 +221,10 @@ export function composeTerrain(graph, grid) {
+     const last = e.s.length - 2;
+     const fromOpen = openNode(e.from); const toOpen = openNode(e.to);
+     const gFrom = fromOpen ? endGrade(k, false) : 0; const gTo = toOpen ? endGrade(k, true) : 0;
++    // (a junction mouth at either end: the core widened to MOUTH_CORE_M there)
++    const mouthFrom = junctionNode(e.from); const mouthTo = junctionNode(e.to);
++    const mouthGain = Math.max(0, MOUTH_CORE_M - (e.half + SHOULDER_M));
++    const sEnd = e.s[e.s.length - 1] - e.s[0];
+     for (let i = 0; i + 1 < e.s.length; i++) {
+       const kind = kindOf[k][i];
+       if (TUBE.has(kind)) continue;
+@@ -219,6 +238,9 @@ export function composeTerrain(graph, grid) {
+       const vx = bx - ax; const vy = by - ay; const L2 = vx * vx + vy * vy;
+       if (L2 < 1e-9) continue;
+       const core = e.half + SHOULDER_M;
++      const sA = e.s[i] - e.s[0]; const sB = e.s[i + 1] - e.s[0];
++      const mouthReach = MOUTH_FLAT_M + MOUTH_TAPER_M;
++      const mouth = !deck && !abutment && mouthGain > 0 && ((mouthFrom && sA < mouthReach) || (mouthTo && sEnd - sB < mouthReach)) ? mouthGain : 0;
+       // a raceway keeps its ground's banking (an oval's turns, 20-30 degrees
+       // in the elevation data): across its core the surface tilts as the
+       // terrain does there, not levelled into a shelf with a cliff each side
+@@ -238,7 +260,7 @@ export function composeTerrain(graph, grid) {
+         return Math.abs(zk[j] - (abutmentOff(kind, k, j)) - (raw(cc, rr) - minHeight));
+       };
+       const off = Math.max(offAt(i), offAt(i + 1)) + 1;
+-      const reach = deck ? e.half + DECK_REACH_M : core + Math.min(SLOPE_MAX_M, Math.max(GROUND_BLEND_M, off * FILL_RUN + 2));
++      const reach = deck ? e.half + DECK_REACH_M : core + mouth + Math.min(SLOPE_MAX_M, Math.max(GROUND_BLEND_M, off * FILL_RUN + 2));
+       const [c0, r0] = toPixel(Math.min(ax, bx) - reach, Math.max(ay, by) + reach);
+       const [c1, r1] = toPixel(Math.max(ax, bx) + reach, Math.min(ay, by) - reach);
+       stats.corridors++;
+@@ -281,21 +303,27 @@ export function composeTerrain(graph, grid) {
+             if (cap < t.cap[j]) t.cap[j] = cap;
+             continue;
+           }
++          // this pixel's core: wider in a junction mouth (MOUTH_CORE_M)
++          let coreHere = core;
++          if (mouth > 0) {
++            const sAt = sA + (sB - sA) * u;
++            coreHere = core + mouth * Math.max(mouthFrom ? mouthShare(sAt) : 0, mouthTo ? mouthShare(sEnd - sAt) : 0);
++          }
+           const h0 = raw(c, r) - minHeight;
+           let slope = GROUND_BLEND_M;
+           if (kind === 'embankment' || kind === 'cutting' || Math.abs(zc - h0) > 0.5) {
+             slope = Math.min(SLOPE_MAX_M, Math.max(SLOPE_MIN_M, Math.abs(zc - h0) * (zc > h0 ? FILL_RUN : CUT_RUN)));
+           }
+-          const tt = d <= core ? 0 : (d - core) / slope;
++          const tt = d <= coreHere ? 0 : (d - coreHere) / slope;
+           if (tt >= 1) continue;
+           // ground over a built tube is the tunnel's: only a road's own
+           // surface on it (a street over the box) is composed, not a road's
+           // rounded end or side slope reaching over it (a cutting's end, its
+           // road meeting the tube by a short link: dug into the portal)
+-          if (tube && (d > core || uRaw < 0 || uRaw > 1) && tube(r * width + c)) { left.add(r * width + c); continue; }
++          if (tube && (d > coreHere || uRaw < 0 || uRaw > 1) && tube(r * width + c)) { left.add(r * width + c); continue; }
+           // ground another builder shaped (a tunnel's cutting): its own
+           // except under the road's surface
+-          if (keep && d > core && keep(r * width + c)) { left.add(r * width + c); continue; }
++          if (keep && d > coreHere && keep(r * width + c)) { left.add(r * width + c); continue; }
+           const target = zc + (h0 - zc) * smoothstep(tt);
+           // the road whose core is physically nearest owns the pixel (inside
+           // two cores, the nearer centreline; equal: averaged). Two roads side by side at different
+@@ -306,22 +334,22 @@ export function composeTerrain(graph, grid) {
+           // (inside any road core beats every side slope, and among cores the
+           // nearer centreline wins outright: a wide road must not take a
+           // narrower road's own surface just because its core reaches)
+-          const out = abutment ? Math.max(1e-3, d - core) : (d <= core ? -1000 + d : d - core);
++          const out = abutment ? Math.max(1e-3, d - core) : (d <= coreHere ? -1000 + d : d - coreHere);
+           // two road cores overlapping at clearly different heights: the lower
+           // road keeps its whole drawn width (the upper stands behind a wall)
+           // (only in the upper road's outer margin: its centre stays its own)
+-          const q = d / core;   // how far out in this road's core (0 centre, 1 edge)
++          const q = d / coreHere;   // how far out in this road's core (0 centre, 1 edge)
+           const bothCores = out < -500 && t.w[j] < -500;
+           const twoLevels = bothCores && Math.abs(target - t.h[j]) > CORE_STEP_M;
+           // (every road core on the pixel, for the junction-mouth blend below)
+           const mine = out < -500 ? k : -1;
+-          if (mine >= 0) claim(r * width + c, t, j, k, d, core, target);
++          if (mine >= 0) claim(r * width + c, t, j, k, d, coreHere, target);
+           if (twoLevels) {
+             const lowerIsNew = target < t.h[j];
+             const upperQ = lowerIsNew ? t.q[j] : q;
+             const take = upperQ > CORE_OUTER ? lowerIsNew : out < t.w[j] - 1e-3;
+-            if (take) { t.w[j] = out; t.h[j] = target; t.q[j] = q; t.n[j] = 1; t.k[j] = mine; }
+-          } else if (out < t.w[j] - 1e-3) { t.w[j] = out; t.h[j] = target; t.q[j] = q; t.n[j] = 1; t.k[j] = mine; }
++            if (take) { t.w[j] = out; t.h[j] = target; t.q[j] = q; t.n[j] = 1; t.k[j] = mine; t.cr[j] = coreHere; }
++          } else if (out < t.w[j] - 1e-3) { t.w[j] = out; t.h[j] = target; t.q[j] = q; t.n[j] = 1; t.k[j] = mine; t.cr[j] = coreHere; }
+           else if (!twoLevels && Math.abs(out - t.w[j]) <= 1e-3) { t.h[j] = (t.h[j] * t.n[j] + target) / (t.n[j] + 1); t.n[j] = Math.min(255, t.n[j] + 1); }
+         }
+       }
+diff --git a/tests/structureTerrain.test.mjs b/tests/structureTerrain.test.mjs
+index a76782d..bb031ea 100644
+--- a/tests/structureTerrain.test.mjs
++++ b/tests/structureTerrain.test.mjs
+@@ -170,6 +170,33 @@ test('a road on a grade split at a node keeps its grade through the node', () =>
+   }
+ });
+ 
++test('narrow roads at a junction: the turn from a steep side street is spread over the mouth', () => {
++  // a level 5 m road along x split at the node, a 5 m side street from it up
++  // a 15 % grade (cores 3.5 m): a left turn's path round the corner changed
++  // grade within a couple of metres (vertical radius 2.6 m over 1 m) before
++  // the cores were widened to 6.5 m in the mouth
++  const flat = () => 0; const up = (x, y) => 0.15 * y;
++  const graph = mouthGraph([
++    mouthEdge(-80, 0, 1, 0, 21, 2.5, flat, 'w', 'j'),
++    mouthEdge(0, 0, 1, 0, 21, 2.5, flat, 'j', 'e'),
++    mouthEdge(0, 0, 0, 1, 21, 2.5, up, 'j', 'n'),
++  ]);
++  const out = composeTerrain(graph, mouthGrid((x, y) => Math.max(0, 0.15 * y)));
++  // the path: a quarter ellipse from the side street's left lane to the main road's, about (12, 12)
++  const P = [];
++  for (let a = 0; a <= 90; a++) { const t = ((180 + a) * Math.PI) / 180; P.push([12 + 13.5 * Math.cos(t), 12 + 10.5 * Math.sin(t)]); }
++  const z = P.map(([x, y]) => out.heightAt(x, y));
++  let worst = 0;
++  for (let i = 3; i + 3 < P.length; i++) {
++    const ds = 3 * Math.hypot(P[i + 1][0] - P[i][0], P[i + 1][1] - P[i][1]);
++    worst = Math.max(worst, Math.abs(z[i + 3] - 2 * z[i] + z[i - 3]) / (ds * ds));
++  }
++  assert.ok(worst < 0.15, `vertical curvature ${worst.toFixed(3)} per metre on the turn (radius ${(1 / worst).toFixed(1)} m)`);
++  // each road's own surface past the mouth
++  for (const [x, y] of [[20, 0], [20, 2], [-20, -2]]) assert.ok(Math.abs(out.heightAt(x, y)) < 0.01, `main road at ${x},${y}: ${out.heightAt(x, y).toFixed(3)}`);
++  for (const [x, y] of [[0, 20], [2, 24], [-2, 30]]) assert.ok(Math.abs(out.heightAt(x, y) - 0.15 * y) < 0.01, `side street at ${x},${y}: ${out.heightAt(x, y).toFixed(3)}`);
++});
++
+ test('roads that do not meet keep their own surfaces where their cores overlap', () => {
+   // two parallel roads 8 m apart at 0 and 0.5 m (cores 4.5 m: 1 m overlap),
+   // no node shared: the nearer centreline still owns the pixel, as before

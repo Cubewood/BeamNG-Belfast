@@ -8,3 +8,5 @@
 0007-Lane-forks-a-branch-off-the-outer-lanes-gets-an-AI-l.patch
 0008-UK-junctions-Give-Way-lines-at-every-minor-mouth-and.patch
 0009-Road-snapping-keeps-a-shared-node-exactly-where-it-i.patch
+0010-Junction-mouths-of-narrow-roads-cores-at-least-6.5-m.patch
+0011-Round-a-sharp-bend-at-a-T-vertex-too-the-vertex-move.patch
