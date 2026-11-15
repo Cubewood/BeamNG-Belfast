@@ -4,7 +4,8 @@ MapNG builds the sidewalks as 256 m tile shapes (`sidewalks/sidewalks_<x>_<y>.da
 collision geometry in world coordinates (the TSStatic sits at the origin). The kerb a wheel meets is a near-vertical
 face of that mesh; its height is the z extent of the face. Roads are not part of the mesh, so the face height is
 the kerb's own height, not its height above the road decal: MapNG sinks every face below the road (a curb 0.10 m,
-a walkway's edge 0.30 m), so the check measures the face's top against the road beside it (`with_tops`).
+a walkway's edge 0.30 m), so the check measures the face's top at each end against the ground beside it
+(`with_tops`).
 """
 from __future__ import annotations
 
@@ -47,7 +48,8 @@ def _chord_height(p: np.ndarray, w: np.ndarray, segs: np.ndarray) -> np.ndarray:
 def kerb_faces(raw: bytes, with_tops: bool = False):
     """Vertical faces of a COLLADA file's Colmesh: ground segments (n, 2, 2) and heights (n,), z extent in metres.
 
-    With `with_tops`, also the z of each face's top (n,), so a caller can measure it against the road beside it.
+    With `with_tops`, also the z of each face's top at the two ends of its segment (n, 2), so a caller can measure
+    it against the ground beside it.
     None when the file has no readable Colmesh."""
     block = _colmesh_block(raw)
     if block is None:
@@ -66,7 +68,7 @@ def kerb_faces(raw: bytes, with_tops: bool = False):
     nz = np.divide(np.abs(cross[:, 2]), norm, out=np.ones_like(norm), where=norm > 1e-12)
     p = p[(nz < WALL_NORMAL_Z) & (norm > 1e-9)]
     if not len(p):
-        return (np.zeros((0, 2, 2)), np.zeros(0)) + ((np.zeros(0),) if with_tops else ())
+        return (np.zeros((0, 2, 2)), np.zeros(0)) + ((np.zeros((0, 2)),) if with_tops else ())
     w = p[:, :, :2]
     d = np.stack([np.linalg.norm(w[:, 0] - w[:, 1], axis=1), np.linalg.norm(w[:, 1] - w[:, 2], axis=1),
                   np.linalg.norm(w[:, 0] - w[:, 2], axis=1)], axis=1)
@@ -77,8 +79,25 @@ def kerb_faces(raw: bytes, with_tops: bool = False):
     height = _chord_height(p, w, segs)
     keep = d.max(axis=1) > MIN_FACE_LEN_M
     if with_tops:
-        return segs[keep], height[keep], p[:, :, 2].max(axis=1)[keep]
+        return segs[keep], height[keep], _end_tops(p, w, segs)[keep]
     return segs[keep], height[keep]
+
+
+def _end_tops(p: np.ndarray, w: np.ndarray, segs: np.ndarray) -> np.ndarray:
+    """z of each vertical triangle's top at the two ends of its ground segment (n, 2).
+
+    A triangle's corners sit at the two ends (the vertical edge has two corners at one end); the top at an end is
+    the highest corner there. A face on a slope is taller at one end than the other, so its top is measured where
+    it stands, not as the highest corner against the road at the middle (I-005: a footway climbing 0.28 m along a
+    1 m face past a dead end)."""
+    z = p[:, :, 2]
+    out = np.empty((len(p), 2))
+    for e in (0, 1):
+        dist = np.linalg.norm(w - segs[:, e][:, None, :], axis=2)            # each corner's distance to this end
+        other = np.linalg.norm(w - segs[:, 1 - e][:, None, :], axis=2)
+        at = dist <= other
+        out[:, e] = np.where(at, z, -np.inf).max(axis=1)
+    return out
 
 
 def level_kerb_faces(level: Level, with_tops: bool = False):
@@ -103,5 +122,5 @@ def level_kerb_faces(level: Level, with_tops: bool = False):
     cat = (np.concatenate(segs) if segs else np.zeros((0, 2, 2)),
            np.concatenate(heights) if heights else np.zeros(0))
     if with_tops:
-        return cat + (np.concatenate(tops) if tops else np.zeros(0), skipped)
+        return cat + (np.concatenate(tops) if tops else np.zeros((0, 2)), skipped)
     return cat + (skipped,)

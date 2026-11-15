@@ -8,6 +8,7 @@ import shutil
 import sys
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -344,6 +345,33 @@ def test_kerb_height_is_its_top_over_the_road_beside_it(tmp_path):
     # a face higher up on a bank than its own height: never more than the face itself
     f = ck.check_kerb_heights(kerb_level(tmp_path, [(40, 3.2, 60, 3.2, 0.25, 10.2)]), C)
     assert [x["value"] for x in f] == [pytest.approx(0.25)]
+
+
+def test_kerb_height_is_over_the_ground_not_the_decal_centreline(tmp_path):
+    # I-005 (635, 172): the ground at the face stands 0.12 m over the road's decal z (a side road's mouth, cross
+    # slope); a 0.15 m curb on that ground is not 0.27 m over the road a wheel drives on
+    lv = kerb_level(tmp_path, [(40, 3.2, 60, 3.2, 0.25, 10.02)])
+    assert [x["value"] for x in ck.check_kerb_heights(lv, C)] == [pytest.approx(0.25)]
+    (tmp_path / "b").mkdir()
+    lv = level(tmp_path / "b", kerbs=[(40, 3.2, 60, 3.2, 0.25, 10.02)], step_at_x=0.0, step_height=0.12)
+    assert ck.check_kerb_heights(lv, C) == []
+    # the ground is the terrain on the lane's side: a face whose other side drops away still counts
+    (tmp_path / "c").mkdir()
+    lv = level(tmp_path / "c", kerbs=[(40, 3.2, 60, 3.2, 0.40)])
+    lv.terrain.heights[:] = np.where(np.arange(lv.terrain.heights.shape[0])[:, None] * lv.terrain.square
+                                     + lv.terrain.origin[1] > 3.2, 9.5, 10.0)
+    assert [x["value"] for x in ck.check_kerb_heights(lv, C)] == [pytest.approx(0.40)]
+
+
+def test_kerb_face_past_a_dead_end_is_measured_within_reach(tmp_path):
+    # I-005 (-277, 821): a footway edge starting 0.2 m past the end of road E (x 180, lanes y -123 to -117) and
+    # climbing 0.3 m along its 1 m: within 0.5 m of the lane its top is 0.10 to 0.19 m over the ground
+    face = (180.2, -118.0, 181.2, -118.0, 9.8, 10.1, 10.1, 10.4)
+    assert ck.check_kerb_heights(kerb_level(tmp_path, [face]), C) == []
+    # the same face along the side of the road is measured over its whole length
+    (tmp_path / "b").mkdir()
+    side = (100.0, -116.8, 101.0, -116.8, 9.8, 10.1, 10.1, 10.4)
+    assert [x["value"] for x in ck.check_kerb_heights(kerb_level(tmp_path / "b", [side]), C)] == [pytest.approx(0.30)]
 
 
 def test_kerb_height_on_a_slope_is_the_height_of_the_face(tmp_path):

@@ -57,6 +57,8 @@ DEFAULTS = {
     "kerb_high_m": 0.30,
     "kerb_reach_m": 0.5,           # ... if it lies within this of a drivable lane's edge (or inside the lane)
     "kerb_cell_m": 10.0,
+    "kerb_side_m": 0.3,            # the ground beside a face is the terrain this far off it, on the lane's side (I-005)
+    "kerb_deck_m": 0.5,            # ... unless it is further than this from the road's decal (a bridge deck): the decal
     # reporting
     "max_per_kind": 150,
 }
@@ -645,14 +647,67 @@ def _road_z_at(nodes: np.ndarray, x: float, y: float) -> float:
     return float(q[k, 2])
 
 
+def _ground_beside(level: Level, line, nodes: np.ndarray, q: np.ndarray, u: np.ndarray, c: dict) -> float:
+    """Height of the ground a wheel on the lane stands on at a point `q` of a kerb face running along `u`.
+
+    DecalRoads have no collision: a wheel rolls on the terrain, and a drawn road's z is its centreline height,
+    which on a cross-sloped road or a side road's mouth is not the ground at its edge (I-005: a 6 m service road's
+    centreline 0.12 m under the main road's gutter at (635, 172)). So the ground is the terrain `kerb_side_m` off
+    the face on the lane's side (the side nearer the lane's centreline; the lower of the two when the face runs
+    across the lane, so a wheel meets it end on). The decal's z is used where there is no terrain, or where the
+    terrain is more than `kerb_deck_m` off the decal (a bridge deck)."""
+    road_z = _road_z_at(nodes, float(q[0]), float(q[1]))
+    t = level.terrain
+    if t is None:
+        return road_z
+    n = np.array([-u[1], u[0]]) * c["kerb_side_m"]
+    pts = np.array([q + n, q - n])
+    g = t.height(pts[:, 0], pts[:, 1])
+    if np.isnan(g).any():
+        return road_z
+    dist = shapely.distance(line, shapely.points(pts))
+    if abs(dist[0] - dist[1]) > c["kerb_side_m"] * 2 / 3:     # the face runs along the lane: its lane side
+        ground = float(g[int(np.argmin(dist))])
+    else:                                                    # it runs across the lane: the lower side
+        ground = float(g.min())
+    return road_z if abs(ground - road_z) > c["kerb_deck_m"] else ground
+
+
+def _in_reach(seg: np.ndarray, roads, idx: LineIndex, reach: float, cache: dict) -> list[float]:
+    """Positions (0 to 1 along the face) of the ends of the parts of a face within `reach` of a lane.
+
+    Only those parts stand beside a lane: a face that starts at a dead end's corner and climbs on past it is
+    measured where it is within reach, not 1 m further on (I-005: a footway carrying on uphill from the end of a
+    service road at (-277, 821))."""
+    face = shapely.LineString(seg)
+    near = []
+    for k in idx.tree.query(face, predicate="dwithin", distance=reach + 15.0):
+        ri = idx.valid[int(k)]
+        if ri not in cache:
+            r, half, _nav = roads[ri]
+            cache[ri] = idx.lines[ri].buffer(half, cap_style="flat", join_style="round").buffer(reach) if half > 0 else None
+        if cache[ri] is not None:
+            near.append(cache[ri])
+    if not near:
+        return []
+    part = face.intersection(shapely.unary_union(near))
+    length = max(face.length, 1e-9)
+    out = []
+    for g in getattr(part, "geoms", [part]):
+        if isinstance(g, shapely.LineString) and not g.is_empty:
+            out += [face.project(shapely.Point(xy)) / length for xy in (g.coords[0], g.coords[-1])]
+    return out
+
+
 def check_kerb_heights(level: Level, c: dict) -> list[dict]:
     """Kerb faces of the sidewalk collision meshes taller than `kerb_limit_m` at the edge of a drivable lane.
 
     A face is the vertical part of a sidewalk tile's Colmesh (`kerbs.kerb_faces`). It counts when its ground
     segment lies within `kerb_reach_m` of the drivable lanes (`geometry.lane_roads`, at drawn width; a face inside
-    the lanes counts too). Its height is what a wheel on the road meets: its top over the nearest lane's road
-    height there (the decal's z), but never more than the face itself (MapNG sinks faces below the road: a
-    walkway's edge reaches 0.30 m down, so its 0.40 m face shows 0.10 to 0.15 m; I-005). Faces are merged into
+    the lanes counts too). Its height is what a wheel on the road meets: its top at each end over the ground on the
+    nearest lane's side there (`_ground_beside`), but never more than the face itself (MapNG sinks faces below the
+    road: a walkway's edge reaches 0.30 m down, so its 0.40 m face shows 0.10 to 0.15 m; I-005). A face still over
+    the limit is measured again on its parts within `kerb_reach_m` of a lane only (`_in_reach`). Faces are merged into
     one finding per `kerb_cell_m` (the tallest). I-004 found the front wheel of a car on a one-lane slip striking
     a face 0.40 m over the road."""
     segs, heights, tops, skipped = level_kerb_faces(level, with_tops=True)
@@ -680,15 +735,25 @@ def check_kerb_heights(level: Level, c: dict) -> list[dict]:
     keep = near_nav | near_other
     if not keep.any():
         return []
-    mids = segs[keep].mean(axis=1)
+    ks = segs[keep]
+    mids = ks.mean(axis=1)
     hs = heights[keep]
     nav = near_nav[keep]
     idx = LineIndex([r.xy for r, _h, _n in roads])
     tk = tops[keep]
+    strips: dict = {}
     for i, (x, y) in enumerate(mids):
         hit = idx.nearest(float(x), float(y), 15.0)
-        if hit:
-            hs[i] = min(hs[i], tk[i] - _road_z_at(roads[hit[0]][0].nodes, float(x), float(y)))
+        if not hit:
+            continue
+        line, nodes = idx.lines[hit[0]], roads[hit[0]][0].nodes
+        a, b = ks[i]
+        u = (b - a) / max(float(np.hypot(*(b - a))), 1e-9)
+        top = max(tk[i, 0] - _ground_beside(level, line, nodes, a, u, c), tk[i, 1] - _ground_beside(level, line, nodes, b, u, c))
+        if min(hs[i], top) > c["kerb_limit_m"]:           # over the limit: measure only the part beside a lane
+            top = max((tk[i, 0] + (tk[i, 1] - tk[i, 0]) * f - _ground_beside(level, line, nodes, a + (b - a) * f, u, c)
+                       for f in _in_reach(ks[i], roads, idx, reach, strips)), default=0.0)
+        hs[i] = min(hs[i], top)
     over = hs > c["kerb_limit_m"]
     mids, hs, nav = mids[over], hs[over], nav[over]
     cell = c["kerb_cell_m"]

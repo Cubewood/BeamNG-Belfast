@@ -206,6 +206,8 @@ Change.
 
 Still found, both off the navigation graph: a footway carrying on uphill from the end of a service road, its side edge 0.30 m over the road's end at (-277, 821); and a curb 0.23 m over a 6 m service road's mouth at (635, 172), past the 2.5 m driveway dip.
 
+Both are the check, not MapNG (I-005, 15 November 2026; no patch 0008). At (635, 172) the face is Purdysburn Road's 0.15 m curb, 0.15 m over the terrain on both sides; the check measured it over the service road's centreline decal, 0.12 m lower than the ground at the curb. At (-277, 821) the footway's side edge starts 0.1 m past the service road's end and climbs 0.28 m along its 1 m; the check took its top at the far end against the road's end. The kerb check now measures over the terrain beside the face and only on the parts within 0.5 m of a lane (`docs/static_checks.md`): 0 findings on the I-007 build. Left for later, off every lane: that footway's top climbs about 0.3 m over its own path decal and the ground north of it between x -277.7 and -276.2.
+
 ### Drive suite (2026-11-15 00:27, `qa/drive_suite.py run --gate`, `H:\BelfastData\qa\drive\2026-11-15_002703`)
 
 The I-005 zip was put in the QA profile's `mods` (the T-413 zip it replaced is kept as `H:\BelfastData\mapng\i005\qa_mods_belfast_slice.before_i005.zip`). `build_routes.py check`: 10 routes, 0 problems (the roads did not move). Status ok, 10 of 10 routes completed, G3 pass, events: 2 `scrape`.

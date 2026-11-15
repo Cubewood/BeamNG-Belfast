@@ -186,9 +186,9 @@ def build(tmp: Path, spec: Spec | None = None) -> tuple[Path, Path]:
                  "position": [0, 0, 0], "shapeName": f"/{base}map_assets/custom_assets/sidewalks/sidewalks_0_0.dae",
                  "collisionType": "Collision Mesh"})
     # a clean level still has a sidewalk tile: a 0.12 m kerb well away from every road
-    # (a sixth value is the face's bottom z; the road is at z 10)
-    kerb_faces = [(k[0], k[1], k[2], k[3], b, b + k[4], b, b + k[4])
-                  for k in spec.kerbs for b in [k[5] if len(k) > 5 else 10.0]]
+    # (a sixth value is the face's bottom z; the road is at z 10; eight values are kerb_dae's own, per end)
+    kerb_faces = [tuple(k) if len(k) == 8 else (k[0], k[1], k[2], k[3], b, b + k[4], b, b + k[4])
+                  for k in spec.kerbs for b in [k[5] if len(k) in (6, 7) else 10.0]]
     kerb_faces = kerb_faces or [(300.0, 300.0, 310.0, 300.0, 10.0, 10.12, 10.0, 10.12)]
     mats = {"road_asphalt_2lane": {"name": "road_asphalt_2lane"}, "m_line_white": {"name": "m_line_white"}}
     if spec.road_material == "road_invisible":
