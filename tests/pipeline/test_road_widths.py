@@ -53,13 +53,13 @@ def test_osm_width_tag_when_no_dfi():
 
 def test_lanes_tag_picks_the_row_for_that_lane_count_else_the_class_default():
     feats, _ = run([way("1", lanes="2"), way("2", lanes="3")])
-    assert (tags_of(feats, "1")["width"], tags_of(feats, "1")["belfast:width_source"]) == ("5.8", "osm-lanes")
-    assert (tags_of(feats, "2")["width"], tags_of(feats, "2")["belfast:width_source"]) == ("5.6", "default")
+    assert (tags_of(feats, "1")["width"], tags_of(feats, "1")["belfast:width_source"]) == ("6", "osm-lanes")
+    assert (tags_of(feats, "2")["width"], tags_of(feats, "2")["belfast:width_source"]) == ("6", "default")
 
 
 def test_class_default_by_direction():
     feats, _ = run([way("1"), way("2", highway="trunk", oneway="yes")])
-    assert tags_of(feats, "1")["width"] == "5.6"
+    assert tags_of(feats, "1")["width"] == "6"
     assert tags_of(feats, "2")["width"] == "9.4"
 
 
@@ -79,7 +79,7 @@ def test_low_confidence_dfi_is_kept_only_inside_the_class_range():
     feats, _ = run([way("1"), way("2"), way("3", highway="service")],
                    {**dfi("1", 6.0, "low"), **dfi("2", 20.0, "low"), **dfi("3", 5.0, "low")})
     assert (tags_of(feats, "1")["width"], tags_of(feats, "1")["belfast:width_source"]) == ("6", "dfi-low")
-    assert (tags_of(feats, "2")["width"], tags_of(feats, "2")["belfast:width_source"]) == ("5.6", "default")
+    assert (tags_of(feats, "2")["width"], tags_of(feats, "2")["belfast:width_source"]) == ("6", "default")
     assert "width" not in tags_of(feats, "3")
 
 
@@ -179,3 +179,11 @@ def test_low_confidence_width_is_cut_to_what_mapng_defaults_would_draw():
     feats, _ = run([w], d)
     t = tags_of(feats, "9")
     assert float(t["width"]) <= 7.4 + 4.6 + 0.05 and t["belfast:width_dfi"] == "14.3"
+
+
+def test_two_way_width_just_under_the_lanes_is_drawn_at_the_lanes_width():
+    feats, _ = run([way("4")], dfi("4", 5.4))     # residential, 2 x 3.0 m lanes
+    t = tags_of(feats, "4")
+    assert t["width"] == "6" and t["belfast:width_dfi"] == "5.4"
+    feats, _ = run([way("5")], dfi("5", 4.8))     # 1.2 m under: a narrow road stays narrow
+    assert tags_of(feats, "5")["width"] == "4.8"

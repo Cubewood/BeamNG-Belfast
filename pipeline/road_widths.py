@@ -41,6 +41,11 @@ defaults give a way. Wider than that (Hospital Road, one-way, lanes=1 in OSM, 14
 carriageway) it was drawn 14 m and MapNG's street props, which stand 2.4 m beyond the carriageway edge, put a utility
 pole on the slip road beside it; the drive suite crashed into it at (125, 275). The DfI figure stays in `belfast:width_dfi`.
 
+A two-way carriageway up to 0.75 m narrower than its lanes at MapNG's lane width (residential 5.6 m of DfI against
+2 x 3.0 m) is drawn at the lanes' width: kerbs sit on the lane edge once the parking lanes are gone, and the AI's line
+through a bend on a 5.6 m street struck one (drive suite, Haddo Woods at (-295, -163), crash). Within the DfI check's
+0.75 m, so the check does not count it; the DfI figure stays in `belfast:width_dfi`.
+
 Tags written: `width` (metres, one decimal), `belfast:width_source` (`dfi-high`, `dfi-medium`, `dfi-low`, `osm-width`,
 `osm-lanes`, `default`, or `none` when left to MapNG), `width:osm` (original, when replaced), `belfast:width_cap`
 (`yes` when `mapng:carriageway_max` was set), `shoulder:both:width` with `belfast:shoulder=yes` (see above). Safe to run twice: a way that carries the source tag is restored first.
@@ -64,6 +69,7 @@ CAP_FLAG = "belfast:width_cap"
 CAP_KEY = "mapng:carriageway_max"
 SHOULDER_KEY = "shoulder:both:width"      # MapNG keeps the lanes' width and draws the rest as an edge strip
 SHOULDER_FLAG = "belfast:shoulder"
+LANE_FLOOR_TOL_M = 0.75                   # a two-way carriageway this much under its lanes' width is drawn at it (kerb strikes)
 DFI_KEY = "belfast:width_dfi"             # the source width when it was cut to the most MapNG's own defaults would draw
 SHOULDER_SLACK_M = 1.6                    # a carriageway this much over the lanes gets no strip: a strip under 0.8 m a side puts the kerb face within 0.5 m of the lane edge (I-006 kerb check)
 
@@ -279,6 +285,11 @@ def apply(features: list[dict], dfi_ways: dict, table: dict) -> dict:
             if source == "dfi-low" and w > widest + 0.05 and not any(k.startswith(("shoulder", "parking")) for k in tags):
                 tags[DFI_KEY] = fmt(w)
                 w = widest
+            if tags["highway"] not in NO_DEFAULT and not is_oneway(tags):
+                floor = driving_width(tags)
+                if floor - LANE_FLOOR_TOL_M <= w < floor - 0.05:
+                    tags[DFI_KEY] = fmt(w)
+                    w = floor
             tags["width"] = fmt(w)
             if w < lo - 0.05:
                 tags[CAP_KEY] = fmt(w)
