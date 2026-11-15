@@ -33,7 +33,7 @@ The lanes' width stays what MapNG would have given the way (lanes x class lane w
 takes `width` as the whole carriageway and, with no parking or shoulder tag, makes ALL of it the driving (AI) width,
 so a one-lane one-way carriageway of 14.3 m (DfI, Hospital Road) became one 14.3 m AI lane whose node radius merged
 the two carriageways of the dual road 6 m apart: the game's graph lost the eastbound link (T-406, `docs/dfi_widths.md`).
-Where the carriageway is more than 0.5 m wider than that driving width, the rest is written as `shoulder:both:width`
+Where the carriageway is more than 1.6 m wider than that driving width, the rest is written as `shoulder:both:width`
 (half each side), which MapNG draws as paved edge and keeps out of the AI path, as it does for a parking lane.
 
 Tags written: `width` (metres, one decimal), `belfast:width_source` (`dfi-high`, `dfi-medium`, `dfi-low`, `osm-width`,
@@ -59,7 +59,7 @@ CAP_FLAG = "belfast:width_cap"
 CAP_KEY = "mapng:carriageway_max"
 SHOULDER_KEY = "shoulder:both:width"      # MapNG keeps the lanes' width and draws the rest as an edge strip
 SHOULDER_FLAG = "belfast:shoulder"
-SHOULDER_SLACK_M = 0.5                    # a carriageway this much over the lanes' width gets no strip
+SHOULDER_SLACK_M = 1.6                    # a carriageway this much over the lanes gets no strip: a strip under 0.8 m a side puts the kerb face within 0.5 m of the lane edge (I-006 kerb check)
 
 VEHICLE_HIGHWAYS = {
     "motorway", "motorway_link", "trunk", "trunk_link", "primary", "primary_link", "secondary", "secondary_link",
