@@ -23,7 +23,7 @@ TURN_MIN_DEG = 35.0  # heading change at a junction counted as a turn
 EARTH_M_PER_DEG = 111320.0
 M_PER_DEG_LAT = 110574.0   # fits MapNG's world to about 1 m (median 0.8 m, T-302 check)
 
-_NAME_RE = re.compile(r"^dr_(.*?)(?:_\d+)?_s\d+_(?:ai|b)\d*$")
+_NAME_RE = re.compile(r"^dr_(.*?)(?:_\d+)?_s\d+_(?:lead_ai|ai|b)\d*$")
 
 
 def latlon_to_xy(lat: float, lon: float, lat0: float, lon0: float) -> tuple[float, float]:
