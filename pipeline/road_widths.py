@@ -29,9 +29,16 @@ minimum half width up to twice the maximum plus 2.3 m). A DfI width under the mi
 `mapng:carriageway_max`, MapNG's own cap tag (roadWidth.js: narrows below the class minimum; the extras give way
 first); one over the maximum cannot be drawn without a MapNG patch and is listed in the report as `unreachable`.
 
+The lanes' width stays what MapNG would have given the way (lanes x class lane width, within its class range): MapNG
+takes `width` as the whole carriageway and, with no parking or shoulder tag, makes ALL of it the driving (AI) width,
+so a one-lane one-way carriageway of 14.3 m (DfI, Hospital Road) became one 14.3 m AI lane whose node radius merged
+the two carriageways of the dual road 6 m apart: the game's graph lost the eastbound link (T-406, `docs/dfi_widths.md`).
+Where the carriageway is more than 0.5 m wider than that driving width, the rest is written as `shoulder:both:width`
+(half each side), which MapNG draws as paved edge and keeps out of the AI path, as it does for a parking lane.
+
 Tags written: `width` (metres, one decimal), `belfast:width_source` (`dfi-high`, `dfi-medium`, `dfi-low`, `osm-width`,
 `osm-lanes`, `default`, or `none` when left to MapNG), `width:osm` (original, when replaced), `belfast:width_cap`
-(`yes` when `mapng:carriageway_max` was set). Safe to run twice: a way that carries the source tag is restored first.
+(`yes` when `mapng:carriageway_max` was set), `shoulder:both:width` with `belfast:shoulder=yes` (see above). Safe to run twice: a way that carries the source tag is restored first.
 """
 from __future__ import annotations
 
@@ -50,6 +57,9 @@ SOURCE_KEY = "belfast:width_source"
 ORIGINAL_KEY = "width:osm"
 CAP_FLAG = "belfast:width_cap"
 CAP_KEY = "mapng:carriageway_max"
+SHOULDER_KEY = "shoulder:both:width"      # MapNG keeps the lanes' width and draws the rest as an edge strip
+SHOULDER_FLAG = "belfast:shoulder"
+SHOULDER_SLACK_M = 0.5                    # a carriageway this much over the lanes' width gets no strip
 
 VEHICLE_HIGHWAYS = {
     "motorway", "motorway_link", "trunk", "trunk_link", "primary", "primary_link", "secondary", "secondary_link",
@@ -74,6 +84,39 @@ def mapng_clamp(highway: str) -> tuple[float, float]:
     else:
         lo, hi = 2.2, 5.0
     return 2 * lo, 2 * (hi + PARKING_LANE_M)
+
+
+def lane_width_m(highway: str) -> float:
+    """MapNG getDefaultLaneWidthMeters."""
+    if highway in ("motorway", "motorway_link", "trunk", "trunk_link"):
+        return 3.7
+    if highway in ("primary", "primary_link", "secondary", "secondary_link"):
+        return 3.5
+    if highway in ("tertiary", "tertiary_link"):
+        return 3.25
+    if highway in ("service", "track"):
+        return 2.8
+    return 3.0
+
+
+def default_lanes(highway: str, oneway: bool) -> int:
+    """MapNG getDefaultLaneCount."""
+    if highway in ("motorway", "trunk"):
+        return 2 if oneway else 4
+    if highway in ("motorway_link", "trunk_link", "primary_link", "secondary_link", "tertiary_link", "service", "track"):
+        return 1
+    return 1 if oneway else 2
+
+
+def driving_width(tags: dict) -> float:
+    """The driving width MapNG would give the way from its lanes (roadWidth.js estimateRoadHalfWidth with no `width`):
+    max(default lanes, `lanes`, lanes:forward + lanes:backward) x class lane width, within the class range."""
+    hw = tags["highway"]
+    fwd, bwd = parse_lanes(tags.get("lanes:forward")) or 0, parse_lanes(tags.get("lanes:backward")) or 0
+    lanes = max(default_lanes(hw, is_oneway(tags)), parse_lanes(tags.get("lanes")) or fwd + bwd)
+    lo, hi = {"motorway": (3.5, 9.0), "trunk": (3.5, 9.0), "primary": (2.8, 6.0), "secondary": (2.8, 6.0),
+              "service": (1.8, 3.5), "track": (1.8, 3.5)}.get(hw.replace("_link", ""), (2.2, 5.0))
+    return 2 * max(lo, min(hi, lanes * lane_width_m(hw) / 2))
 
 
 def way_id(feature_id) -> str:
@@ -197,6 +240,8 @@ def restore(tags: dict) -> None:
         tags.pop("width", None)
     if tags.pop(CAP_FLAG, None):
         tags.pop(CAP_KEY, None)
+    if tags.pop(SHOULDER_FLAG, None):
+        tags.pop(SHOULDER_KEY, None)
     del tags[SOURCE_KEY]
 
 
@@ -230,6 +275,11 @@ def apply(features: list[dict], dfi_ways: dict, table: dict) -> dict:
                 capped = True
             elif w > hi + 0.05:
                 unreachable = True
+            if not any(k.startswith(("shoulder", "parking")) for k in tags):
+                drive = driving_width(tags)
+                if w > drive + SHOULDER_SLACK_M:
+                    tags[SHOULDER_KEY] = fmt((w - drive) / 2)
+                    tags[SHOULDER_FLAG] = "yes"
         rows.append({"id": str(f.get("id")), "way": way_id(f.get("id")), "highway": tags["highway"], "source": source,
                      "width": w, "capped": capped, "unreachable": unreachable, "km": _length_km(f.get("geometry") or [])})
     return summarise(rows)
