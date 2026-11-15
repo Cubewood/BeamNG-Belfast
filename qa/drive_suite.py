@@ -540,7 +540,7 @@ def run_suite(a) -> int:
     started = False
     try:
         gamectl.log(f"drive suite: {len(expected)} routes, mode {a.mode}, out {outdir}")
-        info = gamectl.cmd_start()
+        info = gamectl.cmd_start(allow_daytime=a.allow_daytime)
         started = True
         m["game"] = {"launch_to_ready_s": info.get("launch_to_ready_s"), "pid": info.get("pid")}
         loaded = gamectl.cmd_load_level(a.level, timeout=900)
@@ -702,6 +702,7 @@ def main(argv=None) -> int:
     r.add_argument("--timeout", type=float, default=OVERALL_TIMEOUT_S, help="overall hard timeout in seconds")
     r.add_argument("--out", help="output folder (default H:\\BelfastData\\qa\\drive\\<date_time>)")
     r.add_argument("--gate", action="store_true", help="exit 20 when gate G3 fails")
+    r.add_argument("--allow-daytime", action="store_true", help="allow a launch between 09:00 and 18:00 (only when the user says so)")
     rp = sub.add_parser("replay", help="re-judge a recorded run folder with the current rules (no game)")
     rp.add_argument("dir")
     rp.add_argument("--osm", default=str(OSM_JSON))
