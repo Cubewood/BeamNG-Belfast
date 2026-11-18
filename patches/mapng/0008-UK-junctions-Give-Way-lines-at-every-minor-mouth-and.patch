@@ -1,0 +1,815 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cubewood <330162352+Cubewood@users.noreply.github.com>
+Date: Wed, 18 Nov 2026 13:01:01 +0000
+Subject: [PATCH] UK junctions: Give Way lines at every minor mouth and
+ roundabout entry, at the mouth; UK kerb radii
+
+A UK level painted Give Way lines only where OSM maps a give-way node, at
+MapNG's stop point (8 m or more from the junction node), so most minor
+roads met the main road with no line and the mapped ones sat inside the
+main road or metres back from it.
+
+New file services/ukJunctions.js:
+- impliedGiveWays: at every junction with no signals, the minor arms give
+  way (road class, then the road carrying on by name or ref, then the
+  straightest pair of arms); every roundabout entry gives way to the ring.
+  Not where a dual carriageway starts or a one-way road merges at a
+  shallow angle. A junction where OSM maps a control on an arm this rule
+  gives priority is left as OSM has it.
+- junctionMouth: Stop, Give Way and roundabout lines stand with their near
+  edge 0.1 m off the carriageway they meet (TSM 3 2.3.1 to 2.3.4), square
+  to their road, kerb to centre line or full width (one-way roads, kerb to
+  centre under 2.75 m, TSM 3 2.3.2); the centre line follows uneven
+  lanes:forward / lanes:backward. 1009A across the rest of a two-way mouth.
+  The arm's own carriageway never counts as the road it meets. No line
+  where none fits off the carriageways (a link inside a junction), in a
+  dual carriageway's gap with less than 5 m behind the line, or on service
+  roads, driveways and parking aisles (drawn as paving, no carriageway).
+- Roundabout entries get 1003.1 (200 mm, 300 mm over 40 mph), no triangle.
+- UK_CORNER_RADII: kerb returns 6 m between residential and unclassified
+  streets, 4 m on living streets, 10 m with tertiary roads and up
+  (Creating Places, DOE NI 2000, Table 4, para 16.27), passed to the
+  sidewalk corners as options.cornerRadii; where the full radius does not
+  fit, a metre less at a time down to 4 m, then MapNG's half and quarter.
+  Other countries keep MapNG's table and tries.
+
+roadMarkingCuts: crossingCarriagewaysAt lists the carriageway segments across a direction.
+Signal Stop lines stay at the signal's stop point (the AI stops there),
+kerb to the (lane-split) centre line.
+
+diff --git a/services/beamngSidewalks.js b/services/beamngSidewalks.js
+index 0b3e5f3..d59a63a 100644
+--- a/services/beamngSidewalks.js
++++ b/services/beamngSidewalks.js
+@@ -156,6 +156,9 @@ const RAMP_M = 1.8;           // a loose end's curb ramp: down to the road over
+ const CORNER_RADII = { residential: 3, living_street: 3, unclassified: 3, service: 3, tertiary: 4.5, secondary: 6, primary: 6, trunk: 8 };
+ const CORNER_RADIUS = 5;
+ const CORNER_TRIES = [1, 0.5, 0.25];
++// (with a table of radii of its own, finer: down a metre at a time to 4 m, so a
++// corner that cannot take its full radius keeps as much of it as fits, then half)
++const CORNER_FINE_MIN_M = 4;
+ const CORNER_REACH_M = 15;    // how far past a run's end its corner may lie
+ const CORNER_LEVEL_M = 5;     // a curb return no higher than the road this near it
+ const CURB_LEVEL_M = 0.6;     // a curb no higher than a road this near its line
+@@ -1456,7 +1459,16 @@ function moveEnd(end, t) {
+  * [{ arc: [[x, y, z]...], centre, outer: [x, y], a: end, b: end }]. Ends
+  * left over get curb ramps.
+  */
+-function joinCorners(runs, index, walkRuns = []) {
++function joinCorners(runs, index, walkRuns = [], cornerRadii = null) {
++  // (a country's own table, by class, before MapNG's: ukJunctions.UK_CORNER_RADII)
++  const radiusOf = (highway) => cornerRadii?.[highway] ?? CORNER_RADII[highway] ?? CORNER_RADIUS;
++  const triesOf = (r0) => {
++    if (!cornerRadii) return CORNER_TRIES.map((share) => r0 * share);
++    const out = [];
++    for (let r = r0; r >= Math.min(r0, CORNER_FINE_MIN_M) - 1e-9; r -= 1) out.push(r);
++    for (const share of [0.5, 0.25]) if (r0 * share < out[out.length - 1] - 1e-9) out.push(r0 * share);
++    return out;
++  };
+   const ends = runs.flatMap((run) => [runEnd(run, true), runEnd(run, false)]);
+   // (ends by grid cell of the reach: each against its neighbours, not all
+   // against all: 4 s of a dense 8 km map)
+@@ -1495,9 +1507,8 @@ function joinCorners(runs, index, walkRuns = []) {
+   const corners = [];
+   for (const { A, B } of pairs) {
+     if (used.has(A) || used.has(B)) continue;
+-    const r0 = Math.max(CORNER_RADII[A.run.highway] ?? CORNER_RADIUS, CORNER_RADII[B.run.highway] ?? CORNER_RADIUS);
+-    for (const share of CORNER_TRIES) {
+-      const r = r0 * share;
++    const r0 = Math.max(radiusOf(A.run.highway), radiusOf(B.run.highway));
++    for (const r of triesOf(r0)) {
+       const Z = lineX([A.p[0] + A.n[0] * r, A.p[1] + A.n[1] * r], A.d, [B.p[0] + B.n[0] * r, B.p[1] + B.n[1] * r], B.d);
+       if (!Z) break;
+       const T1 = [Z[0] - A.n[0] * r, Z[1] - A.n[1] * r];
+@@ -3606,7 +3617,7 @@ function* sidewalkMeshes(carriageways, options = {}) {
+   const walkRuns = buildWalkRuns(options.walks, carriageways, options);
+   const runs = buildSidewalkRuns(carriageways, { ...options, medians, walkEnds: walkRuns.flatMap((r) => r.roadEnds) });
+   const medianRuns = buildMedianRuns(carriageways, medians, options);
+-  const corners = joinCorners(runs, buildCarriagewayIndex(carriageways), walkRuns);
++  const corners = joinCorners(runs, buildCarriagewayIndex(carriageways), walkRuns, options.cornerRadii);
+   levelWalkEndsOnSidewalks(walkRuns, runs, corners);
+   for (const run of walkRuns) capWalk(run);
+   const paveAt = pavedWalkZones(carriageways, options.walks, { americas: options.americas });
+diff --git a/services/exportBeamNGLevel.js b/services/exportBeamNGLevel.js
+index 3042fcb..e16e30d 100644
+--- a/services/exportBeamNGLevel.js
++++ b/services/exportBeamNGLevel.js
+@@ -128,6 +128,7 @@ import {
+ } from './beamngBiomeCatalog.js';
+ import { resolveRegionalBiome } from './beamngRegion.js';
+ import { isUkRoadRules, ukJunctionContext, ukJunctionLines, ukLineLayers, ukLineNodes } from './ukRoadMarkings.js';
++import { UK_CORNER_RADII } from './ukJunctions.js';
+ 
+ const BEAMNG_EXPORT_SERVICE_LOG = '[BeamNG Export Service]';
+ 
+@@ -6413,9 +6414,11 @@ export function generateJunctionMarkingDecals(terrainData, squareSize, { carriag
+   const junctions = collectJunctionApproaches(terrainData);
+   const leftHandTraffic = !!terrainData.roadRules?.leftHandTraffic;
+   // (UK roads: UK Stop lines, and Give Way lines where the give-way signs stand)
+-  const uk = junctions && isUkRoadRules(terrainData.roadRules) ? ukJunctionContext(features, junctions) : null;
++  // (and the minor arms and roundabout entries OSM maps no give-way for, every line at its mouth)
++  const ukToWorld = (x, y) => { const ll = junctions.projector.unproject(x, y); return geoToWorldPoint(ll.lat, ll.lng, terrainData, squareSize, 0); };
++  const uk = junctions && isUkRoadRules(terrainData.roadRules) ? ukJunctionContext(features, junctions, { toWorld: ukToWorld, carriageways }) : null;
+   const approaches = junctions
+-    ? [...junctions.intersections.flatMap((i) => i.approaches), ...junctions.stopApproaches, ...(uk ? junctions.yieldApproaches : [])]
++    ? [...junctions.intersections.flatMap((i) => i.approaches), ...junctions.stopApproaches, ...(uk ? [...junctions.yieldApproaches, ...uk.impliedYields] : [])]
+     : [];
+   for (const approach of approaches) {
+     const ll = junctions.projector.unproject(approach.x, approach.y);
+@@ -12250,6 +12253,8 @@ async function runBeamNGLevelExport(terrainData, center, options, jobLog) {
+       // (paving stones laid as the streets' decals lay them: red brick in the Americas)
+       americas: getMarkingStyle(exportTerrainData.roadRules) === 'americas',
+       groundAt: (x, y) => getTerrainHeightAtWorldXY(x, y, exportTerrainData, squareSize),
++      // (UK corners: Creating Places' kerb radii)
++      cornerRadii: isUkRoadRules(exportTerrainData.roadRules) ? UK_CORNER_RADII : null,
+     })
+     : { meshes: [], runs: [], triangles: 0 };
+   if (sidewalks.runs.length > 0 && shapeExtras) {
+diff --git a/services/roadMarkingCuts.js b/services/roadMarkingCuts.js
+index 284fae6..2e4c8be 100644
+--- a/services/roadMarkingCuts.js
++++ b/services/roadMarkingCuts.js
+@@ -197,6 +197,11 @@ export function parallelRoadAt(index, x, y, dir) {
+   return { half: best.s.half, dir: [best.s.ux * sign, best.s.uy * sign] };
+ }
+ 
++/** The carriageway segments at (x, y), widened by `margin`, that run across `dir`. */
++export function crossingCarriagewaysAt(index, x, y, margin, dir) {
++  return nearbySegments(index, x, y, margin).filter(({ s }) => !isParallel(s, dir)).map(({ s }) => s);
++}
++
+ /** Half width of the road running along `dir` at (x, y), or null. */
+ export function parallelHalfWidthAt(index, x, y, dir) {
+   return parallelRoadAt(index, x, y, dir)?.half ?? null;
+diff --git a/services/ukJunctions.js b/services/ukJunctions.js
+new file mode 100644
+index 0000000..e95038d
+--- /dev/null
++++ b/services/ukJunctions.js
+@@ -0,0 +1,281 @@
++// UK priority junctions and roundabouts, for a level whose road rules are the
++// United Kingdom's (ukRoadMarkings.isUkRoadRules):
++//   impliedGiveWays  the minor arms of a junction that OSM maps no give-way
++//                    or stop node for: the arm that gives way is decided by
++//                    road class, then by the road carrying on through
++//                    (name or ref), then by the straightest pair of arms;
++//                    every entry onto a roundabout gives way to the ring.
++//   junctionMouth    where a Give Way or Stop line goes on its approach:
++//                    square to the minor road, the line's edge nearest the
++//                    junction on the edge of the road it meets ("the line
++//                    edge nearest the major road continues the major road
++//                    edge", TSM 3 2.3.1 to 2.3.4, Figure 2-5; 1003A and
++//                    1003.1 are sited the same way, TSM 3 3.2.1, TSM 5 6.2.1).
++//   lineSpan         across which part of the approach a line runs: kerb to
++//                    centre line on a two-way road (the centre line where
++//                    lanes:forward and lanes:backward put it), the full width
++//                    on a one-way road, or where kerb to centre is under
++//                    2.75 m (TSM 3 2.3.2).
++//   UK_CORNER_RADII  kerb return radius at a junction corner by the larger
++//                    road's class (Creating Places, DOE NI 2000, Table 4 and
++//                    para 16.27: 6 m between access roads, 4 m where the minor
++//                    road serves about 50 dwellings or for shared surfaces,
++//                    10 m at junctions with local distributor roads).
++// Works in the stop-bar pass's frames: the junction graph's projector metres
++// for the arms, the world frame for the drawn carriageways.
++import {
++  approachFromArm, armStopDistance, canArrive, canLeave, isJunction, junctionArms, otherEnd, pointAlong, roadHalfWidth, roadRank, walk,
++} from './signalApproaches.js';
++import { crossingCarriagewaysAt, parallelHalfWidthAt } from './roadMarkingCuts.js';
++
++// residential and unclassified streets 6 m, shared surfaces 4 m, distributor
++// roads 10 m (Creating Places names no larger radius; trunk roads take it too).
++// Service roads and tracks keep MapNG's own.
++export const UK_CORNER_RADII = Object.freeze({
++  residential: 6, unclassified: 6, road: 6, living_street: 4,
++  tertiary: 10, tertiary_link: 10, secondary: 10, secondary_link: 10,
++  primary: 10, primary_link: 10, trunk: 10, trunk_link: 10,
++});
++
++// service roads (rank 1) and tracks (0): neither given a line nor counted for
++// priority (driveways, car parks and private accesses: TSM 3 gives them the
++// 1009A edge line of the road they leave, not a Give Way line)
++export const MIN_PUBLIC_RANK = 2;
++// an inbound one-way arm this close in direction to the priority road's
++// inbound arm merges with it (a taper, not a priority junction)
++const MERGE_DEG = 35;
++// the arm's direction is read this far out from the node (a kink at the node
++// does not count)
++const ARM_DIRECTION_M = 5;
++
++const norm = (v) => String(v ?? '').trim().toLowerCase();
++export const isRoundaboutRoad = (tags = {}) => ['roundabout', 'circular'].includes(norm(tags.junction));
++const roadIdentity = (road) => norm(road?.tags?.name) || norm(road?.tags?.ref) || `way ${String(road?.id ?? '').split('_seg')[0]}`;
++const unit = (x, y) => { const l = Math.hypot(x, y) || 1; return [x / l, y / l]; };
++
++/** Every arm of a junction node that a public road makes: direction, class, which way traffic may run. */
++export function junctionArmsAll(node) {
++  const out = [];
++  for (const edge of node.edges) {
++    const road = edge.road;
++    const rank = roadRank(road?.tags?.highway);
++    if (rank < MIN_PUBLIC_RANK) continue;
++    const path = walk(node, edge, ARM_DIRECTION_M + 1, () => false);
++    const at = pointAlong(path, Math.min(ARM_DIRECTION_M, path.length));
++    const u = at ? unit(at.x - node.x, at.y - node.y) : unit(otherEnd(edge, node).x - node.x, otherEnd(edge, node).y - node.y);
++    out.push({
++      edge, road, rank, id: roadIdentity(road), u,
++      armId: `${node.key}|${otherEnd(edge, node).key}`,
++      inbound: canArrive(edge, node), outbound: canLeave(edge, node), twoWay: edge.fwd && edge.back,
++      ring: isRoundaboutRoad(road?.tags),
++    });
++  }
++  return out;
++}
++
++const better = (a, b) => {
++  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] > b[i];
++  return false;
++};
++
++/**
++ * The inbound arms of one junction that give way, from junctionArmsAll.
++ * Roundabout: every entry (the ring has priority). Otherwise the priority
++ * road is the pair of arms traffic can run through with the highest class,
++ * the same road (name or ref) before different ones, then the straightest;
++ * the other inbound arms give way, except the priority road's other
++ * carriageway where a dual carriageway starts (same road, one-way, the pair
++ * holds its two-way end) and an arm merging at under MERGE_DEG.
++ * Returns { giveWay: [arms], priority: [arms] } or null (fewer than 3 arms).
++ */
++export function priorityAtJunction(arms) {
++  if (arms.length < 3) return null;
++  if (arms.some((a) => a.ring)) {
++    const priority = arms.filter((a) => a.ring);
++    return { priority, giveWay: arms.filter((a) => !a.ring && a.inbound), roundabout: true };
++  }
++  let best = null;
++  for (let i = 0; i < arms.length; i++) {
++    for (let j = i + 1; j < arms.length; j++) {
++      const a = arms[i]; const b = arms[j];
++      if (!((a.inbound && b.outbound) || (b.inbound && a.outbound))) continue;
++      const key = [Math.min(a.rank, b.rank), a.id === b.id ? 1 : 0, -(a.u[0] * b.u[0] + a.u[1] * b.u[1])];
++      if (!best || better(key, best.key)) best = { key, pair: [a, b] };
++    }
++  }
++  if (!best) return null;
++  const [a, b] = best.pair;
++  const into = [a, b].filter((x) => x.inbound);
++  const mergeCos = Math.cos((MERGE_DEG * Math.PI) / 180);
++  const giveWay = arms.filter((x) => {
++    if (x === a || x === b || !x.inbound) return false;
++    if (!x.twoWay && x.id === a.id && x.id === b.id && x.rank === best.key[0] && (a.twoWay || b.twoWay)) return false;
++    if (!x.twoWay && into.some((p) => p.u[0] * x.u[0] + p.u[1] * x.u[1] > mergeCos)) return false;
++    return true;
++  });
++  return { priority: [a, b], giveWay, roundabout: false };
++}
++
++/**
++ * Give-way approaches (signalApproaches.approachFromArm) for the minor arms of
++ * every junction OSM maps no control for. Signalled junctions and
++ * mini-roundabouts are left alone; a junction where OSM maps a give-way or
++ * stop on an arm this rule gives priority is left as OSM has it. An arm OSM
++ * already controls keeps its own approach. Each approach gets `ukImplied`.
++ */
++export function impliedGiveWays(junctions, { miniRoundabouts = null } = {}) {
++  const graph = junctions?.graph;
++  if (!graph) return [];
++  const signalled = new Set((junctions.intersections || []).filter((i) => !i.midblock).flatMap((i) => i.approaches.map((a) => a.junctionKey)));
++  const controlled = new Set([...(junctions.stopApproaches || []), ...(junctions.yieldApproaches || [])].map((a) => a.armId));
++  const out = [];
++  for (const node of graph.nodes.values()) {
++    if (!isJunction(node) || signalled.has(node.key) || miniRoundabouts?.has(node.key)) continue;
++    const arms = junctionArmsAll(node);
++    const rule = priorityAtJunction(arms);
++    if (!rule?.giveWay.length) continue;
++    const minor = new Set(rule.giveWay.map((a) => a.armId));
++    if (arms.some((a) => controlled.has(a.armId) && !minor.has(a.armId))) continue;
++    const inbound = junctionArms(node, new Set([node.key]));
++    for (const arm of inbound) {
++      if (!minor.has(arm.armId) || controlled.has(arm.armId)) continue;
++      const approach = approachFromArm(arm, armStopDistance(arm, inbound, junctions.crossingKeys));
++      if (approach) out.push(Object.assign(approach, { ukImplied: true, ukRoundabout: rule.roundabout }));
++    }
++  }
++  return out;
++}
++
++// MapNG's own inset: paint stops this far inside the drawn carriageway's edge
++// (exportBeamNGLevel JUNCTION_MARK_EDGE_INSET_M)
++export const EDGE_INSET_M = 0.3;
++// the gap left at the centre line on a two-way road (STOP_BAR_CENTRE_GAP_M)
++export const CENTRE_GAP_M = 0.25;
++// kerb to centre line under this: the line runs across the full width (TSM 3 2.3.2)
++const FULL_WIDTH_UNDER_M = 2.75;
++
++const lanesTag = (tags, key) => { const n = Number.parseInt(tags?.[key], 10); return Number.isFinite(n) && n > 0 ? n : 0; };
++
++/** The approach's arm in the junction graph: { node, edge, along } (along: traffic arrives along node order), or null. */
++export function approachArm(approach, graph) {
++  const node = graph?.nodes?.get(approach?.junctionKey);
++  const nextKey = String(approach?.armId ?? '').split('|')[1];
++  const edge = node?.edges?.find((e) => otherEnd(e, node).key === nextKey);
++  return edge ? { node, edge, along: edge.to === node } : null;
++}
++
++/**
++ * The lateral span of a transverse line on an approach whose drawn half
++ * width is `half`, measured from the centreline towards the kerb (left in
++ * left-hand traffic): { from, to, laneFrom, centre, full }. `laneFrom` is
++ * where the approach's own lanes start (the triangles' lanes); `along`
++ * (approachArm) says which of lanes:forward / lanes:backward are its own.
++ */
++export function lineSpan(approach, half, along, { fullWidthUnder = FULL_WIDTH_UNDER_M } = {}) {
++  const E = Math.max(1, half - EDGE_INSET_M);
++  if (approach.oneWay) return { from: -E, to: E, laneFrom: -E, centre: -E, full: true };
++  // where the centre line runs: lanes:forward / lanes:backward split the road unevenly (ukLineLayers mirrors it)
++  const tags = approach.road?.tags || {};
++  const fwd = lanesTag(tags, 'lanes:forward'); const back = lanesTag(tags, 'lanes:backward');
++  const lanesIn = along === undefined || along === null ? 0 : (along ? fwd : back);
++  const lanesOut = along === undefined || along === null ? 0 : (along ? back : fwd);
++  const centre = lanesIn && lanesOut ? E * (1 - (2 * lanesIn) / (lanesIn + lanesOut)) : 0;
++  if (half - centre < fullWidthUnder) return { from: -E, to: E, laneFrom: centre + CENTRE_GAP_M, centre, full: true };
++  return { from: centre + CENTRE_GAP_M, to: E, laneFrom: centre + CENTRE_GAP_M, centre, full: false };
++}
++
++const MOUTH_STEP_M = 0.1;
++const MOUTH_MAX_M = 30;
++// the line's near edge stays this far off the carriageway it meets
++const MOUTH_CLEAR_M = 0.1;
++const MOUTH_SAMPLES = 6;
++
++/**
++ * Where a transverse line `nearEdgeM` (its half painted width) goes on an
++ * approach: walking out along the arm from the junction node, the first spot
++ * where the line, across its whole span, is clear of every carriageway that
++ * crosses the arm. Returns { found: true, px, py, dir, kerb, half, span, d,
++ * armLength } in the world frame (dir: travel, kerb: left of travel), or
++ * { found: false, reason }: 'merge' where no carriageway crosses the arm at
++ * the node (a shallow merge), 'no-room' where none clears within the arm (a
++ * short link inside a junction, the gap of a dual carriageway). null without
++ * the graph or the carriageways.
++ *   context: { junctions, toWorld(x, y) -> [wx, wy], carriageways (roadMarkingCuts index) }
++ */
++export function junctionMouth(approach, context, nearEdgeM) {
++  const { junctions, toWorld, carriageways } = context || {};
++  const arm = approachArm(approach, junctions?.graph);
++  if (!arm || !toWorld || !carriageways) return null;
++  const { node, edge, along } = arm;
++  const path = walk(node, edge, MOUTH_MAX_M + 10);
++  const maxD = Math.min(MOUTH_MAX_M, path.length - 0.5);
++  const frameAt = (d) => {
++    const at = pointAlong(path, d);
++    if (!at) return null;
++    const p = toWorld(at.x, at.y);
++    const q = toWorld(at.x - at.outward[0], at.y - at.outward[1]);
++    const dir = unit(q[0] - p[0], q[1] - p[1]);
++    return { p, dir, kerb: [-dir[1], dir[0]] };
++  };
++  // the arm's own carriageway (a bend in it runs across its line further on) is never what it meets: a
++  // segment lying along the arm, both its ends within OWN_NEAR_M of it (not by owner: a way that loops
++  // back to meet itself is one owner)
++  const armPts = [];
++  for (let d = 0; d <= path.length + 1e-9; d += OWN_STEP_M) { const f = frameAt(Math.min(d, path.length)); if (f) armPts.push(f.p); }
++  // (near the arm, and past its first metres: the road it meets crosses the arm at the node)
++  const nearArm = (x, y) => {
++    let best = Infinity; let arc = 0;
++    for (let i = 0; i + 1 < armPts.length; i++) {
++      const [ax, ay] = armPts[i]; const [bx, by] = armPts[i + 1];
++      const vx = bx - ax; const vy = by - ay; const L2 = vx * vx + vy * vy || 1e-9;
++      const t = Math.max(0, Math.min(1, ((x - ax) * vx + (y - ay) * vy) / L2));
++      const dist = Math.hypot(ax + vx * t - x, ay + vy * t - y);
++      if (dist < best) { best = dist; arc = (i + t) * OWN_STEP_M; }
++    }
++    return best <= OWN_NEAR_M && arc >= OWN_FROM_M;
++  };
++  const alongArm = (s) => nearArm(s.ax, s.ay) && nearArm(s.bx, s.by);
++  const onCrossing = (x, y, margin, dir) => crossingCarriagewaysAt(carriageways, x, y, margin, dir).some((s) => !alongArm(s));
++  for (let d = MOUTH_STEP_M; d <= maxD + 1e-9; d += MOUTH_STEP_M) {
++    const f = frameAt(d);
++    if (!f) break;
++    const { p, dir, kerb } = f;
++    const half = parallelHalfWidthAt(carriageways, p[0], p[1], dir) ?? approach.halfWidth;
++    const span = lineSpan(approach, half, along);
++    const lateral = (k) => span.from + ((span.to - span.from) * k) / (MOUTH_SAMPLES - 1);
++    let blocked = false;
++    for (let k = 0; k < MOUTH_SAMPLES && !blocked; k++) {
++      blocked = onCrossing(p[0] + kerb[0] * lateral(k) + dir[0] * nearEdgeM, p[1] + kerb[1] * lateral(k) + dir[1] * nearEdgeM, MOUTH_CLEAR_M, dir);
++    }
++    if (!blocked) {
++      // clear at the node itself: no road crosses here (a shallow merge)
++      if (d <= 2 * MOUTH_STEP_M) return { found: false, reason: 'merge' };
++      // its far edge on a road behind it: the arm is a link inside the junction
++      for (let k = 0; k < MOUTH_SAMPLES; k++) {
++        if (onCrossing(p[0] + kerb[0] * lateral(k) - dir[0] * nearEdgeM, p[1] + kerb[1] * lateral(k) - dir[1] * nearEdgeM, 0, dir)) {
++          return { found: false, reason: 'no-room' };
++        }
++      }
++      // a gap between two roads that both have priority over it (a dual carriageway's central reserve)
++      // shorter than a car: one junction, crossed in one go, no line in it
++      if (path.end && isJunction(path.end)) {
++        const farArms = junctionArmsAll(path.end);
++        const farRule = priorityAtJunction(farArms);
++        const link = farArms.find((a) => a.edge === path.steps[path.steps.length - 1].edge);
++        if (farRule?.priority.length && link && !farRule.priority.includes(link)) {
++          const far = toWorld(path.end.x, path.end.y);
++          const pr = farRule.priority[0];
++          const farHalf = parallelHalfWidthAt(carriageways, far[0], far[1], pr.u) ?? roadHalfWidth(pr.road?.tags);
++          if (path.length - d - nearEdgeM - farHalf < GAP_MIN_M) return { found: false, reason: 'no-room' };
++        }
++      }
++      return { found: true, px: p[0], py: p[1], dir, kerb, half, span, d: Math.round(d * 100) / 100, armLength: path.length };
++    }
++  }
++  return { found: false, reason: 'no-room' };
++}
++const OWN_STEP_M = 1;
++const OWN_NEAR_M = 1.5;     // (a drawn bend cuts inside the mapped one)
++const OWN_FROM_M = 2;
++// a central reserve gap with less room than this behind the line takes none (ours: a car's length and a margin)
++const GAP_MIN_M = 5;
+diff --git a/services/ukRoadMarkings.js b/services/ukRoadMarkings.js
+index 3c84052..c5bb8c4 100644
+--- a/services/ukRoadMarkings.js
++++ b/services/ukRoadMarkings.js
+@@ -12,8 +12,13 @@
+ // art/uk_markings_cubewood/main.materials.json. Every other country keeps
+ // MapNG's own paint (getMarkingStyle), and so do the UK's signs.
+ import { parseMaxspeedMps } from './beamngMapNavigation.js';
++import { isOnCrossingCarriageway } from './roadMarkingCuts.js';
+ import { makeRoadNodeKey } from './roadNetwork.js';
+ import { isOneWayRoad } from './roadWidth.js';
++import { roadRank } from './signalApproaches.js';
++import {
++  approachArm, CENTRE_GAP_M, EDGE_INSET_M, impliedGiveWays, isRoundaboutRoad, junctionMouth, lineSpan, MIN_PUBLIC_RANK,
++} from './ukJunctions.js';
+ 
+ export const isUkRoadRules = (roadRules) => roadRules?.countryCode === 'GB';
+ 
+@@ -182,19 +187,30 @@ export function ukLineNodes(nodes, layer) {
+   return layer.ukReverse && out.length >= 2 ? [...out].reverse() : out;
+ }
+ 
+-const isRoundaboutTags = (tags = {}) => ['roundabout', 'circular'].includes(String(tags.junction ?? '').trim().toLowerCase());
++const isRoundaboutTags = isRoundaboutRoad;
+ 
+-/** What ukJunctionLines needs of an export: its junction approaches and mini-roundabout nodes. */
+-export function ukJunctionContext(features = [], junctions = null) {
++/**
++ * What ukJunctionLines needs of an export: its junction approaches, the
++ * mini-roundabout nodes, the give-way approaches OSM does not map
++ * (ukJunctions.impliedGiveWays: minor arms and roundabout entries) and, for
++ * placing the lines at the mouth, `toWorld` (junction graph metres to world
++ * x, y) and the drawn carriageways' index.
++ */
++export function ukJunctionContext(features = [], junctions = null, { toWorld = null, carriageways = null } = {}) {
+   const miniRoundabouts = new Set();
+   for (const f of features) {
+     if (f?.geometry?.length === 1 && f.tags?.highway === 'mini_roundabout') miniRoundabouts.add(makeRoadNodeKey(f.geometry[0]));
+   }
+-  return { junctions, miniRoundabouts };
++  const impliedYields = junctions ? impliedGiveWays(junctions, { miniRoundabouts }) : [];
++  return { junctions, miniRoundabouts, impliedYields, toWorld, carriageways };
+ }
+ 
+ // Give Way line 1003A: two rows 200 mm wide, 300 mm apart (700 mm painted).
+ const GIVEWAY_PAINT_HALF_M = 0.35;
++// Stop line 1002.1: 400 mm.
++const STOP_PAINT_HALF_M = 0.2;
++// Edge line 1009A across the rest of the mouth: 100 mm, 600 mark, 300 gap.
++const EDGE_1009A_MM = 100;
+ // Triangle 1023A: its base 2.1 to 2.75 m from the line (TSM 3 3.2.5), here
+ // 2.4 m; the texture leaves (4.2857 - 3.75) / 2 m clear at each end.
+ const TRIANGLE_GAP_M = 2.4;
+@@ -207,32 +223,60 @@ const TRIANGLE_MIN_LANE_M = 1.6;
+  * (cx, cy) + dir·from to (cx, cy) + dir·to. `at` is the pass's own geometry:
+  * the stop point (px, py), travel direction `dir`, unit `kerb` (across, to
+  * the kerb) and the span fromM..halfW across the approach lanes.
+- *   signals: Stop line 1001, 200 mm (300 mm at 40 mph and over)
+- *   STOP sign: Stop line 1002.1, 400 mm
++ *   signals: Stop line 1001, 200 mm (300 mm at 40 mph and over), at the
++ *            signal's stop point (where the AI stops), kerb to centre line
++ *   STOP sign: Stop line 1002.1, 400 mm      roundabout entry: 1003.1, 200 mm (300 mm over 40 mph)
+  *   give way: Give Way line 1003A and a triangle 1023A in each approaching
+  *             lane, apex first (the DecalRoad runs in the direction of travel)
+- * A give-way at a roundabout or mini-roundabout is left unpainted (its line is 1003.1 or 1003.3).
++ * Stop and Give Way lines stand at the mouth (ukJunctions.junctionMouth; the
++ * stop point where none is found), kerb to centre line or across the full
++ * width (ukJunctions.lineSpan), with the edge line 1009A across the rest of
++ * a two-way mouth. A give-way at a mini-roundabout is left unpainted (1003.3).
+  */
+-export function ukJunctionLines(approach, context, { px, py, dir, kerb, fromM, halfW }) {
++export function ukJunctionLines(approach, context, at) {
+   const junctions = context?.junctions;
+   const mph = ukSpeedMph(approach.road?.tags || {}, approach.highway);
+-  const across = (name, look) => ({ name, cx: px, cy: py, dir: kerb, from: fromM, to: halfW, ...look });
+-  if (junctions?.stopApproaches?.includes(approach)) return [across('jm_stopline', ukMarking('solid_white', 400))];
+-  if (!junctions?.yieldApproaches?.includes(approach)) return [across('jm_stopline', ukMarking('solid_white', mph >= 40 ? 300 : 200))];
++  const arm = approachArm(approach, junctions?.graph);
++  const stop = !!junctions?.stopApproaches?.includes(approach);
++  const giveWay = !stop && (!!junctions?.yieldApproaches?.includes(approach) || !!context?.impliedYields?.includes(approach));
++  if (!stop && !giveWay) {
++    const span = arm ? lineSpan(approach, at.halfW + EDGE_INSET_M, arm.along, { fullWidthUnder: 0 }) : { from: at.fromM, to: at.halfW };
++    return [{ name: 'jm_stopline', cx: at.px, cy: at.py, dir: at.kerb, from: span.from, to: span.to, ...ukMarking('solid_white', mph >= 40 ? 300 : 200) }];
++  }
+   const node = junctions.graph?.nodes?.get(approach.junctionKey);
+-  if (context.miniRoundabouts?.has(approach.junctionKey) || node?.edges?.some((e) => isRoundaboutTags(e.road?.tags))) return [];
+-  const lines = [across('jm_giveway', ukMarking('giveway_1003a'))];
++  if (context.miniRoundabouts?.has(approach.junctionKey)) return [];
++  // (service roads, driveways and parking aisles are drawn as paving, not
++  // carriageways: no edge to site a line at or width to size it by)
++  if (roadRank(approach.highway) < MIN_PUBLIC_RANK) return [];
++  const ring = !!node?.edges?.some((e) => isRoundaboutTags(e.road?.tags));
++  if (ring && isRoundaboutTags(approach.road?.tags)) return [];   // (a give-way mapped on the ring itself)
++  const ringWide = mph > 40;
++  const look = stop ? ukMarking('solid_white', 400) : ring ? ukMarking('dash_1000_1000', ringWide ? 300 : 200) : ukMarking('giveway_1003a');
++  const paintHalf = stop ? STOP_PAINT_HALF_M : ring ? (ringWide ? 0.15 : 0.1) : GIVEWAY_PAINT_HALF_M;
++  const found = junctionMouth(approach, context, paintHalf);
++  // no room for a line off the carriageways (a dual carriageway's gap): none; a mapped one at a merge stays at its node
++  if (found && !found.found && (found.reason === 'no-room' || approach.ukImplied)) return [];
++  const mouth = found?.found ? found : null;
++  const m = mouth ?? { px: at.px, py: at.py, dir: at.dir, kerb: at.kerb, span: lineSpan(approach, at.halfW + EDGE_INSET_M, arm?.along) };
++  const across = (name, lk, from, to, shift = 0) => ({ name, cx: m.px + m.dir[0] * shift, cy: m.py + m.dir[1] * shift, dir: m.kerb, from, to, ...lk });
++  const lines = [across(stop ? 'jm_stopline' : ring ? 'jm_giveway_roundabout' : 'jm_giveway', look, m.span.from, m.span.to)];
++  // 1009A: the major road's edge carried across the other half of the mouth, flush with the line's near edge
++  const edgeLook = ukMarking('dash_600_300', EDGE_1009A_MM);
++  if (!ring && !m.span.full) lines.push(across('jm_edge_1009a', edgeLook, -m.span.to, m.span.centre - CENTRE_GAP_M, paintHalf - EDGE_1009A_MM / 2000));
++  if (stop || ring) return lines;
+   const tri = ukMarking('triangle_1023a');
+   const lanes = Math.max(1, approach.lanesIn || 1);
+-  const span = halfW - fromM;
+-  if (span / lanes >= TRIANGLE_MIN_LANE_M) {
+-    const back = GIVEWAY_PAINT_HALF_M + TRIANGLE_GAP_M - TRIANGLE_END_MARGIN_M;
++  const span = m.span.to - m.span.laneFrom;
++  const back = GIVEWAY_PAINT_HALF_M + TRIANGLE_GAP_M - TRIANGLE_END_MARGIN_M;
++  // (room behind the line on its own road: not where the arm is shorter, or onto the road at its far end)
++  const room = !mouth || mouth.armLength - mouth.d >= back + tri.textureLength;
++  if (room && span / lanes >= TRIANGLE_MIN_LANE_M) {
+     for (let k = 0; k < lanes; k++) {
+-      const lateral = fromM + ((k + 0.5) * span) / lanes;
+-      lines.push({
+-        name: 'jm_giveway_triangle', cx: px + kerb[0] * lateral, cy: py + kerb[1] * lateral, dir,
+-        from: -(back + tri.textureLength), to: -back, ...tri,
+-      });
++      const lateral = m.span.laneFrom + ((k + 0.5) * span) / lanes;
++      const cx = m.px + m.kerb[0] * lateral; const cy = m.py + m.kerb[1] * lateral;
++      const far = back + tri.textureLength;
++      if (context.carriageways && isOnCrossingCarriageway(context.carriageways, cx - m.dir[0] * far, cy - m.dir[1] * far, 0.3, m.dir)) continue;
++      lines.push({ name: 'jm_giveway_triangle', cx, cy, dir: m.dir, from: -far, to: -back, ...tri });
+     }
+   }
+   return lines;
+diff --git a/tests/ukJunctions.test.mjs b/tests/ukJunctions.test.mjs
+new file mode 100644
+index 0000000..2cfab2d
+--- /dev/null
++++ b/tests/ukJunctions.test.mjs
+@@ -0,0 +1,248 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++
++import { generateDecalRoads, generateJunctionMarkingDecals } from '../services/exportBeamNGLevel.js';
++import { buildSidewalkMeshes } from '../services/beamngSidewalks.js';
++import { buildRoadGraph, findSignalApproaches, makeProjector } from '../services/signalApproaches.js';
++import {
++  impliedGiveWays, junctionArmsAll, lineSpan, priorityAtJunction, UK_CORNER_RADII,
++} from '../services/ukJunctions.js';
++
++const GB = { countryCode: 'GB', countryName: 'United Kingdom', region: 'Europe', leftHandTraffic: true };
++const IE = { countryCode: 'IE', countryName: 'Ireland', region: 'Europe', leftHandTraffic: true };
++const J = 0.005;
++const M = 111320;   // metres per degree in the projector at latitude ~0
++// a way from metre offsets around (J, J)
++const way = (id, tags, pts) => ({ id, type: 'road', tags: { name: id, ...tags }, geometry: pts.map(([x, y]) => ({ lat: J + y / M, lng: J + x / M })) });
++const graphOf = (roads) => buildRoadGraph(roads, makeProjector(J, J));
++const nodeAt = (graph, x = 0, y = 0) => [...graph.nodes.values()].find((n) => Math.hypot(n.x - x, n.y - y) < 0.01);
++const rule = (roads) => { const g = graphOf(roads); return priorityAtJunction(junctionArmsAll(nodeAt(g))); };
++const names = (arms) => arms.map((a) => a.road.id).sort();
++
++test('the priority road: higher class first, then the road carrying on, then the straightest pair', () => {
++  // a residential stem onto a secondary: the stem gives way
++  let r = rule([way('main', { highway: 'secondary' }, [[-100, 0], [0, 0], [100, 0]]), way('side', { highway: 'residential' }, [[0, -100], [0, 0]])]);
++  assert.deepEqual(names(r.giveWay), ['side']);
++  // three residential arms, two of one street: the other street gives way
++  r = rule([way('Grays Park', { highway: 'residential' }, [[-100, 0], [0, 0], [100, 10]]), way('Avenue', { highway: 'residential' }, [[0, 0], [60, -80]])]);
++  assert.deepEqual(names(r.giveWay), ['Avenue']);
++  // one street, three arms: the arm off the straight line gives way
++  r = rule([way('Close', { highway: 'residential' }, [[-100, 0], [0, 0], [100, 5]]), { ...way('Close', { highway: 'residential' }, [[0, 0], [0, -80]]), id: 'Close stem' }]);
++  assert.deepEqual(names(r.giveWay), ['Close stem']);
++  // the main road turns the corner: class beats straightness
++  r = rule([way('main', { highway: 'tertiary' }, [[-100, 0], [0, 0], [0, 100]]), way('lane', { highway: 'residential' }, [[0, 0], [100, 0]])]);
++  assert.deepEqual(names(r.giveWay), ['lane']);
++  // a crossroads: both minor arms
++  r = rule([way('main', { highway: 'secondary' }, [[-100, 0], [0, 0], [100, 0]]), way('side', { highway: 'residential' }, [[0, -100], [0, 0], [0, 100]])]);
++  assert.equal(r.giveWay.length, 2);
++  assert.ok(r.giveWay.every((a) => a.road.id === 'side'));
++});
++
++test('no Give Way where a dual carriageway starts, where a one-way road leaves or merges at a shallow angle', () => {
++  // two-way road splitting into its two one-way carriageways
++  let r = rule([
++    way('Milltown Road', { highway: 'trunk' }, [[-100, 0], [0, 0]]),
++    { ...way('Milltown Road', { highway: 'trunk', oneway: 'yes' }, [[0, 0], [100, 8]]), id: 'out' },
++    { ...way('Milltown Road', { highway: 'trunk', oneway: 'yes' }, [[100, -8], [0, 0]]), id: 'in' },
++  ]);
++  assert.equal(r.giveWay.length, 0);
++  // a one-way slip merging at 10 degrees into a one-way road
++  r = rule([
++    way('Belvoir Road', { highway: 'trunk', oneway: 'yes' }, [[-100, 0], [0, 0], [100, 0]]),
++    way('slip', { highway: 'trunk_link', oneway: 'yes' }, [[-100, -17.6], [0, 0]]),
++  ]);
++  assert.equal(r.giveWay.length, 0);
++  // the same slip at 45 degrees gives way; a slip leaving never does
++  r = rule([
++    way('Belvoir Road', { highway: 'trunk', oneway: 'yes' }, [[-100, 0], [0, 0], [100, 0]]),
++    way('slip', { highway: 'secondary_link', oneway: 'yes' }, [[-70, -70], [0, 0]]),
++  ]);
++  assert.deepEqual(names(r.giveWay), ['slip']);
++  r = rule([
++    way('Belvoir Road', { highway: 'trunk', oneway: 'yes' }, [[-100, 0], [0, 0], [100, 0]]),
++    way('exit', { highway: 'secondary_link', oneway: 'yes' }, [[0, 0], [70, -70]]),
++  ]);
++  assert.equal(r.giveWay.length, 0);
++});
++
++test('a roundabout: the ring has priority, every entry gives way', () => {
++  const ring = way('ring', { highway: 'tertiary', junction: 'roundabout' }, [[11, 0], [0, -11], [-11, 0], [0, 11], [11, 0]]);
++  const entry = way('entry', { highway: 'residential' }, [[-60, 0], [-11, 0]]);
++  const g = graphOf([ring, entry]);
++  const r = priorityAtJunction(junctionArmsAll(nodeAt(g, -11, 0)));
++  assert.equal(r.roundabout, true);
++  assert.deepEqual(names(r.giveWay), ['entry']);
++  assert.ok(r.priority.every((a) => a.road.id === 'ring'));
++});
++
++test('implied Give Ways: only where OSM maps none, never at signals, and OSM wins where it disagrees', () => {
++  const roads = [way('main', { highway: 'secondary' }, [[-100, 0], [0, 0], [100, 0]]), way('side', { highway: 'residential' }, [[0, -100], [0, 0]])];
++  const projector = makeProjector(J, J);
++  const at = (x, y) => ({ point: { lat: J + y / M, lng: J + x / M }, tags: {} });
++  let j = findSignalApproaches({ roads, projector });
++  let implied = impliedGiveWays(j);
++  assert.equal(implied.length, 1);
++  assert.equal(implied[0].road.id, 'side');
++  assert.ok(implied[0].ukImplied && !implied[0].ukRoundabout);
++  // OSM maps the give-way on the side road: that one stands, nothing added
++  j = findSignalApproaches({ roads, projector, yieldPoints: [at(0, -5)] });
++  assert.equal(j.yieldApproaches.length, 1);
++  assert.equal(impliedGiveWays(j).length, 0);
++  // OSM maps a give-way on the main road's arm: left as OSM has it
++  j = findSignalApproaches({ roads, projector, yieldPoints: [at(-5, 0)] });
++  assert.equal(impliedGiveWays(j).length, 0);
++  // signals at the junction
++  j = findSignalApproaches({ roads, projector, signalPoints: [at(0, 0)] });
++  assert.equal(impliedGiveWays(j).length, 0);
++});
++
++test('line span: kerb to centre line, the full width on a one-way road or under 2.75 m, centre moved by uneven lanes', () => {
++  const two = { oneWay: false, road: { tags: {} } };
++  assert.deepEqual(lineSpan(two, 5.3, true), { from: 0.25, to: 5, laneFrom: 0.25, centre: 0, full: false });
++  const narrow = lineSpan(two, 2.6, true);
++  assert.ok(narrow.full && Math.abs(narrow.from + 2.3) < 1e-9 && Math.abs(narrow.to - 2.3) < 1e-9, 'kerb to centre 2.6 m: full width');
++  assert.equal(lineSpan(two, 2.6, true, { fullWidthUnder: 0 }).full, false, 'signal Stop lines keep kerb to centre');
++  assert.deepEqual(lineSpan({ oneWay: true }, 4, true), { from: -3.7, to: 3.7, laneFrom: -3.7, centre: -3.7, full: true });
++  // three of four lanes ours (lanes:forward 3, arriving along node order): the centre line 0.5 E past the axis
++  const uneven = lineSpan({ oneWay: false, road: { tags: { 'lanes:forward': '3', 'lanes:backward': '1' } } }, 7, true);
++  assert.ok(Math.abs(uneven.centre + 3.35) < 1e-9 && Math.abs(uneven.from + 3.1) < 1e-9, JSON.stringify(uneven));
++});
++
++// T junction in a 1.1 km box: the secondary `main` runs east-west through J,
++// the tertiary `side` comes up from the south and stops at it (as tests/ukRoadMarkings.test.mjs).
++function tJunction(roadRules, sideTags = {}, extra = []) {
++  const size = 64;
++  const road = (id, tags, coords) => ({ id, type: 'road', tags: { name: id, ...tags }, geometry: coords.map(([lat, lng]) => ({ lat, lng })) });
++  return {
++    width: size, height: size, minHeight: 0, maxHeight: 50,
++    heightMap: new Float32Array(size * size).fill(10),
++    bounds: { north: 0.01, south: 0, west: 0, east: 0.01 },
++    metersPerPixel: (0.01 * 111320) / size,
++    roadRules,
++    osmFeatures: [
++      road('main', { highway: 'secondary', maxspeed: '40 mph' }, [[J, 0.001], [J, J], [J, 0.009]]),
++      road('side', { highway: 'tertiary', maxspeed: '30 mph', ...sideTags }, [[0.001, J], [J - 0.0002, J], [J, J]]),
++      ...extra,
++    ],
++  };
++}
++const allDecals = (groups) => {
++  const out = [];
++  const walk = (items) => items.forEach((it) => { if (it.class === 'DecalRoad') out.push(it); if (it.__items) walk(it.__items); });
++  walk(groups);
++  return out;
++};
++
++test('a UK side road with no give-way node gets its Give Way line at the mouth, square, kerb to centre, with 1009A', () => {
++  const td = tJunction(GB);
++  const decals = allDecals(generateDecalRoads(td, td.metersPerPixel));
++  const mainBody = decals.find((d) => /^dr_main_.*_b$/.test(d.name));
++  const sideBody = decals.find((d) => /^dr_side_.*_b$/.test(d.name));
++  assert.ok(mainBody && sideBody);
++  const mainHalf = mainBody.nodes[0][3] / 2; const sideHalf = sideBody.nodes[0][3] / 2;
++  const [line] = decals.filter((d) => /^jm_giveway_\d/.test(d.name));
++  assert.ok(line, 'an implied Give Way line');
++  assert.equal(line.material, 'uk_giveway_1003a_cubewood');
++  // square: across the side road (it runs north-south)
++  assert.ok(Math.abs(line.nodes[0][1] - line.nodes[1][1]) < 1e-3, 'runs east-west, square to the side road');
++  // at the mouth: the near (north) edge 0.1 m off the main road's kerb (y = -mainHalf)
++  const nearEdge = line.nodes[0][1] + 0.35;
++  assert.ok(Math.abs(nearEdge - (-mainHalf - 0.1)) <= 0.11, `near edge at ${nearEdge.toFixed(2)}, kerb at ${-mainHalf}`);
++  // kerb to centre on the left (west) half, 0.3 m inside the kerb, 0.25 m off the centre line
++  const xs = line.nodes.map((n) => n[0]).sort((a, b) => a - b);
++  assert.ok(Math.abs(xs[0] + (sideHalf - 0.3)) < 0.05 && Math.abs(xs[1] + 0.25) < 0.05, `x ${xs}`);
++  const [edge] = decals.filter((d) => d.name.startsWith('jm_edge_1009a'));
++  assert.ok(edge && edge.material === 'uk_dash_600_300_cubewood', '1009A across the exit half');
++  assert.ok(edge.nodes.every(([x]) => x > 0), 'on the east half');
++  const tri = decals.filter((d) => d.name.startsWith('jm_giveway_triangle'));
++  assert.equal(tri.length, 1);
++  assert.ok(tri[0].nodes.every(([, y]) => y < line.nodes[0][1]), 'the triangle behind the line');
++  // Ireland: nothing
++  const ie = allDecals(generateDecalRoads(tJunction(IE), td.metersPerPixel));
++  assert.equal(ie.filter((d) => d.name.startsWith('jm_giveway')).length, 0);
++});
++
++test('a side road bending away just past its mouth still gets its line; a dual carriageway gap gets none', () => {
++  const g = (x, y) => ({ lat: J + y / M, lng: J + x / M });
++  const road = (id, tags, pts) => ({ id, type: 'road', tags: { name: id, ...tags }, geometry: pts.map(([x, y]) => g(x, y)) });
++  const base = tJunction(GB);
++  // a side road from the south that turns west 9 m from the main road's centreline
++  const bent = { ...base, osmFeatures: [road('main', { highway: 'secondary' }, [[-300, 0], [0, 0], [300, 0]]), road('side', { highway: 'residential' }, [[-200, -9], [-12, -9], [0, 0]])] };
++  const lines = allDecals(generateDecalRoads(bent, bent.metersPerPixel)).filter((d) => /^jm_giveway_\d/.test(d.name));
++  assert.equal(lines.length, 1, 'the bend does not count as a road it meets');
++  // one way that comes back to meet itself (a crescent): its arm off the straight line still meets the rest of it
++  const loop = { ...base, osmFeatures: [road('Crescent', { highway: 'residential' }, [[0, -150], [0, 0], [80, 0], [80, 80], [0, 80], [0, 0]])] };
++  const ll = allDecals(generateDecalRoads(loop, loop.metersPerPixel)).filter((d) => /^jm_giveway_\d/.test(d.name));
++  assert.equal(ll.length, 1, 'one line, on the arm off the straight');
++  assert.ok(ll[0].nodes.every(([x]) => x > 3), `on the east arm (${ll[0].nodes.map((n) => n[0].toFixed(1))})`);
++  // a residential road crossing a dual carriageway whose two carriageways are 14 m apart: lines outside, none in the gap
++  const dual = {
++    ...base,
++    osmFeatures: [
++      road('north', { highway: 'trunk', oneway: 'yes' }, [[300, 7], [0, 7], [-300, 7]]),
++      road('south', { highway: 'trunk', oneway: 'yes' }, [[-300, -7], [0, -7], [300, -7]]),
++      road('cross', { highway: 'residential' }, [[0, -150], [0, -7], [0, 7], [0, 150]]),
++    ],
++  };
++  const dl = allDecals(generateDecalRoads(dual, dual.metersPerPixel)).filter((d) => /^jm_giveway_\d/.test(d.name));
++  assert.equal(dl.length, 2, `two lines, the outer arms (${dl.map((d) => d.nodes[0][1].toFixed(1))})`);
++  assert.ok(dl.every((d) => Math.abs(d.nodes[0][1]) > 7), 'none between the carriageways');
++});
++
++test('a UK give-way node on the side road: its line moves from the node to the mouth', () => {
++  const giveWay = { id: 'n1', type: 'poi', geometry: [{ lat: J - 0.0002, lng: J }], tags: { highway: 'give_way' } };
++  const td = tJunction(GB, {}, [giveWay]);
++  const decals = allDecals(generateDecalRoads(td, td.metersPerPixel));
++  const lines = decals.filter((d) => /^jm_giveway_\d/.test(d.name));
++  assert.equal(lines.length, 1, 'one line: the mapped one, not an implied one as well');
++  const mainHalf = decals.find((d) => /^dr_main_.*_b$/.test(d.name)).nodes[0][3] / 2;
++  assert.ok(Math.abs(lines[0].nodes[0][1] + 0.35 + mainHalf + 0.1) <= 0.11, `at ${lines[0].nodes[0][1]}, not the node's ${-0.0002 * 111320 / 1}`);
++});
++
++test('a UK roundabout entry: 1003.1 Give Way line at the ring, no triangle', () => {
++  const size = 64;
++  const g = (x, y) => ({ lat: J + y / M, lng: J + x / M });
++  const ringPts = Array.from({ length: 13 }, (_, i) => { const a = -(i / 12) * 2 * Math.PI; return [14 * Math.cos(a), 14 * Math.sin(a)]; });
++  const td = {
++    width: size, height: size, minHeight: 0, maxHeight: 50, heightMap: new Float32Array(size * size).fill(10),
++    bounds: { north: 0.01, south: 0, west: 0, east: 0.01 }, metersPerPixel: (0.01 * 111320) / size, roadRules: GB,
++    osmFeatures: [
++      { id: 'ring', type: 'road', tags: { name: 'ring', highway: 'tertiary', junction: 'roundabout' }, geometry: ringPts.map(([x, y]) => g(x, y)) },
++      { id: 'entry', type: 'road', tags: { name: 'entry', highway: 'residential' }, geometry: [g(-80, 0), g(-40, 0), g(-14, 0)] },
++    ],
++  };
++  const decals = allDecals(generateDecalRoads(td, td.metersPerPixel));
++  const lines = decals.filter((d) => d.name.startsWith('jm_giveway_roundabout'));
++  assert.equal(lines.length, 1);
++  assert.equal(lines[0].material, 'uk_dash_1000_1000_cubewood');
++  assert.ok(lines[0].nodes.every((n) => n[3] === 0.266667), '200 mm');
++  assert.ok(lines[0].nodes.every(([x]) => x < -14), 'outside the ring, on the entry');
++  assert.equal(decals.filter((d) => d.name.startsWith('jm_giveway_triangle')).length, 0);
++  assert.equal(decals.filter((d) => d.name.startsWith('jm_edge_1009a')).length, 0);
++});
++
++test('UK kerb radii at junction corners (Creating Places): 6 m between residential streets, 10 m with a distributor road', () => {
++  const street = (o) => ({ owner: 1, half: 4, highway: 'residential', urban: true, tags: { sidewalk: 'both' }, continuations: [], ...o });
++  const ew = street({ owner: 1, nodes: [[-100, 0, 5, 8], [0, 0, 5, 8], [100, 0, 5, 8]] });
++  const ns = street({ owner: 2, tags: { sidewalk: 'both', name: 'Cross' }, nodes: [[0, -100, 5, 8], [0, 0, 5, 8], [0, 100, 5, 8]] });
++  const radius = (c) => Math.hypot(c.arc[0][0] - c.centre[0], c.arc[0][1] - c.centre[1]);
++  const mapng = buildSidewalkMeshes([ew, ns]).corners;
++  assert.ok(mapng.length === 4 && mapng.every((c) => Math.abs(radius(c) - 3) < 1e-6), 'MapNG: 3 m');
++  const uk = buildSidewalkMeshes([ew, ns], { cornerRadii: UK_CORNER_RADII }).corners;
++  assert.ok(uk.length === 4 && uk.every((c) => Math.abs(radius(c) - 6) < 1e-6), `UK: ${uk.map(radius)}`);
++  const dist = buildSidewalkMeshes([ew, { ...ns, highway: 'tertiary' }], { cornerRadii: UK_CORNER_RADII }).corners;
++  assert.ok(dist.length === 4 && dist.every((c) => Math.abs(radius(c) - 10) < 1e-6), `with a tertiary: ${dist.map(radius)}`);
++  for (const c of uk) for (const [x, y] of c.arc) assert.ok(Math.abs(x) >= 4 - 1e-6 && Math.abs(y) >= 4 - 1e-6, 'off both carriageways');
++  // a lane behind the north-east corner leaves no room for 6 m: it keeps 5 m (tried in sixths), not half (3 m)
++  const lane = { owner: 3, half: 1, highway: 'service', urban: false, tags: { sidewalk: 'no' }, continuations: [], nodes: [[9.8, 6.8, 5, 2], [6.8, 9.8, 5, 2]] };
++  const blocked = buildSidewalkMeshes([ew, ns, lane], { cornerRadii: UK_CORNER_RADII }).corners;
++  const ne = blocked.find((c) => c.centre[0] > 0 && c.centre[1] > 0);
++  assert.ok(ne && Math.abs(radius(ne) - 5) < 1e-6, `north-east corner: ${ne && radius(ne)}`);
++  assert.equal(blocked.filter((c) => Math.abs(radius(c) - 6) < 1e-6).length, 3);
++});
++
++test('junction markings outside the UK are unchanged by the UK rules', () => {
++  const giveWay = { id: 'n1', type: 'poi', geometry: [{ lat: J - 0.0002, lng: J }], tags: { highway: 'give_way' } };
++  const decals = generateJunctionMarkingDecals(tJunction(IE, {}, [giveWay]), (0.01 * 111320) / 64);
++  assert.equal(decals.filter((d) => d.name.startsWith('jm_')).length, 0);
++});

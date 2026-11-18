@@ -1,0 +1,52 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cubewood <330162352+Cubewood@users.noreply.github.com>
+Date: Wed, 18 Nov 2026 13:14:30 +0000
+Subject: [PATCH] Road snapping keeps a shared node exactly where it is
+
+snapRoadsToTerrain fades a way's offset to zero towards nodes another way
+shares, but the fade is evaluated at the 2 m samples and a node between two
+samples took the interpolated offset. A junction node in the middle of a
+moved way moved a few centimetres (Bests Hill at its junction with Bests
+Hill Lane: 0.11 m), off the way that joins it, and every graph keyed by the
+node (signal and give-way approaches, junction markings) lost the junction:
+19 of 909 junction nodes on the Belfast Slice. Nodes another way shares now
+stay exactly, as the comment above nodeUse already says.
+
+diff --git a/services/roadSnap.js b/services/roadSnap.js
+index e607cbe..e230f60 100644
+--- a/services/roadSnap.js
++++ b/services/roadSnap.js
+@@ -272,7 +272,11 @@ export function snapRoadsToTerrain(heightMap, width, height, bounds, osmFeatures
+             const L = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+             const o = offsetAt(arcs[i]);
+             const node = f.geometry[i];
+-            if (Math.abs(o) * metersPerPixel < MOVED_EPSILON_M) {
++            // (a node another way shares stays exactly: the fade is zero only
++            // at the samples, and between two of them a junction node in the
++            // middle of a way moved a few centimetres off the way it joins,
++            // so the junction graph lost the junction)
++            if (Math.abs(o) * metersPerPixel < MOVED_EPSILON_M || (nodeUse.get(makeRoadNodeKey(node)) || 0) > 1) {
+                 geometry.push(node);
+             } else {
+                 const moved = { ...node, ...shift(pts[i].x, pts[i].y, -(b.y - a.y) / L, (b.x - a.x) / L, o) };
+diff --git a/tests/roadSnap.test.mjs b/tests/roadSnap.test.mjs
+index 71cc377..a756b00 100644
+--- a/tests/roadSnap.test.mjs
++++ b/tests/roadSnap.test.mjs
+@@ -62,6 +62,16 @@ test('shared nodes stay; a signal on a moved node moves with it', () => {
+   assert.ok(Math.abs(xAt(sig.lng) - X_BENCH) < 1);
+ });
+ 
++test('a shared node in the middle of a moved way stays exactly where it is', () => {
++  // nodes 40.1 m apart, so the shared node falls between two snap samples
++  const r = road('r', X_BENCH - 4, 20, 381);
++  const side = { id: 's', type: 'road', tags: { highway: 'residential' }, geometry: [r.geometry[4], { lat: r.geometry[4].lat, lng: lngAt(50) }] };
++  const { features } = snapRoadsToTerrain(hillWithBench(), N, N, bounds, [r, side], 1, isGroundLevelRoad);
++  const moved = features[0];
++  assert.ok(moved.geometry.some((p) => Math.abs(xAt(p.lng) - X_BENCH) < 1), 'the way moves onto its bench');
++  assert.ok(moved.geometry.some((p) => p.lat === r.geometry[4].lat && p.lng === r.geometry[4].lng), 'the junction node is kept exactly');
++});
++
+ test('coarse rasters and bridges are left alone', () => {
+   const hm = hillWithBench();
+   const r = road('r', X_BENCH - 4);
