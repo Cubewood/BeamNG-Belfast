@@ -57,10 +57,12 @@ def test_lanes_tag_picks_the_row_for_that_lane_count_else_the_class_default():
     assert (tags_of(feats, "2")["width"], tags_of(feats, "2")["belfast:width_source"]) == ("5.6", "default")
 
 
-def test_class_default_by_direction():
-    feats, _ = run([way("1"), way("2", highway="trunk", oneway="yes")])
+def test_class_default_two_way_only():
+    feats, _ = run([way("1"), way("2", highway="trunk", oneway="yes"), way("3", highway="trunk", oneway="yes", lanes="2")])
     assert tags_of(feats, "1")["width"] == "6"
-    assert tags_of(feats, "2")["width"] == "9.4"
+    for wid in ("2", "3"):                       # one-way: MapNG's own lane-based width, not the table's 9.4 m
+        t = tags_of(feats, wid)
+        assert "width" not in t and t["belfast:width_source"] == "none"
 
 
 def test_service_and_track_are_left_to_mapng():
@@ -120,7 +122,7 @@ def test_running_twice_gives_the_same_result_and_restores_the_original_width():
     # DfI gone: the original OSM width comes back, the cap tag goes
     rw.apply(again, {}, TABLE)
     assert tags_of(again, "1")["width"] == "9" and tags_of(again, "1")["belfast:width_source"] == "osm-width"
-    assert "mapng:carriageway_max" not in tags_of(again, "3") and tags_of(again, "3")["width"] == "9.4"
+    assert "mapng:carriageway_max" not in tags_of(again, "3") and "width" not in tags_of(again, "3")   # one-way: MapNG's
 
 
 def test_deterministic_bytes(tmp_path):

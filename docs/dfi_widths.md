@@ -242,7 +242,11 @@ names the file, default `widths_full.json`, `--no-road-widths` turns it off). Ma
 2. An OSM `width` tag; a `lanes` tag picks the table row for that lane count when there is one.
 3. The Northern Ireland class default: `config/road_width_defaults.json`, the **DfI median** of the high and
    medium ways of that class, direction and lanes tag in the full box (5,544 ways; made by `road_widths.py derive`).
-   Residential two-way 5.6 m, unclassified 6.6, tertiary 6.8 (no lanes tag), secondary 10.1, one-way trunk 9.4.
+   Residential two-way 5.6 m, unclassified 6.6, tertiary 6.8 (no lanes tag), secondary 10.1. **Two-way only** (since
+   18 November): the one-way rows mix dual-road carriageways matched to DfI sections measured across both and junction
+   flares (tertiary, one lane, one-way: median 12.1 m), and the two one-way arms of the Newtownbreda Road roundabout entry
+   drawn at 11.0 and 12.1 m overlapped and lost the entry's Give Way line; a one-way way with no DfI or OSM width keeps
+   MapNG's lane-based width (34 pieces on the Slice).
    Service roads and tracks have no default (width depends on what they serve) and stay with MapNG's.
 
 Before, an untagged Belfast street came out 10.6 m wide (two 3 m lanes plus a 2.3 m parking lane each side) where DfI
@@ -339,3 +343,28 @@ under T-404's lines; on t404 the junction gate fails only on its 20 accepted sho
 
 One failing and one passing run of the same build: the Haddo Woods bend is a coin toss between scrape and crash for
 this AI on a 6.0 m street. The QA profile holds the t404 zip again. The routes file matches t406f's graph only.
+
+## Drive gate on the t406i build (18 November 2026, passed twice)
+
+Build `H:\BelfastData\mapng\t406i\out\belfast_slice.zip` (area `t413_slice`, `gpxz`, MapNG patches 0001 to 0017, MapNG
+commit `e918084`; `docs/mapng_patches.md`), with one-way ways left to MapNG's widths (above). In the QA profile.
+
+- **Haddo Woods kerb strike (t406f: crash, then scrape at (-297, -159)): no contact in four runs** (t406h twice, t406i
+  twice). Patch 0015 gives 348 narrow curbed two-way streets an invisible AI path 0.5 m inside each kerb (Haddo Woods:
+  5.0 m in a 6.0 m street); nothing drawn moved. At the bend exit the car's centre came 1.89 and 1.88 m left of the
+  centreline (front left corner 2.63 m, kerb at 3.0 m), against 1.95 and 1.96 m (2.70 m) on t406f: the AI still swings
+  wide out of the bend, 7 cm less.
+- Widths 145 of 158 (high 77 of 77, medium 57 of 57, low 11 of 24). Junction gate fails on `kerb-radius-small` 4 and one
+  `junction-mouth-unmarked` (Old Milltown Road, a check tolerance; `docs/mapng_patches.md`); roundabout entries 6 of 6
+  marked, minor arms 150 of 155 (4 with no room). Signals check 0. `terrain-step` 150 (41 high) and `kerb-height` 82:
+  the checks now measure 0.5 m nearer the kerbs of the 348 streets with an `_ai` twin (the ground is the same as
+  t406f's); one step and three kerb findings within 4 m of a route, none high.
+- Suites `2026-11-18_211606` and `2026-11-18_212543`: 10 of 10 each, G3 passed both. Worst bump 6.1 at (-218, -146) on
+  `lady-ishbel-loop-reverse` (Lady Ishbel Avenue's crest 30 m from Hospital Road; the drop at the junction is gone).
+  No scrapes (t404: 2). Console: no errors, 3 known warnings. `milltown-road-out` 5.5: the dip 0014 left between
+  Milltown Road's carriageways at (-42 to -53, 332 to 340) is still in the ground (not fixed).
+- t406h (0016 before it spared driveways) also passed twice (`2026-11-18_205320`, `2026-11-18_210307`) but kept the West
+  link road's T vertex where mapped (its service road goes straight on from one arm) and scraped the inside kerb at
+  (-134, 132) once: t406i rounds it again, as on t406f.
+
+Routes rebuilt on t406i's graph (`build_routes.py rebuild`, `check`: 10 routes, 0 problems); they match t406i only.

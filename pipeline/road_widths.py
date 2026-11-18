@@ -20,7 +20,8 @@ Order, per OSM way (one width per way; the `_seg_N` pieces share it):
    more), else the class default below. (Scaling a width by the lane count was tried and gave 4.1 m for a one-lane
    trunk road: a lane count is no good as a multiplier.)
 3. **Class default**: the DfI median of high and medium confidence ways of that class and direction with no `lanes`
-   tag, from `config/road_width_defaults.json` (made by `derive` from the full DfI match, 5,544 ways).
+   tag, from `config/road_width_defaults.json` (made by `derive` from the full DfI match, 5,544 ways). Two-way only:
+   a one-way way with no DfI match or OSM width keeps MapNG's lane-based width (see `class_default`).
    Service roads and tracks have no default: their width depends on what they serve (driveway, parking aisle), so
    MapNG's own defaults stay.
 
@@ -198,8 +199,13 @@ def derive_table(dfi_ways: dict, dfi_inputs: dict | None = None) -> dict:
 
 
 def class_default(table: dict, highway: str, oneway: bool, lanes: int | None) -> tuple[float, str] | None:
-    """(width, how) from the table, or None when the class has no usable row."""
-    if highway in NO_DEFAULT:
+    """(width, how) from the table, or None when the class has no usable row.
+
+    One-way ways get none: the table's one-way rows are mostly one carriageway of a dual road matched to a DfI
+    section measured across both, or a junction flare (tertiary, one lane, one-way: median 12.1 m). Drawn at those
+    widths, the two one-way arms of a roundabout entry (11.0 and 12.1 m, Newtownbreda Road) overlapped and the entry
+    lost its Give Way line; MapNG's own lane-based width stays (T-406)."""
+    if highway in NO_DEFAULT or oneway:
         return None
     rows = table["rows"]
     d = "oneway" if oneway else "twoway"
