@@ -1,0 +1,54 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cubewood <330162352+Cubewood@users.noreply.github.com>
+Date: Wed, 18 Nov 2026 18:26:20 +0000
+Subject: [PATCH] Consecutive ways of one road with different width tags stay
+ separate decal roads, each at its own width
+
+
+diff --git a/services/exportBeamNGLevel.js b/services/exportBeamNGLevel.js
+index e16e30d..5767fe2 100644
+--- a/services/exportBeamNGLevel.js
++++ b/services/exportBeamNGLevel.js
+@@ -2385,7 +2385,7 @@ function isRaisedBuildingPart(tags = {}) {
+   return (Number.isFinite(minLevel) && minLevel > 0) || (Number.isFinite(minHeight) && minHeight > 0) || Number.parseInt(tags.layer, 10) > 0;
+ }
+ 
+-function getDecalMergeStyleKey(segment) {
++export function getDecalMergeStyleKey(segment) {
+   const tags = segment?.tags || {};
+   return JSON.stringify([
+     segment?.highway || tags.highway || '',
+@@ -2394,6 +2394,10 @@ function getDecalMergeStyleKey(segment) {
+     tags.ref || '',
+     tags.oneway || '',
+     tags.surface || '',
++    // (a measured width of its own: merged into the way before, it was drawn
++    // at that way's width)
++    tags.width || '',
++    tags['mapng:carriageway_max'] || '',
+     // (a drawbridge span stays its own segment: the structure solver keeps
+     // the whole bridge low by it)
+     tags.bridge === 'movable' || (!!tags['bridge:movable'] && tags['bridge:movable'] !== 'no'),
+diff --git a/tests/roadNetwork.test.mjs b/tests/roadNetwork.test.mjs
+index 4d740d5..a0c2aef 100644
+--- a/tests/roadNetwork.test.mjs
++++ b/tests/roadNetwork.test.mjs
+@@ -124,3 +124,18 @@ test('mergeLinearRoadSegments still merges a straight continuation', () => {
+   assert.equal(merged.length, 1, 'collinear same-style segments must merge');
+   assert.equal(merged[0].geometry.length, 3);
+ });
++
++test('decal merge: consecutive ways of one road with different width tags stay two roads', async () => {
++  const { getDecalMergeStyleKey } = await import('../services/exportBeamNGLevel.js');
++  const way = (id, lng0, width) => ({
++    id, type: 'road', tags: { highway: 'trunk', name: 'Long Road', ref: 'A1', ...(width ? { width } : {}) },
++    geometry: [{ lat: 0, lng: lng0 }, { lat: 0, lng: lng0 + 0.001 }],
++  });
++  const merged = (ways) => {
++    const network = buildRoadNetwork(ways);
++    return mergeLinearRoadSegments(network.segments, network.intersections, { styleKeyResolver: getDecalMergeStyleKey });
++  };
++  assert.equal(merged([way('a', 0, '7.5'), way('b', 0.001, '10.2')]).length, 2, 'a 7.5 m and a 10.2 m way: two roads');
++  assert.equal(merged([way('a', 0, '7.5'), way('b', 0.001, '7.5')]).length, 1, 'the same width: one road');
++  assert.equal(merged([way('a', 0), way('b', 0.001)]).length, 1, 'no width tags: one road');
++});

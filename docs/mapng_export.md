@@ -95,3 +95,11 @@ After that, `export` runs `fix_signals` (`pipeline/signals_fix.py`, T-407): ever
 
 `fetch`, `pinned-osm` and `export` run `pipeline/speed_limits.py` on the area's `osm.json` first, so every road way
 carries `maxspeed` in mph (`docs/speed_limits.md`). It is idempotent. The summary lands in `<area>/speed_limits.json`.
+
+## Road widths (T-406)
+
+`fetch`, `pinned-osm` and `export` also run `pipeline/road_widths.py` on the area's `osm.json` after the speed limits:
+every road way gets a `width` (DfI, then OSM tags, then NI class defaults; `docs/dfi_widths.md`). Options
+`--dfi-widths FILE` and `--no-road-widths`; a missing DfI file exits 6. The summary lands in `<area>/road_widths.json`
+(counts by source, ways capped below MapNG's class minimum, ways over its maximum).
+

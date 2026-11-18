@@ -2,7 +2,7 @@
 
 DfI Roads publishes the width of almost every adopted road in Northern Ireland. This step reads that data, matches it
 to the pinned OSM ways of the three map squares, and writes one width per OSM way with a confidence score. T-406
-(road widths) reads the output.
+(road widths, below) reads the output.
 
 | Thing | Where |
 |---|---|
@@ -229,3 +229,142 @@ thresholds, and I did not try.
 - **Unnamed OSM ways** match on position alone (name part 0.55). The three unprovable ways above are of this kind.
 - The xlsx is from July 2021; the OSM extract is from 12 November 2026.
 - Items dropped for width (118 of 2,101 in the slice box) are counted in `coverage.dfi` of each output file.
+
+## How the level uses it (T-406)
+
+`pipeline/road_widths.py` writes a `width` tag on every road way of the area's `osm.json` before MapNG reads it (the
+same route as the speed limits; `tools/mapng_export.py` calls it in `fetch`, `pinned-osm` and `export`, `--dfi-widths`
+names the file, default `widths_full.json`, `--no-road-widths` turns it off). MapNG draws a road as wide as its
+`width` tag, so nothing in MapNG changed. Details and the order are in the module docstring:
+
+1. DfI width when the match is high or medium confidence; a low confidence one only inside the p10 to p90 of its class
+   and never on a service road (12 of 42 low ways in the Slice are kept).
+2. An OSM `width` tag; a `lanes` tag picks the table row for that lane count when there is one.
+3. The Northern Ireland class default: `config/road_width_defaults.json`, the **DfI median** of the high and
+   medium ways of that class, direction and lanes tag in the full box (5,544 ways; made by `road_widths.py derive`).
+   Residential two-way 5.6 m, unclassified 6.6, tertiary 6.8 (no lanes tag), secondary 10.1. **Two-way only** (since
+   18 November): the one-way rows mix dual-road carriageways matched to DfI sections measured across both and junction
+   flares (tertiary, one lane, one-way: median 12.1 m), and the two one-way arms of the Newtownbreda Road roundabout entry
+   drawn at 11.0 and 12.1 m overlapped and lost the entry's Give Way line; a one-way way with no DfI or OSM width keeps
+   MapNG's lane-based width (34 pieces on the Slice).
+   Service roads and tracks have no default (width depends on what they serve) and stay with MapNG's.
+
+Before, an untagged Belfast street came out 10.6 m wide (two 3 m lanes plus a 2.3 m parking lane each side) where DfI
+says 5.6 m. On the Slice build (`H:\BelfastData\mapng\t406\`) of the 524 road pieces: DfI high 95, medium 66, low 12,
+OSM lanes 33, class default 57, left to MapNG 261 (228 service, 28 track, 5 links).
+
+Limits found:
+
+- MapNG clamps a `width` to its class range (carriageway 4.4 to 14.6 m for residential and tertiary, 5.6 to 16.6
+  primary and secondary, 7.0 to 22.6 trunk, 3.6 to 11.6 service). A DfI width under the minimum is reached with
+  MapNG's `mapng:carriageway_max` tag (written with `belfast:width_cap=yes`; 13 ways on the Slice). One over the maximum
+  cannot be drawn without a MapNG patch: 1 way on the Slice (Castlehume Gardens 17.8 m, a junction mouth).
+- **MapNG merges consecutive ways of one name, class, ref, one-way and surface into one DecalRoad and draws it with
+  the first way's width.** Where the merged ways have different DfI widths (the A55 Belvoir Road: 7.5 m and 10.2 m)
+  the road gets one of them, and the other way is off by the difference. 5 high or medium ways on the Slice were off
+  for this reason alone. Fixed by MapNG patch 0014 (`width` and `mapng:carriageway_max` in `getDecalMergeStyleKey`,
+  18 November): widths check 145 of 158, all 134 high and medium ways within 0.75 m.
+- DfI's wide medium confidence figures at cul-de-sac heads (Moyle Walk 12.5 and 11.1 m, inter-quartile range 5.9 to
+  12.7) are drawn as DfI gives them and put one building 2.4 m into the lanes.
+
+
+## Drive gate on the T-406 build (15 November 2026, not passed)
+
+First t406 run `2026-11-15_183606`: 4 of 10. Causes, each checked against level data and telemetry:
+
+- **Six routes refused, 244 m on the roundabout route: real.** MapNG takes `width` as the whole carriageway and, with no parking or
+  shoulder tag, makes all of it the AI road. Hospital Road 24 (OSM one-way, lanes=1, DfI low confidence 14.3 m) became a 14.3 m AI lane;
+  the game merges graph nodes within the road radius and joined the two carriageways 6 m apart, so the eastbound link at (150, 282) was lost
+  (the graph had no path from the test centre to the Newtownbreda junction). Fix: `pipeline/road_widths.py` keeps MapNG's own driving
+  width (lanes x class lane width) and writes the rest as `shoulder:both:width` (only over 1.6 m, else the kerb face lands within 0.5 m
+  of the lane edge: 6 kerb findings at 0.4 m strips); the `_ai` roads are back as in i007. Routes then validate to 3 to 6 m (artefact:
+  the `_ai` lines were shifted by `laneShift`, the body is not), so `build_routes.py rebuild` was run on the new graph. **The routes file
+  now matches this build only; `dev` (i007, t407) needs its own copy** (`H:\BelfastData\mapng\t406b\routes_dev_i007.json`).
+- **Wrong-side 86, 28, 106 and `milltown-road-out` median -0.62: artefact.** The route line came from the old graph; the AI line sat 1 to 2 m east
+  of it (checked at (-190, 85): car 1.1 m left of the new graph line, 1.9 m east of the old route line).
+- **Crash at (127, 275) on `hospital-road-ne-back`: real.** A 14.3 m body pushed MapNG's street props (2.4 m beyond the carriageway
+  edge) onto the slip road: `utility_pole_36` at (123.4, 273.8), 0.5 m from the slip centre. Fix: a low-confidence DfI width is cut to the
+  driving width plus two parking lanes (2 x 2.3 m); the DfI figure stays in `belfast:width_dfi` (widths check 141 to 140 of 158).
+- **Kerb strike at (-295, -163) on `haddo-woods-loop`: real.** Without the parking lanes the kerb stands at 2.8 m from the centre and the
+  AI's line through the bend reaches it. Fix: a two-way carriageway up to 0.75 m under its lanes' width is drawn at it (5.6 to 6.0 m).
+- **`lady-ishbel-loop-reverse`, (-130, 129): real, fixed (MapNG patch 0011).** Not the road at (-130, 129): the damage is polled every 0.5 s and
+  stamped on the batch's first sample, so the hit lies up to 0.5 s on. Front spindle damage, FL zone: the car's left front wheel on the inside
+  kerb at (-136, 131.5), 2.9 m from the centre, with the car's reference node 2.7 m left of it. The West link road bends 53 degrees at the
+  vertex where service road 579543545 ends; MapNG pinned the road through that vertex, an S (right 7 degrees, then the whole turn) with a
+  7.8 m core radius, and the AI cut it by 1.2 m. With the 10.6 m body the kerb had stood at 5.3 m. Patch 0011 rounds such a vertex (20 m arc,
+  the vertex moved 2.4 m, the service road's end with it). No hit there in any of the three t406e runs.
+- **The drop at (-192, -145): improved, not fixed.** The path (y -146 to -144) runs inside both cores; the cores had shrunk to 4.0 m (Lady
+  Ishbel) and 4.55 m (Hospital Road) from 6.3 and 5.5, so the junction-mouth blend of patch 0005 took the car from Lady Ishbel's 15 % to
+  Hospital Road's level within about 2 m. Patch 0010 keeps cores at 6.5 m within a junction mouth; game bump 7.2 and 8.3 (t406d: 8.6 to 11.7,
+  i007 6.1). Widening further is not the answer: Lady Ishbel's own solved profile changes from 15 % to 8.5 % at one node 4 m from the
+  junction, which only easing that profile (a vertical curve on the minor road's approach, `services/structures/profileSolve.js`) can spread.
+- **The known scrape (-196, -146) is partly the kerb end: fixed (patch 0012).** Lady Ishbel's north kerb ran on to 0.5 m from Hospital Road
+  (no sidewalk there, so no curb return) and its ramp lay under the turning car's front left wheel (v1 run: `crash` 2410, front spindle).
+  Patch 0012 stops such a loose end the run's corner radius back (here 3 m; 6 m since 18 November, when the patch was rebased onto T-404 and reads `UK_CORNER_RADII`). Run `2026-11-15_234431` still logged a `scrape` there.
+- **New with 0010, fixed in it: bump 7.0 to 7.2 at (-96, 144)** on `hospital-road-ne-back` and `milltown-road-back`: a level service road's
+  widened core pulled Hospital Road's climbing lanes off their grade. Service roads and tracks keep their own core (3.3 and 3.6 after).
+
+Build `H:\BelfastData\mapng\t406e\out\belfast_slice.zip` (patches 0001 to 0007 and today's 0010 to 0012, then numbered 0008 to 0010; `out_run1` is the first t406e build, without 0012): widths
+140 of 158, `terrain-step` 85 (navigation 18; t406d 90 and 24), kerbs 0. Routes rebuilt on its graph (`build_routes.py rebuild`, `check`: 10
+routes, 0 problems); they match t406e builds only. Suite `2026-11-15_232145` (first t406e build): 10 of 10 completed, G3 failed (bumps 7.2,
+7.2, 7.0). Suite `2026-11-15_234431` (final build): 10 of 10 completed, G3 failed on `lady-ishbel-loop-reverse` only (bump 8.3 at (-193,
+-145), scrape at (-197, -146)); other events: `haddo-woods-loop` scrapes at (-244, -144), (-298, -158), (-271, -111), `newtownbreda-roundabout`
+scrape at (401, 808) (t406d had scrapes at those Haddo Woods and roundabout places too). Console: one error, `Hook discarded:
+FilteredInputChanged` (game UI), not seen before. The QA profile holds the i007 zip again. The suite now reads the osm.json the routes file
+names (`sources.osm_file`) unless `--osm` is given.
+
+## Drive gate on the t406f build (18 November 2026, not passed)
+
+Build `H:\BelfastData\mapng\t406f\out\belfast_slice.zip`: area `t413_slice` (pinned OSM, `gpxz`), MapNG patches 0001 to
+0014 (T-404's 0008 and 0009; T-406's 0010 to 0012, then 0013 a side road's approach to a junction and 0014 the decal
+merge key, `docs/mapng_patches.md`). Static checks against t404 (dev): widths 145 of 158 (high 77 of 77, medium 57 of
+57, low 11 of 24; t406e 140), `terrain-step` 78 (1 high, (457, 923); t404 98 with 15 high, t406e 85), `kerb-height` 1 (22 cm at
+(133, 735), as on the build without 0013 and 0014), signals check 0, junctions: `kerb-radius-small` 4 (t404 20,
+accepted), but 4 high `junction-line-on-priority-road`, 1 `roundabout-entry-unmarked` (450, 872), 1
+`junction-mouth-unmarked`, 1 `junction-line-no-mouth`, all already on the build with 0001 to 0012 alone (the T-406 widths
+under T-404's lines; on t404 the junction gate fails only on its 20 accepted short corners). Routes rebuilt on its graph (`build_routes.py rebuild`, `check`: 10 routes,
+0 problems).
+
+- **The Lady Ishbel drop: fixed (patch 0013).** Lady Ishbel Avenue leaves Hospital Road at 2.3 % and turns about 4 % per
+  station to 15 % at 16 m, instead of 9.4 % then 15 % from 4 m. `lady-ishbel-loop-reverse` bump 6.1 and 6.2 (t406e 8.3,
+  t404 6.0); no scrape there (t404: (-194, -146)).
+- **Suite `2026-11-18_183125`: 9 of 10, G3 failed.** `haddo-woods-loop` crashed at (-297, -159): front spindle, FL. The AI
+  comes out of the 12 m radius right-hand bend 1.95 m left of the centreline (0.45 m outside its 3.0 m lane's middle),
+  front left wheel at about 2.75 m, and meets the 13 cm kerb at 3.0 m. Haddo Woods has no DfI match: 5.6 m class
+  default, drawn at the lanes' 6.0 m. Road, kerb and terrain under the path are as on t406e, where the same contact
+  was a scrape at (-298, -158) in its runs; not caused by 0013 or 0014. Tried: a 0.3 m channel inside two-way
+  carriageways at the lanes' width (`shoulder:both:width`, AI lanes 5.4 m): `kerb-height` 1 to 91 and `terrain-step` 78 to 150
+  (43 high) on the static checks (build `t406g`), so reverted and not driven.
+- **Suite `2026-11-18_184913` (same build, rerun): 10 of 10, G3 passed.** Worst bump 6.8 at (-54, 340) on
+  `milltown-road-out`, new with 0014 (6.4 in the first run; t406e and t404 under 5 there); scrapes 2: Haddo Woods
+  (-298, -158) and the roundabout (401, 808) (t404: 2, both on `lady-ishbel-loop-reverse`).
+- Console: no errors in either run (3 warnings, the known baseline lines); `Hook discarded: FilteredInputChanged` did not
+  come back.
+
+One failing and one passing run of the same build: the Haddo Woods bend is a coin toss between scrape and crash for
+this AI on a 6.0 m street. The QA profile holds the t404 zip again. The routes file matches t406f's graph only.
+
+## Drive gate on the t406i build (18 November 2026, passed twice)
+
+Build `H:\BelfastData\mapng\t406i\out\belfast_slice.zip` (area `t413_slice`, `gpxz`, MapNG patches 0001 to 0017, MapNG
+commit `e918084`; `docs/mapng_patches.md`), with one-way ways left to MapNG's widths (above). In the QA profile.
+
+- **Haddo Woods kerb strike (t406f: crash, then scrape at (-297, -159)): no contact in four runs** (t406h twice, t406i
+  twice). Patch 0015 gives 348 narrow curbed two-way streets an invisible AI path 0.5 m inside each kerb (Haddo Woods:
+  5.0 m in a 6.0 m street); nothing drawn moved. At the bend exit the car's centre came 1.89 and 1.88 m left of the
+  centreline (front left corner 2.63 m, kerb at 3.0 m), against 1.95 and 1.96 m (2.70 m) on t406f: the AI still swings
+  wide out of the bend, 7 cm less.
+- Widths 145 of 158 (high 77 of 77, medium 57 of 57, low 11 of 24). Junction gate fails on `kerb-radius-small` 4 and one
+  `junction-mouth-unmarked` (Old Milltown Road, a check tolerance; `docs/mapng_patches.md`); roundabout entries 6 of 6
+  marked, minor arms 150 of 155 (4 with no room). Signals check 0. `terrain-step` 150 (41 high) and `kerb-height` 82:
+  the checks now measure 0.5 m nearer the kerbs of the 348 streets with an `_ai` twin (the ground is the same as
+  t406f's); one step and three kerb findings within 4 m of a route, none high.
+- Suites `2026-11-18_211606` and `2026-11-18_212543`: 10 of 10 each, G3 passed both. Worst bump 6.1 at (-218, -146) on
+  `lady-ishbel-loop-reverse` (Lady Ishbel Avenue's crest 30 m from Hospital Road; the drop at the junction is gone).
+  No scrapes (t404: 2). Console: no errors, 3 known warnings. `milltown-road-out` 5.5: the dip 0014 left between
+  Milltown Road's carriageways at (-42 to -53, 332 to 340) is still in the ground (not fixed).
+- t406h (0016 before it spared driveways) also passed twice (`2026-11-18_205320`, `2026-11-18_210307`) but kept the West
+  link road's T vertex where mapped (its service road goes straight on from one arm) and scraped the inside kerb at
+  (-134, 132) once: t406i rounds it again, as on t406f.
+
+Routes rebuilt on t406i's graph (`build_routes.py rebuild`, `check`: 10 routes, 0 problems); they match t406i only.

@@ -474,6 +474,23 @@ def apply_speed_limits(area_dir: Path) -> dict:
     return summary
 
 
+def apply_road_widths(area_dir: Path, args: argparse.Namespace) -> dict | None:
+    """T-406: give every road way of <area>/osm.json a `width` (DfI, then OSM tags, then NI class defaults;
+    pipeline/road_widths.py). Safe to run twice. `--no-road-widths` leaves MapNG's own widths."""
+    if getattr(args, "no_road_widths", False):
+        return None
+    sys.path.insert(0, str(REPO_ROOT / "pipeline"))
+    import road_widths
+    dfi = Path(getattr(args, "dfi_widths", None) or road_widths.DEFAULT_DFI)
+    if not dfi.is_file():
+        raise GuardError(f"DfI widths file {dfi} is missing; run pipeline/dfi.py match (or pass --no-road-widths)", EXIT_INPUTS)
+    summary = road_widths.run(area_dir / "osm.json", dfi_path=dfi, write=True, report=area_dir / "road_widths.json")
+    print("road widths: " + json.dumps({k: v["pieces"] for k, v in summary["by_source"].items()})
+          + f"; below class minimum (capped) {len(summary['capped_below_class_minimum'])} ways, "
+            f"over class maximum (not reachable) {len(summary['unreachable_over_class_maximum'])} ways")
+    return summary
+
+
 def cmd_pinned_osm(args: argparse.Namespace) -> int:
     """Write <areas>/NAME/osm.json from a pinned cut. No network: every request would be blocked and logged."""
     check_pin()
@@ -491,6 +508,7 @@ def cmd_pinned_osm(args: argparse.Namespace) -> int:
         print(f"pinned-osm FAILED (node exit {code}, requests {hosts})", file=sys.stderr)
         return EXIT_NODE
     apply_speed_limits(area_dir)
+    apply_road_widths(area_dir, args)
     return EXIT_OK
 
 
@@ -513,6 +531,7 @@ def cmd_fetch(args: argparse.Namespace) -> int:
         print(f"fetch FAILED (node exit {code})", file=sys.stderr)
         return EXIT_NODE
     apply_speed_limits(AREAS_DIR / args.name)
+    apply_road_widths(AREAS_DIR / args.name, args)
     print(f"fetched {AREAS_DIR / args.name}")
     return EXIT_OK
 
@@ -534,6 +553,7 @@ def cmd_export(args: argparse.Namespace) -> int:
     custom_out = getattr(args, "out_dir", None)
     check_dem_inputs(area_dir, dem)
     apply_speed_limits(area_dir)   # no-op when fetch or pinned-osm already did it
+    apply_road_widths(area_dir, args)
     if custom_out:
         out_dir = require_under_data(Path(custom_out), "out-dir")
         netlog, home = _prepare(f"export_{level}.log", out_dir, out_dir / "netlog")
@@ -587,6 +607,12 @@ def cmd_check(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def _width_args(s: argparse.ArgumentParser) -> None:
+    s.add_argument("--dfi-widths", metavar="FILE",
+                   help=r"DfI widths file (pipeline/dfi.py match; default H:\BelfastData\dfi\widths_full.json)")
+    s.add_argument("--no-road-widths", action="store_true", help="leave MapNG's own road widths (no width tags)")
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -598,11 +624,13 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--pinned-osm", metavar="AREA",
                    help="take OSM from the pinned cut of this AOI square (pipeline/osm_pin.py), not Overpass")
     s.add_argument("--node-memory-mb", type=int, default=12288)
+    _width_args(s)
     s.set_defaults(func=cmd_fetch)
     s = sub.add_parser("pinned-osm", help="write osm.json for an area from a pinned cut, offline")
     s.add_argument("name", help="area folder under areas/ (needs meta.json)")
     s.add_argument("--cut", metavar="AREA", help="AOI square whose cut to use (default: same as NAME)")
     s.add_argument("--node-memory-mb", type=int, default=4096)
+    _width_args(s)
     s.set_defaults(func=cmd_pinned_osm)
     s = sub.add_parser("export", help="build the level zip and assert left-hand traffic")
     s.add_argument("name")
@@ -615,6 +643,7 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--no-fix-stubs", action="store_true",
                    help="leave the 4-byte stub images (default: replace them, as MapNG's --fix-stubs would)")
     s.add_argument("--node-memory-mb", type=int, default=12288)
+    _width_args(s)
     s.set_defaults(func=cmd_export)
     s = sub.add_parser("check", help="assert a built zip is left-hand traffic in Europe")
     s.add_argument("zip")

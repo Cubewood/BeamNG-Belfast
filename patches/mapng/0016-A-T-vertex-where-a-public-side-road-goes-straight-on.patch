@@ -1,0 +1,79 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cubewood <330162352+Cubewood@users.noreply.github.com>
+Date: Wed, 18 Nov 2026 20:45:26 +0000
+Subject: [PATCH] A T vertex where a public side road goes straight on from one
+ arm of the bend stays where mapped
+
+
+diff --git a/services/roadCurves.js b/services/roadCurves.js
+index d162624..58072b6 100644
+--- a/services/roadCurves.js
++++ b/services/roadCurves.js
+@@ -57,6 +57,14 @@ const ARC_STEP_M = 1;
+ // the bend within a few metres of it (a 53 degree bend on 20 m legs drew a
+ // 7.8 m radius where the arc is 20 m).
+ const T_ARC_MIN_TURN_RAD = (30 * Math.PI) / 180;
++// ...unless a public road ending there goes straight on from one side of the
++// bend (within 20 degrees): then the junction is that road and the bend is
++// the turn off it, and the vertex stays where mapped (moved onto the arc, the
++// straight road was bent 3 m off its line and the side road read as the
++// through road: Give Way lines on the wrong arm). A service road or track
++// going straight on is a driveway: the bend is still rounded.
++const T_STRAIGHT_COS = Math.cos((20 * Math.PI) / 180);
++const NOT_A_JUNCTION_ROAD = new Set(['service', 'track', 'footway', 'path', 'cycleway', 'pedestrian', 'steps', 'bridleway', 'corridor']);
+ const NODE_POINT_TYPES = new Set(['street_furniture', 'traffic_calming']);
+ 
+ const isRoundableRoad = (f) => f?.type === 'road'
+@@ -191,6 +199,17 @@ export function roundRoadCorners(osmFeatures) {
+         const ends = endUse.get(k) || [];
+         return ends.length > 0 && ends.every((e) => e.fi !== fi) && (nodeUse.get(k) || 0) === ends.length + 1;
+     };
++    const straightOn = (p, a, c) => {
++        const mx = Math.cos((p.lat * Math.PI) / 180);
++        const dir = (q) => { const x = (q.lng - p.lng) * mx; const y = q.lat - p.lat; const l = Math.hypot(x, y) || 1; return [x / l, y / l]; };
++        const arms = [dir(a), dir(c)];
++        return (endUse.get(makeRoadNodeKey(p)) || []).some((e) => {
++            if (NOT_A_JUNCTION_ROAD.has(osmFeatures[e.fi].tags?.highway)) return false;
++            const g = osmFeatures[e.fi].geometry;
++            const d = dir(e.atStart ? g[1] : g[g.length - 2]);
++            return arms.some((u) => u[0] * d[0] + u[1] * d[1] < -T_STRAIGHT_COS);
++        });
++    };
+     const tMoved = new Set();
+     // A segment is split between its two ends when both get a curve; an end
+     // that stays as it is (dead end, junction, straight-through vertex) leaves
+@@ -248,7 +267,7 @@ export function roundRoadCorners(osmFeatures) {
+         if (startHalf) { push(...[...startHalf].reverse()); changed = true; } else push(g[0]);
+         for (let i = 1; i < g.length - 1; i++) {
+             let pinned = isFixed(g[i], false);
+-            if (pinned && tVertex(g[i], fi) && turnAt(g[i - 1], g[i], g[i + 1]) >= T_ARC_MIN_TURN_RAD) {
++            if (pinned && tVertex(g[i], fi) && turnAt(g[i - 1], g[i], g[i + 1]) >= T_ARC_MIN_TURN_RAD && !straightOn(g[i], g[i - 1], g[i + 1])) {
+                 pinned = false;
+                 tMoved.add(makeRoadNodeKey(g[i]));
+             }
+diff --git a/tests/roadCurves.test.mjs b/tests/roadCurves.test.mjs
+index 1beca04..914425c 100644
+--- a/tests/roadCurves.test.mjs
++++ b/tests/roadCurves.test.mjs
+@@ -100,6 +100,21 @@ test('a vertex another way passes through, or a gentle bend at a driveway, stays
+   assert.deepEqual(out[1].geometry[0], gentle.geometry[1], 'driveway still attached');
+ });
+ 
++test('a sharp bend at a vertex where a side road goes straight on from one arm stays: that road and the arm are the junction', () => {
++  // (the road turns 90 degrees at J; the side road carries on the line of the arm it meets)
++  const r = road('r', [[0, 0], [0, 40], [-40, 40]]);
++  const side = road('s', [[0, 40], [1, 70]]);
++  const { features, stats } = roundRoadCorners([r, side]);
++  assert.ok(features[0].geometry.some((p) => makeRoadNodeKey(p) === makeRoadNodeKey(r.geometry[1])), 'junction vertex kept');
++  assert.deepEqual(features[1].geometry[0], r.geometry[1], 'side road still starts there');
++  assert.ok(!stats.movedEnds, 'nothing moved');
++  // a service road going straight on is a driveway: the bend is still rounded
++  const drive = { id: 'd', type: 'road', tags: { highway: 'service' }, geometry: [r.geometry[1], ll(1, 70)] };
++  const out = roundRoadCorners([r, drive]);
++  assert.ok(!out.features[0].geometry.some((p) => makeRoadNodeKey(p) === makeRoadNodeKey(r.geometry[1])), 'driveway: vertex moved onto the arc');
++  assert.equal(out.stats.movedEnds, 1);
++});
++
+ test('two ways meeting mid-bend are rounded across the join and still meet; a signal there follows', () => {
+   const a = road('a', [[0, 0], [100, 0]]);
+   const b = road('b', [[100, 0], [100, 100]]);

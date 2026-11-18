@@ -1,0 +1,67 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cubewood <330162352+Cubewood@users.noreply.github.com>
+Date: Wed, 18 Nov 2026 20:49:26 +0000
+Subject: [PATCH] A way coming back to a node of its own (a P-shaped loop) is
+ split there: a junction like any other
+
+
+diff --git a/services/roadNetwork.js b/services/roadNetwork.js
+index 3dcda60..ad700f4 100644
+--- a/services/roadNetwork.js
++++ b/services/roadNetwork.js
+@@ -85,18 +85,28 @@ export function buildRoadNetwork(roadFeatures = [], options = {}) {
+     .filter((feature) => feature.geometry.length >= 2);
+ 
+   const nodeCounts = new Map();
++  // a way coming back to a node of its own (a P-shaped loop closing on its
++  // stem) meets itself there: a junction like any other (not a closed ring's
++  // last node, its first). Kept whole, the loop and its stem were one road
++  // through the junction, its own end arm with no road to give way to.
++  const selfKeys = new Set();
+   for (const road of roads) {
+     const layer = layerResolver(road.tags || {});
+     const seenInRoad = new Set();
+-    for (const pt of road.geometry) {
++    const g = road.geometry;
++    const firstKey = makeLayeredRoadNodeKey(g[0], layer, decimals);
++    g.forEach((pt, i) => {
+       const key = makeLayeredRoadNodeKey(pt, layer, decimals);
+-      if (seenInRoad.has(key)) continue;
++      if (seenInRoad.has(key)) {
++        if (!(i === g.length - 1 && key === firstKey)) selfKeys.add(key);
++        return;
++      }
+       seenInRoad.add(key);
+       nodeCounts.set(key, (nodeCounts.get(key) || 0) + 1);
+-    }
++    });
+   }
+ 
+-  const splitKeys = new Set();
++  const splitKeys = new Set(selfKeys);
+   for (const [key, count] of nodeCounts.entries()) {
+     if (count >= 2) splitKeys.add(key);
+   }
+diff --git a/tests/roadNetwork.test.mjs b/tests/roadNetwork.test.mjs
+index a0c2aef..a49f76a 100644
+--- a/tests/roadNetwork.test.mjs
++++ b/tests/roadNetwork.test.mjs
+@@ -139,3 +139,18 @@ test('decal merge: consecutive ways of one road with different width tags stay t
+   assert.equal(merged([way('a', 0, '7.5'), way('b', 0.001, '7.5')]).length, 1, 'the same width: one road');
+   assert.equal(merged([way('a', 0), way('b', 0.001)]).length, 1, 'no width tags: one road');
+ });
++
++test('a P-shaped way closing on its own stem is split there: the stem and the loop meet at a junction', () => {
++  const p = (x, y) => ({ lat: y * 0.0001, lng: x * 0.0001 });
++  const way = { id: 'p', type: 'road', tags: { highway: 'residential', name: 'Loop Crescent' },
++    geometry: [p(0, 0), p(0, 5), p(0, 10), p(5, 15), p(0, 20), p(-5, 15), p(0, 10)] };
++  const network = buildRoadNetwork([way]);
++  assert.equal(network.segments.length, 2, 'the stem and the loop');
++  const junction = network.intersections.get(network.segments[0].endKey);
++  assert.equal(junction?.length, 3, 'three ends at the junction: the stem and both ends of the loop');
++  const merged = mergeLinearRoadSegments(network.segments, network.intersections);
++  assert.equal(merged.length, 2, 'not merged through the junction');
++  const ring = { id: 'r', type: 'road', tags: { highway: 'residential', junction: 'roundabout' },
++    geometry: [p(0, 0), p(5, 5), p(0, 10), p(-5, 5), p(0, 0)] };
++  assert.equal(buildRoadNetwork([ring]).segments.length, 1, 'a closed ring stays one way');
++});

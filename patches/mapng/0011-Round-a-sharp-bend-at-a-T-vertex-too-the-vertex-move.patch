@@ -1,0 +1,138 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cubewood <330162352+Cubewood@users.noreply.github.com>
+Date: Sun, 15 Nov 2026 23:19:11 +0000
+Subject: [PATCH] Round a sharp bend at a T vertex too: the vertex moves onto
+ the arc and the ways ending there follow
+
+A vertex another way is attached to stayed exactly where mapped, so the road
+had to pass through it: an S that swings out before the vertex and turns most
+of the bend within a few metres of it. On a 53 degree bend at a service road's
+end (legs of 25 m and 20 m) that drew a 7.8 m radius where the arc would be
+20 m, and a car on a 6 m street cut the bend into the inside kerb. Where every
+other way only ends at the vertex and the bend is 30 degrees or more, the
+vertex is rounded like any other (at most MAX_CUT_M inside it) and the ending
+ways' ends move to the arc's middle. A way passing through the vertex, and a
+gentler bend, keep the old rule.
+
+diff --git a/services/roadCurves.js b/services/roadCurves.js
+index a64df13..d162624 100644
+--- a/services/roadCurves.js
++++ b/services/roadCurves.js
+@@ -50,6 +50,13 @@ const MAX_TURN_RAD = (170 * Math.PI) / 180;
+ // Arc sampling: at most this angle and this chord length per step.
+ const ARC_STEP_RAD = (5 * Math.PI) / 180;
+ const ARC_STEP_M = 1;
++// A sharp bend at a vertex other ways only end at (a T: a driveway or a side
++// road leaving the bend) is rounded like any other and the vertex moves to
++// the arc's middle, the ending ways with it. Kept in place, the road had to
++// pass through it: an S, swinging out before the vertex and turning most of
++// the bend within a few metres of it (a 53 degree bend on 20 m legs drew a
++// 7.8 m radius where the arc is 20 m).
++const T_ARC_MIN_TURN_RAD = (30 * Math.PI) / 180;
+ const NODE_POINT_TYPES = new Set(['street_furniture', 'traffic_calming']);
+ 
+ const isRoundableRoad = (f) => f?.type === 'road'
+@@ -178,6 +185,13 @@ export function roundRoadCorners(osmFeatures) {
+         if (joinOf.has(k)) return false;
+         return isEnd || (nodeUse.get(k) || 0) > 1;
+     };
++    // a vertex where every other way ends (T_ARC_MIN_TURN_RAD), none of them this one
++    const tVertex = (p, fi) => {
++        const k = makeRoadNodeKey(p);
++        const ends = endUse.get(k) || [];
++        return ends.length > 0 && ends.every((e) => e.fi !== fi) && (nodeUse.get(k) || 0) === ends.length + 1;
++    };
++    const tMoved = new Set();
+     // A segment is split between its two ends when both get a curve; an end
+     // that stays as it is (dead end, junction, straight-through vertex) leaves
+     // most of it to the other.
+@@ -233,7 +247,11 @@ export function roundRoadCorners(osmFeatures) {
+         const startHalf = joinHalves.get(`${fi}:true`);
+         if (startHalf) { push(...[...startHalf].reverse()); changed = true; } else push(g[0]);
+         for (let i = 1; i < g.length - 1; i++) {
+-            const pinned = isFixed(g[i], false);
++            let pinned = isFixed(g[i], false);
++            if (pinned && tVertex(g[i], fi) && turnAt(g[i - 1], g[i], g[i + 1]) >= T_ARC_MIN_TURN_RAD) {
++                pinned = false;
++                tMoved.add(makeRoadNodeKey(g[i]));
++            }
+             const arc = filletArc(g[i - 1], g[i], g[i + 1], radius, shareFor(g, i - 1), shareFor(g, i + 1), pinned);
+             if (!arc) { push(g[i]); continue; }
+             push(...arc);
+@@ -246,6 +264,20 @@ export function roundRoadCorners(osmFeatures) {
+         return changed ? { ...f, geometry } : f;
+     });
+ 
++    // (the ways ending at a moved T vertex: their end follows it)
++    for (let i = 0; tMoved.size && i < out.length; i++) {
++        const f = out[i];
++        if (f?.type !== 'road' || !Array.isArray(f.geometry) || f.geometry.length < 2) continue;
++        const g = f.geometry;
++        const at = (p) => (tMoved.has(makeRoadNodeKey(p)) ? movedNodes.get(makeRoadNodeKey(p)) : null);
++        const m0 = at(g[0]); const m1 = at(g[g.length - 1]);
++        if (!m0 && !m1) continue;
++        const geometry = g.slice();
++        if (m0) geometry[0] = { ...g[0], ...m0 };
++        if (m1) geometry[g.length - 1] = { ...g[g.length - 1], ...m1 };
++        out[i] = { ...f, geometry };
++        stats.movedEnds = (stats.movedEnds || 0) + (m0 ? 1 : 0) + (m1 ? 1 : 0);
++    }
+     if (movedNodes.size > 0) {
+         for (let i = 0; i < out.length; i++) {
+             const f = out[i];
+diff --git a/tests/roadCurves.test.mjs b/tests/roadCurves.test.mjs
+index 7c3d201..1beca04 100644
+--- a/tests/roadCurves.test.mjs
++++ b/tests/roadCurves.test.mjs
+@@ -57,14 +57,47 @@ test('short segments shrink the radius so neighbouring arcs never overlap', () =
+   for (const p of g) assert.ok(dist(xy(p)) < 2, `point ${xy(p)} strays ${dist(xy(p))}`);
+ });
+ 
+-test('a vertex another way is attached to stays exactly, and the road still bends smoothly through it', () => {
++// the smallest radius of a polyline, from each three consecutive points (m)
++function minRadius(geometry) {
++  const P = geometry.map(xy);
++  let min = Infinity;
++  for (let i = 1; i + 1 < P.length; i++) {
++    const [a, b, c] = [P[i - 1], P[i], P[i + 1]];
++    const ab = Math.hypot(b[0] - a[0], b[1] - a[1]); const bc = Math.hypot(c[0] - b[0], c[1] - b[1]); const ca = Math.hypot(a[0] - c[0], a[1] - c[1]);
++    const area2 = Math.abs((b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]));
++    if (area2 > 1e-9) min = Math.min(min, (ab * bc * ca) / (2 * area2));
++  }
++  return min;
++}
++
++test('a sharp bend at a vertex another way only ends at is rounded; the vertex moves onto the arc and that way follows', () => {
++  // (before: the road was pinned through the vertex, an S with a tight core:
++  // a 53 degree bend at a driveway on 25 m and 20 m legs drew under 8 m of radius)
++  const r = road('r', [[0, 0], [20, 15], [39, 9]]);
++  const drive = { id: 'd', type: 'road', tags: { highway: 'service' }, geometry: [r.geometry[1], ll(30, 40)] };
++  const { features, stats } = roundRoadCorners([r, drive]);
++  const g = features[0].geometry;
++  assert.ok(minRadius(g) > 15, `min radius ${minRadius(g).toFixed(1)} m`);
++  const start = features[1].geometry[0];
++  assert.ok(g.some((p) => makeRoadNodeKey(p) === makeRoadNodeKey(start)), 'driveway still attached, on the arc');
++  const moved = Math.hypot(xy(start)[0] - 20, xy(start)[1] - 15);
++  assert.ok(moved > 0.5 && moved < 3.1, `vertex moved ${moved.toFixed(2)} m`);
++  assert.equal(stats.movedEnds, 1);
++});
++
++test('a vertex another way passes through, or a gentle bend at a driveway, stays exactly, and the road still bends smoothly through it', () => {
+   const r = road('r', [[0, 0], [100, 0], [100, 100]]);
+-  const drive = { id: 'd', type: 'road', tags: { highway: 'service' }, geometry: [r.geometry[1], ll(140, -40)] };
+-  const { features } = roundRoadCorners([r, drive]);
++  const path = { id: 'p', type: 'road', tags: { highway: 'footway' }, geometry: [ll(140, -40), r.geometry[1], ll(60, 40)] };
++  const { features } = roundRoadCorners([r, path]);
+   const g = features[0].geometry;
+   assert.ok(g.some((p) => makeRoadNodeKey(p) === makeRoadNodeKey(r.geometry[1])), 'shared vertex kept');
+   assert.ok(maxTurnDeg(g) < 30, `max turn ${maxTurnDeg(g)}`);
+-  assert.deepEqual(features[1].geometry[0], r.geometry[1], 'driveway still attached');
++  assert.deepEqual(features[1].geometry[1], r.geometry[1], 'path still crosses there');
++  const gentle = road('g', [[0, 0], [100, 0], [200, 30]]);
++  const drive = { id: 'd', type: 'road', tags: { highway: 'service' }, geometry: [gentle.geometry[1], ll(140, -40)] };
++  const out = roundRoadCorners([gentle, drive]).features;
++  assert.ok(out[0].geometry.some((p) => makeRoadNodeKey(p) === makeRoadNodeKey(gentle.geometry[1])), 'gentle bend: vertex kept');
++  assert.deepEqual(out[1].geometry[0], gentle.geometry[1], 'driveway still attached');
+ });
+ 
+ test('two ways meeting mid-bend are rounded across the join and still meet; a signal there follows', () => {

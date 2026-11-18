@@ -1,0 +1,109 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cubewood <330162352+Cubewood@users.noreply.github.com>
+Date: Wed, 18 Nov 2026 20:37:18 +0000
+Subject: [PATCH] A narrow two-way town street's AI path keeps 0.5 m off its
+ kerbs; the asphalt, kerbs and paint stay
+
+
+diff --git a/services/exportBeamNGLevel.js b/services/exportBeamNGLevel.js
+index 5767fe2..fd72428 100644
+--- a/services/exportBeamNGLevel.js
++++ b/services/exportBeamNGLevel.js
+@@ -2291,6 +2291,14 @@ const AI_PATH_LAYER = {
+   name: 'ai_path', material: GLOBAL_DECAL_MATERIALS.invisible,
+   renderPriority: 20, textureLength: 10, breakAngle: 2, drivability: 1,
+ };
++// A narrow town street's AI path keeps off its kerbs: where a two-way curbed
++// carriageway leaves less than AI_KERB_MARGIN_M beside its lanes, the AI
++// drives lanes that far inside the kerbs, never narrower than AI_MIN_HALF_M a
++// side (a 6 m street drawn at its two 3 m lanes: the AI swung 0.45 m wide out
++// of a bend and broke a front spindle on the kerb). Only the invisible AI
++// path moves: the asphalt, kerbs, terrain and paint stay where they are.
++const AI_KERB_MARGIN_M = 0.5;
++const AI_MIN_HALF_M = 2.25;
+ const EDGE_BLEND = (width) => ([
+   { name: 'edge_left', material: GLOBAL_DECAL_MATERIALS.edgeAsphaltGrass, width, offset: -1.0, isEdge: true, mirrorByReversingNodes: true,
+     renderPriority: 9, textureLength: 8, breakAngle: 1, startEndFadeMag: 1 },
+@@ -3083,7 +3091,7 @@ export function buildLineMarkingLayers(highway, tags = {}, styleHalfWidth = 3.5,
+   return layers;
+ }
+ 
+-function getLayeredRoadDecals(centerNodes, highway, tags, styleHalfWidth, parentName, options = {}) {
++export function getLayeredRoadDecals(centerNodes, highway, tags, styleHalfWidth, parentName, options = {}) {
+   const isUnpaved = UNPAVED_SURFACES.has(tags.surface) || highway === 'track';
+   const laneMarkingsEnabled = shouldUseLaneMarkings(highway, tags);
+   const grassEdgeBlendEnabled = shouldUseGrassEdgeBlend(highway, tags);
+@@ -3106,7 +3114,13 @@ function getLayeredRoadDecals(centerNodes, highway, tags, styleHalfWidth, parent
+   // paved in strips, none of which can carry the AI: an invisible path does
+   // (a branch of a lane fork: its own AI path, a lead-in piece from the fork, laneForkLeadIns.js)
+   const leadEnd = isUnpaved ? -1 : leadInEnd(centerNodes, options.leadIn);
+-  const separateAiPath = !isUnpaved && (!!paving || styleHalfWidth - drivingHalfWidth > 0.1 || leadEnd > 0);
++  // (the AI path's half width: the lanes, or inside the kerbs of a narrow street)
++  const narrowest = Math.min(styleHalfWidth, ...(options.halfAt || []));
++  const kerbClose = !isUnpaved && options.curbed && !isOneWayRoad(tags) && narrowest - drivingHalfWidth - Math.abs(laneShift) < AI_KERB_MARGIN_M;
++  const aiHalfWidth = kerbClose
++    ? Math.min(drivingHalfWidth, Math.max(narrowest - Math.abs(laneShift) - AI_KERB_MARGIN_M, Math.min(drivingHalfWidth, AI_MIN_HALF_M)))
++    : drivingHalfWidth;
++  const separateAiPath = !isUnpaved && (!!paving || styleHalfWidth - drivingHalfWidth > 0.1 || leadEnd > 0 || aiHalfWidth < drivingHalfWidth - 0.05);
+ 
+   const concrete = !isUnpaved && CONCRETE_SURFACES.has(String(tags.surface ?? '').trim().toLowerCase());
+   let layers = (ROAD_TEMPLATES[templateKey] || ROAD_TEMPLATES.default).filter((layer) => {
+@@ -3137,12 +3151,12 @@ function getLayeredRoadDecals(centerNodes, highway, tags, styleHalfWidth, parent
+     layers = layers.map((layer) => (layer.drivability ? { ...layer, drivability: undefined } : layer));
+     if (leadEnd > 0) {
+       layers.push({
+-        ...AI_PATH_LAYER, width: 2 * (drivingHalfWidth + LANE_FORK_STEP_M), offset: laneShift,
++        ...AI_PATH_LAYER, width: 2 * (aiHalfWidth + LANE_FORK_STEP_M), offset: laneShift,
+         levelName: 'AI Path Lead-in', nodeRange: [0, leadEnd],
+       });
+     }
+     layers.push({
+-      ...AI_PATH_LAYER, width: 2 * drivingHalfWidth, offset: laneShift,
++      ...AI_PATH_LAYER, width: 2 * aiHalfWidth, offset: laneShift,
+       ...(leadEnd > 0 ? { nodeRange: [leadEnd, centerNodes.length - 1] } : {}),
+     });
+   }
+diff --git a/tests/aiPathKerbMargin.test.mjs b/tests/aiPathKerbMargin.test.mjs
+new file mode 100644
+index 0000000..2bbe82d
+--- /dev/null
++++ b/tests/aiPathKerbMargin.test.mjs
+@@ -0,0 +1,38 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { getLayeredRoadDecals } from '../services/exportBeamNGLevel.js';
++
++// a straight street, nodes [x, y, z, half width]
++const street = (half) => Array.from({ length: 6 }, (_, i) => [i * 4, 0, 10, half]);
++const decalsOf = (half, drivingHalf, tags, curbed = true) => getLayeredRoadDecals(street(half), tags.highway, tags, half, 'dr_test', {
++  drivingHalfWidth: drivingHalf, curbed, ukMarkings: true, isRoadStart: true, isRoadEnd: true,
++});
++const drivable = (decals) => decals.filter((d) => d.drivability > 0);
++const widthOf = (d) => d.nodes[0][3];
++
++test('AI path: a narrow two-way town street gets an AI path inside its kerbs, the asphalt as drawn', () => {
++  const decals = decalsOf(3.0, 3.0, { highway: 'residential' });
++  const nav = drivable(decals);
++  assert.equal(nav.length, 1, 'one drivable road');
++  assert.equal(nav[0].name, 'AI Path');
++  assert.equal(widthOf(nav[0]), 5.0, 'AI lanes 0.5 m inside each kerb of a 6.0 m street');
++  const base = decals.find((d) => d.name === 'Base');
++  assert.equal(widthOf(base), 6.0, 'the asphalt keeps its width');
++  assert.ok(!(base.drivability > 0), 'the asphalt no longer carries the AI');
++});
++
++test('AI path: room beside the lanes, a one-way road, a road with no kerbs: the AI drives the lanes as before', () => {
++  const wide = drivable(decalsOf(3.6, 3.0, { highway: 'residential' }));
++  assert.equal(widthOf(wide[0]), 6.0, 'a 7.2 m street: the 6.0 m lanes');
++  const oneWay = drivable(decalsOf(1.5, 1.5, { highway: 'residential', oneway: 'yes' }));
++  assert.equal(oneWay[0].name, 'Base', 'a one-way lane: the asphalt carries the AI');
++  const open = drivable(decalsOf(3.0, 3.0, { highway: 'residential' }, false));
++  assert.equal(open[0].name, 'Base', 'no kerbs: the asphalt carries the AI');
++});
++
++test('AI path: a very narrow street keeps at least 4.5 m of AI lanes', () => {
++  const nav = drivable(decalsOf(2.5, 2.5, { highway: 'residential' }));
++  assert.equal(widthOf(nav[0]), 4.5);
++  const narrowest = drivable(decalsOf(2.2, 2.2, { highway: 'residential' }));
++  assert.equal(narrowest[0].name, 'Base', 'a 4.4 m street: its whole width');
++});
