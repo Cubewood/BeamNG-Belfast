@@ -13,10 +13,10 @@ spindle. The loose end now stops the run's curb return radius further back
 meet no road, and runs too short to lose that much, are unchanged.
 
 diff --git a/services/beamngSidewalks.js b/services/beamngSidewalks.js
-index 0b3e5f3..169975e 100644
+index d59a63a..dc0cf2d 100644
 --- a/services/beamngSidewalks.js
 +++ b/services/beamngSidewalks.js
-@@ -1563,10 +1563,29 @@ function joinCorners(runs, index, walkRuns = []) {
+@@ -1574,10 +1574,29 @@ function joinCorners(runs, index, walkRuns = [], cornerRadii = null) {
      const k = end.atStart ? 0 : 1;
      if (used.has(end)) run.caps[k] = false;
      else if (run.width > CURB_ONLY_M && walkGoesOn(end)) continue;
@@ -26,7 +26,7 @@ index 0b3e5f3..169975e 100644
 +      // a loose end at a road it meets (MOUTH_SETBACK: no return made, the
 +      // other road has no sidewalk on that side): back a curb return's radius
 +      const ahead = [end.p[0] + end.d[0] * MOUTH_PROBE_M, end.p[1] + end.d[1] * MOUTH_PROBE_M];
-+      const r = CORNER_RADII[run.highway] ?? CORNER_RADIUS;
++      const r = radiusOf(run.highway); // the country's table first (UK_CORNER_RADII), as a return would use
 +      if (runLength(run.points) - r >= MIN_RUN_M / 2 && isOnOtherCarriageway(index, ahead[0], ahead[1], -MOUTH_PROBE_IN_M, (o) => o === run.owner)) {
 +        moveEnd(end, -r);
 +        run.mouthSetback = (run.mouthSetback || 0) + 1;
@@ -48,10 +48,18 @@ index 0b3e5f3..169975e 100644
  const CUT_SLIVER_W_M = 0.15;      // nor one thinner than this on average (twice its area over its outline)
  const CUT_SLIVER_M2 = 0.25;     // a piece of walk this small left by a corner's cut: dropped
 diff --git a/tests/beamngSidewalks.test.mjs b/tests/beamngSidewalks.test.mjs
-index 0caa5a0..5ccd26f 100644
+index 0caa5a0..7bbae25 100644
 --- a/tests/beamngSidewalks.test.mjs
 +++ b/tests/beamngSidewalks.test.mjs
-@@ -81,6 +81,21 @@ test('sidewalks meeting at a corner are joined by a curb return; loose ends ramp
+@@ -2,6 +2,7 @@ import test from 'node:test';
+ import assert from 'node:assert/strict';
+ 
+ import { buildMedianRuns, buildSidewalkMeshes, buildSidewalkRuns, findMedians, sidewalkSides } from '../services/beamngSidewalks.js';
++import { UK_CORNER_RADII } from '../services/ukJunctions.js';
+ 
+ const street = (overrides = {}) => ({
+   owner: 1, half: 4, highway: 'residential', urban: true, tags: { sidewalk: 'both' }, continuations: [],
+@@ -81,6 +82,27 @@ test('sidewalks meeting at a corner are joined by a curb return; loose ends ramp
    assert.ok(loose.length >= 4);
  });
  
@@ -67,6 +75,12 @@ index 0caa5a0..5ccd26f 100644
 +    assert.ok(Math.min(...xs) >= 5.5 + 3 - 1e-6, `run stops ${Math.min(...xs).toFixed(2)} m from the cross road's centreline`);
 +    assert.ok(Math.max(...xs) >= 99, 'the end at the map edge stays');
 +    assert.ok(run.ramps.every(Boolean), 'both ends still ramp down');
++  }
++  // with a country's radii (UK_CORNER_RADII: residential 6 m) the run stops that radius back
++  const uk = buildSidewalkMeshes([street(), cross], { cornerRadii: UK_CORNER_RADII }).runs;
++  for (const run of uk) {
++    const xs = run.points.map((p) => Math.abs(p[0]));
++    assert.ok(Math.min(...xs) >= 5.5 + 6 - 1e-6, `UK run stops ${Math.min(...xs).toFixed(2)} m from the cross road's centreline`);
 +  }
 +});
 +
