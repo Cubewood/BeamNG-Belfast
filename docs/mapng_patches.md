@@ -46,7 +46,7 @@ git add patches/mapng                              # in the repo root, by name
 1. Move the submodule to the new upstream commit and set `PINNED_COMMIT` in `tools/mapng_export.py`.
 2. `export` now exits 3 ("the pin changed"). `apply --reset` stops at the first patch that no longer applies and leaves the submodule clean at the new pin.
 3. Rebase by hand: `git checkout -B belfast <new pin>`, `git am --3way patches/mapng/<name>` for each, fix conflicts, then `save` (this writes the new `BASE`).
-4. Run MapNG's tests (806 of 812 pass on Windows at the bare pin, 822 of 828 with patches 0001 to 0004, 825 of 831 with 0001 to 0005, 832 of 838 with 0001 to 0006, 837 of 843 with 0001 to 0007, 849 of 855 with 0001 to 0009, 852 of 858 with 0001 to 0012, `docs/mapng_export.md`; the six failures are environment) and the new tests of each patch.
+4. Run MapNG's tests (806 of 812 pass on Windows at the bare pin, 822 of 828 with patches 0001 to 0004, 825 of 831 with 0001 to 0005, 832 of 838 with 0001 to 0006, 837 of 843 with 0001 to 0007, 849 of 855 with 0001 to 0009, 852 of 858 with 0001 to 0012, 855 of 861 with 0001 to 0014, `docs/mapng_export.md`; the six failures are environment) and the new tests of each patch.
 
 Offering generic patches upstream (the building rule, the junction step, mph signs) needs the user's GitHub account and stays a follow-up.
 
@@ -244,3 +244,12 @@ shrank every road core. Three faults that the wide default roads had hidden, eac
 
 Upstream tests with 0001 to 0012 (renumbered from 0008 to 0010 and rebased on T-404's 0008 and 0009, 18 November): 858, 852 pass, the same six environment failures. Drive gate: not passed, see
 `docs/dfi_widths.md`.
+
+## Patches 0013 and 0014: a side road's approach, one width per decal road (T-406, 18 November)
+
+| Patch | File | Change | Test |
+|---|---|---|---|
+| 0013 side road approach | `services/structures/profileSolve.js` (`junctionApproaches`, applied to the solve's allowed rise per station) | At a junction on the ground (3+ carriageway ends, no bridge or tunnel) the through pair is the two ends leaving most nearly opposite (higher class first; service and track last). Every other end whose ground leaves the node at least `APPROACH_MIN` 6 % steeper than the through road's grade across it may rise at most that cross grade plus `APPROACH_K` 0.01 per metre from the node (a 100 m vertical curve: about 4 % per 4 m station) until its own allowance. Not applied where the road cannot give the height back (capped rise end to end under the ground's difference plus what the curve gives up): a 29 m track at its limit otherwise lifted the Ballylesson Road junction 0.33 m | `tests/structureProfile.test.mjs`: a street with a 31 % bank into a level road left it at 12.8 % before, at most 3 % after, turning at most 4.5 % per station, the through road on its ground; a 5 % street keeps its profile |
+| 0014 merge key | `services/exportBeamNGLevel.js` (`getDecalMergeStyleKey`, now exported) | `width` and `mapng:carriageway_max` are part of the merge key: consecutive ways of one name with different widths stay separate DecalRoads, each drawn at its own width | `tests/roadNetwork.test.mjs`: a 7.5 m and a 10.2 m way stay two roads; equal or no width tags still merge |
+
+On the Slice (0013 alone against the same inputs without it): 13 of 908 road bodies move more than 5 cm, all side roads at a junction (Lady Ishbel Avenue up to 0.85 m lower 17 m from Hospital Road, six dirt tracks, six other asphalt side roads), no through road and no junction node; one dead-end track's far end rose 1.12 m at (-222, -988). 0014 splits Milltown Road at (-25, 315) (6.3 m, then 7.3 m) and leaves a 0.14 to 0.48 m dip along the edge of its westbound carriageway by the central reservation at (-42 to -53, 332 to 340): `milltown-road-out` bump 6.4 and 6.8 at (-54, 340), under the 7.0 limit but new (follow-up). Lady Ishbel Avenue now leaves Hospital Road at 2.3 % and steepens about 4 % per station to 15 % at 16 m (was 9.4 %, then 15 % from 4 m). Widths 145 of 158 (all 134 high and medium within 0.75 m). Upstream tests with 0001 to 0014: 861, 855 pass, the same six environment failures. Drive gate: `docs/dfi_widths.md`.

@@ -257,9 +257,9 @@ Limits found:
   cannot be drawn without a MapNG patch: 1 way on the Slice (Castlehume Gardens 17.8 m, a junction mouth).
 - **MapNG merges consecutive ways of one name, class, ref, one-way and surface into one DecalRoad and draws it with
   the first way's width.** Where the merged ways have different DfI widths (the A55 Belvoir Road: 7.5 m and 10.2 m)
-  the road gets one of them, and the other way is off by the difference. 5 high or medium ways on the Slice are off
-  for this reason alone. The fix is a MapNG patch adding `width` and `mapng:carriageway_max` to
-  `getDecalMergeStyleKey` (`exportBeamNGLevel.js`); not made in T-406.
+  the road gets one of them, and the other way is off by the difference. 5 high or medium ways on the Slice were off
+  for this reason alone. Fixed by MapNG patch 0014 (`width` and `mapng:carriageway_max` in `getDecalMergeStyleKey`,
+  18 November): widths check 145 of 158, all 134 high and medium ways within 0.75 m.
 - DfI's wide medium confidence figures at cul-de-sac heads (Moyle Walk 12.5 and 11.1 m, inter-quartile range 5.9 to
   12.7) are drawn as DfI gives them and put one building 2.4 m into the lanes.
 
@@ -308,3 +308,34 @@ routes, 0 problems); they match t406e builds only. Suite `2026-11-15_232145` (fi
 scrape at (401, 808) (t406d had scrapes at those Haddo Woods and roundabout places too). Console: one error, `Hook discarded:
 FilteredInputChanged` (game UI), not seen before. The QA profile holds the i007 zip again. The suite now reads the osm.json the routes file
 names (`sources.osm_file`) unless `--osm` is given.
+
+## Drive gate on the t406f build (18 November 2026, not passed)
+
+Build `H:\BelfastData\mapng\t406f\out\belfast_slice.zip`: area `t413_slice` (pinned OSM, `gpxz`), MapNG patches 0001 to
+0014 (T-404's 0008 and 0009; T-406's 0010 to 0012, then 0013 a side road's approach to a junction and 0014 the decal
+merge key, `docs/mapng_patches.md`). Static checks against t404 (dev): widths 145 of 158 (high 77 of 77, medium 57 of
+57, low 11 of 24; t406e 140), `terrain-step` 78 (1 high, (457, 923); t404 98 with 15 high, t406e 85), `kerb-height` 1 (22 cm at
+(133, 735), as on the build without 0013 and 0014), signals check 0, junctions: `kerb-radius-small` 4 (t404 20,
+accepted), but 4 high `junction-line-on-priority-road`, 1 `roundabout-entry-unmarked` (450, 872), 1
+`junction-mouth-unmarked`, 1 `junction-line-no-mouth`, all already on the build with 0001 to 0012 alone (the T-406 widths
+under T-404's lines; on t404 the junction gate fails only on its 20 accepted short corners). Routes rebuilt on its graph (`build_routes.py rebuild`, `check`: 10 routes,
+0 problems).
+
+- **The Lady Ishbel drop: fixed (patch 0013).** Lady Ishbel Avenue leaves Hospital Road at 2.3 % and turns about 4 % per
+  station to 15 % at 16 m, instead of 9.4 % then 15 % from 4 m. `lady-ishbel-loop-reverse` bump 6.1 and 6.2 (t406e 8.3,
+  t404 6.0); no scrape there (t404: (-194, -146)).
+- **Suite `2026-11-18_183125`: 9 of 10, G3 failed.** `haddo-woods-loop` crashed at (-297, -159): front spindle, FL. The AI
+  comes out of the 12 m radius right-hand bend 1.95 m left of the centreline (0.45 m outside its 3.0 m lane's middle),
+  front left wheel at about 2.75 m, and meets the 13 cm kerb at 3.0 m. Haddo Woods has no DfI match: 5.6 m class
+  default, drawn at the lanes' 6.0 m. Road, kerb and terrain under the path are as on t406e, where the same contact
+  was a scrape at (-298, -158) in its runs; not caused by 0013 or 0014. Tried: a 0.3 m channel inside two-way
+  carriageways at the lanes' width (`shoulder:both:width`, AI lanes 5.4 m): `kerb-height` 1 to 91 and `terrain-step` 78 to 150
+  (43 high) on the static checks (build `t406g`), so reverted and not driven.
+- **Suite `2026-11-18_184913` (same build, rerun): 10 of 10, G3 passed.** Worst bump 6.8 at (-54, 340) on
+  `milltown-road-out`, new with 0014 (6.4 in the first run; t406e and t404 under 5 there); scrapes 2: Haddo Woods
+  (-298, -158) and the roundabout (401, 808) (t404: 2, both on `lady-ishbel-loop-reverse`).
+- Console: no errors in either run (3 warnings, the known baseline lines); `Hook discarded: FilteredInputChanged` did not
+  come back.
+
+One failing and one passing run of the same build: the Haddo Woods bend is a coin toss between scrape and crash for
+this AI on a 6.0 m street. The QA profile holds the t404 zip again. The routes file matches t406f's graph only.
